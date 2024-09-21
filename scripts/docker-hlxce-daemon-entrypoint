@@ -1,0 +1,8 @@
+#!/bin/bash
+
+sed -i "/DBHost/s/\"\([^\"]*\)\"/\"${DB_HOST}\"/g" /home/hlxce/hlstats.conf
+sed -i "/DBUsername/s/\"\([^\"]*\)\"/\"${DB_USERNAME}\"/g" /home/hlxce/hlstats.conf
+sed -i "/DBPassword/s/\"\([^\"]*\)\"/\"${DB_PASSWORD}\"/g" /home/hlxce/hlstats.conf
+sed -i "/DBName/s/\"\([^\"]*\)\"/\"${DB_NAME}\"/g" /home/hlxce/hlstats.conf
+
+perl hlstats.pl
