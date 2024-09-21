@@ -34,11 +34,11 @@
 #
 # For support and installation notes visit http://www.hlxcommunity.com
 
-API_KEY="<YOUR_API_KEY>"
+#API_KEY="<YOUR_API_KEY>"
 
 # ***** NOTHING TO CONFIGURE BELOW HERE *****
 
-API_URL="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$API_KEY&suffix=tar.gz"
+#API_URL="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$API_KEY&suffix=tar.gz"
 
 FILE=GeoLite2-City
 FILE_EXT=.tar.gz
@@ -54,8 +54,8 @@ if [[ $API_KEY =~ "<YOUR_API_KEY>" ]]; then
   exit 3
 fi
 
-echo "[>>] Downloading GeoLite2-City database"
-wget -N -q $API_URL -O $FILE$FILE_EXT
+# echo "[>>] Downloading GeoLite2-City database"
+# wget -N -q $API_URL -O $FILE$FILE_EXT
 
 echo "[<<] Uncompressing $FILE$FILE_EXT"
 tar -zxvf $FILE$FILE_EXT
