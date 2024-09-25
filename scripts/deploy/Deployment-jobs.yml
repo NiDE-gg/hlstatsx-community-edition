@@ -24,7 +24,7 @@ spec:
               value: $DB_PASSWORD
             - name: DB_USERNAME
               value: $DB_USERNAME
-            image: registry.gitlab.com/nide.gg/docker-hlstatx-daemon:latest
+            image: ghcr.io/nide-gg/hlstatsx-deamon:latest
             imagePullPolicy: Always
             name: hlstatx-daemon-awards
             resources: {}

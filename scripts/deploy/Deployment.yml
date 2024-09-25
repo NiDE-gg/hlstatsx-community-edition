@@ -19,20 +19,20 @@ spec:
     spec:
       hostNetwork: false
       containers:
+      - name: hlstatx-daemon
+        image: ghcr.io/nide-gg/hlstatsx-deamon:latest
+        imagePullPolicy: Always
+        ports:
         - name: hlstatx-daemon
-          image: registry.gitlab.com/nide.gg/docker-hlstatx-daemon:latest
-          imagePullPolicy: Always
-          ports:
-            - name: hlstatx-daemon
-              containerPort: 32578
-              hostPort: 32578
-              protocol: UDP
-          env:
-            - name: DB_NAME
-              value: $DB_NAME
-            - name: DB_PASSWORD
-              value: $DB_PASSWORD
-            - name: DB_USERNAME
-              value: $DB_USERNAME
-            - name: DB_HOST
-              value: $DB_HOST
+          containerPort: 32578
+          hostPort: 32578
+          protocol: UDP
+        env:
+        - name: DB_NAME
+          value: $DB_NAME
+        - name: DB_PASSWORD
+          value: $DB_PASSWORD
+        - name: DB_USERNAME
+          value: $DB_USERNAME
+        - name: DB_HOST
+          value: $DB_HOST
