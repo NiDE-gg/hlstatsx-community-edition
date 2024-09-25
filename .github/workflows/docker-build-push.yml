@@ -24,4 +24,4 @@ jobs:
       with:
         context: ./scripts
         push: true
-        tags: ghcr.io/nide/hlstatsx-deamon:latest
+        tags: ghcr.io/nide-gg/hlstatsx-deamon:latest
