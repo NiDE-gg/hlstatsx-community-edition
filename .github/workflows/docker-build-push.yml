@@ -24,4 +24,4 @@ jobs:
       with:
         context: ./scripts
         push: true
-        tags: ghcr.io/${{ github.repository }}:latest
+        tags: ghcr.io/${{ lowercase(github.repository) }}:latest
