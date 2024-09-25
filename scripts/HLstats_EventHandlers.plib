@@ -786,6 +786,7 @@ sub doEvent_Suicide
 	my $desc;
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
+
 	$player->set("is_dead", "1");
 	
 	if ($g_servers{$s_addr}->{num_trackable_players} < $g_servers{$s_addr}->{minplayers})
@@ -1485,7 +1486,7 @@ sub doEvent_PlayerPlayerAction
 	} elsif (checkBonusRound()) {
 		$desc = "(IGNORED) BonusRound: ";
 	} elsif ($player && $victim) {
-		if (($g_servers{$s_addr}->{ignore_bots} == 1) && (($killer->{is_bot} == 1) || ($victim->{is_bot} == 1))) {
+		if (($g_servers{$s_addr}->{ignore_bots} == 1) && (($player->{is_bot} == 1) || ($victim->{is_bot} == 1))) {
 			$desc = "(IGNORED) BOT: ";
 		} else {
 			if ($g_servers{$s_addr}->{play_game} == TF() && $action eq "medic_death") {
@@ -1514,6 +1515,18 @@ sub doEvent_PlayerPlayerAction
 						$vz
 					);
 				}
+			}
+
+			if (defined($g_games{$g_servers{$s_addr}->{game}}{actions}{$action}) && $g_games{$g_servers{$s_addr}->{game}}{actions}{$action}{paction}) {
+				# Reroute PPAction that wants to be scored as a PAction
+				&doEvent_PlayerAction(
+					$playerId,
+					$playerUniqueId,
+					$action,
+					$x,
+					$y,
+					$z
+				);
 			}
 			
 			my $map = $g_servers{$s_addr}->get_map();
@@ -1918,13 +1931,14 @@ sub doEvent_TeamAction
 	$rcmd = $g_servers{$s_addr}->{broadcasting_command};
 	my ($team, $action, %properties) = @_;
 	my $desc;
-	if ($g_servers{$s_addr}->{num_trackable_players} < $g_servers{$s_addr}->{minplayers}) {
-		$desc = "(IGNORED) NOTMINPLAYERS: ";
 
 	my $team_bonuspoints = 0;
 	if (defined($properties{hlx_team_bonuspoints})) {
 		$team_bonuspoints = $properties{hlx_team_bonuspoints};
 	}
+
+	if ($g_servers{$s_addr}->{num_trackable_players} < $g_servers{$s_addr}->{minplayers}) {
+		$desc = "(IGNORED) NOTMINPLAYERS: ";
 
 # Team events, such as Round_Win can still occur during Bonus Round		
 #	} elsif (checkBonusRound()) {
