@@ -87,55 +87,52 @@ For support and installation notes visit http://www.hlxcommunity.com
 					echo '<input type="hidden" name="'.htmlspecialchars($var, ENT_QUOTES).'" value="'.htmlspecialchars($value, ENT_QUOTES)."\" />\n";
 				}
 			?>
-					<table class="data-table" style="width:30%;">
-						<tr valign="middle" class="bg1">
-							<td nowrap="nowrap" style="width:30%;">Search For:</td>
-							<td style="width:70%;">
-								<input type="text" name="q" size="20" maxlength="128" value="<?php echo htmlspecialchars($this->query, ENT_QUOTES); ?>" style="width:300px;" />
-							</td>
-						</tr>
-						<tr valign="middle" class="bg1">
-							<td nowrap="nowrap" style="width:30%;">In:</td>
-							<td style="width:70%;">
-								<?php
-									echo getSelect('st', $searchtypes, $this->type);
-								?>
-							</td>
-						</tr>
-						<tr valign="middle" class="bg1">
-							<td nowrap="nowrap" style="width:30%;">Game:</td>
-							<td style="width:70%;">
-								<?php
-									$games = array ();
-									$games[''] = '(All)';
-									$result = $db->query("
-										SELECT
-											hlstats_Games.code,
-											hlstats_Games.name
-										FROM
-											hlstats_Games
-										WHERE
-											hlstats_Games.hidden = '0'
-										ORDER BY
-											hlstats_Games.name
-									");
-									while ($rowdata = $db->fetch_row($result))
-									{
-										$games[$rowdata[0]] = $rowdata[1];
-									}
-									echo getSelect('game', $games, $this->game);
-								?>
-							</td>
-						</tr>
-						<tr class="bg1">
-							<td colspan="3" style="text-align:center;">
-								<input type="submit" value=" Find Now " class="submit" />
-							</td> 
-						</tr>
-					</table>
-				</td>
-			</tr>
-		</table>
+			<table class="data-table" style="width:30%;">
+				<tr style="vertical-align:middle;" class="bg1">
+					<td nowrap="nowrap" style="width:30%;">Search For:</td>
+					<td style="width:70%;">
+						<input type="text" name="q" size="20" maxlength="128" value="<?php echo htmlspecialchars($this->query, ENT_QUOTES); ?>" style="width:300px;" />
+					</td>
+				</tr>
+				<tr style="vertical-align:middle;" class="bg1">
+					<td nowrap="nowrap" style="width:30%;">In:</td>
+					<td style="width:70%;">
+						<?php
+							echo getSelect('st', $searchtypes, $this->type);
+						?>
+					</td>
+				</tr>
+				<tr style="vertical-align:middle;" class="bg1">
+					<td nowrap="nowrap" style="width:30%;">Game:</td>
+					<td style="width:70%;">
+						<?php
+							$games = array ();
+							$games[''] = '(All)';
+							$result = $db->query("
+								SELECT
+									hlstats_Games.code,
+									hlstats_Games.name
+								FROM
+									hlstats_Games
+								WHERE
+									hlstats_Games.hidden = '0'
+								ORDER BY
+									hlstats_Games.name
+							");
+							while ($rowdata = $db->fetch_row($result))
+							{
+								$games[$rowdata[0]] = $rowdata[1];
+							}
+							echo getSelect('game', $games, $this->game);
+						?>
+					</td>
+				</tr>
+				<tr class="bg1">
+					<td colspan="3" style="text-align:center;">
+						<input type="submit" value=" Find Now " class="submit" />
+					</td> 
+				</tr>
+			</table>
 		</form>
 	</div>
 </div><br /><br />
@@ -149,8 +146,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 			if ($link_clan == -1) $link_clan = "mode=claninfo&amp;clan=%k";
 ?>
 
-</div class="block">
-	<a name="results"></a>
+<div class="block">
+	<a id="results"></a>
 	<?php printSectionTitle('Search Results'); ?>
 	<br /><br />
 
