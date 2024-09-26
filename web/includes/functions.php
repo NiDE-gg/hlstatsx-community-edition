@@ -150,14 +150,20 @@ function error($message, $exit = true)
 {
 	global $g_options;
 ?>
-<table border="1" cellspacing="0" cellpadding="5">
-<tr>
-<td class="errorhead">ERROR</td>
-</tr>
-<tr>
-<td class="errortext"><?php echo $message; ?></td>
-</tr>
-</table>
+	<table border="1" cellspacing="0" cellpadding="5">
+		<tr>
+			<td class="errorhead">ERROR</td>
+		</tr>
+		<td class="errortext">
+			<?php
+				if (isset($_SESSION['loggedin'])) {
+					echo $message;
+				} else {
+					echo 'Oops, there is a problem (╯°□°）╯︵ ┻━┻ <br />If you see this message, please report it to Administrators.';
+				}
+			?>
+		</td>
+	</table>
 <?php if ($exit)
 		exit;
 }
