@@ -148,7 +148,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 <br /><br />
 <div class="block">
 <?php // figure out URL and absolute path of image
-	if ($mapimg = getImage("/games/$game/maps/$map"))
+	if ($mapimg = getImage("/games/$game/maps/$map", "https://bans.nide.gg/images/maps/$map.jpg"))
 	{
 		$mapimg = $mapimg['url'];
 	}
@@ -175,7 +175,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 			if ($mapimg)
 			{
-				echo "<img src=\"$mapimg\" alt=\"$map\" />";
+				echo "<img class=\"mapinfo_thumb\" src=\"$mapimg\" alt=\"$map\" />";
 			}
 
 			if ($g_options['map_dlurl'])

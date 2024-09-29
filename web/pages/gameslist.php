@@ -56,7 +56,9 @@ global $game;
 
 	?>
 <ul id="header_gameslist">
-<?php        
+<?php   
+		echo "\t\t\t\t<a href='https://discord.nide.gg'>" . 
+		"<img src=\"" . IMAGE_PATH . "/discord.png\" style=\"margin-left: 2px; margin-right: 2px;\" alt=\"Discord\" title=\"Discord\" /></a>";	   
 		// Iterate over array of game names and codes
 		while ($gamedata = $db->fetch_row($resultGames))
 		{

@@ -390,7 +390,7 @@ if ($server_data['addr'] != '')  {
 				teamshots, 
 				teamhits, 
 				teamjointime, 
-				IFNULL(playerlist_bgcolor,'#D5D5D5') as playerlist_bgcolor, 
+				IFNULL(playerlist_bgcolor,'#EFEFEF') as playerlist_bgcolor, 
 				IFNULL(playerlist_color,'#050505') AS playerlist_color, 
 				IFNULL(playerlist_index, 99 ) AS playerlist_index
 			FROM 

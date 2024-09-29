@@ -18,7 +18,7 @@ HLstatsX is an enhanced version of HLstats made by Simon Garner
 HLstats - Real-time player and clan rankings and statistics for Half-Life
 http://sourceforge.net/projects/hlstats/
 Copyright (C) 2001  Simon Garner
-            
+			
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -37,11 +37,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 */
 
 	if (!defined('IN_HLSTATS')) {
-        die('Do not access this file directly.');
-    }
+		die('Do not access this file directly.');
+	}
 
 	if ($auth->userdata["acclevel"] < 80) {
-        die ("Access denied!");
+		die ("Access denied!");
 	}
 ?>
 
@@ -54,7 +54,7 @@ For support and installation notes visit http://www.hlxcommunity.com
    $commands[1]["name"] = "Shut down the Daemon *";
    $commands[1]["cmd"] = "KILL";
 
-    if (isset($_POST['confirm'])) {
+	if (isset($_POST['confirm'])) {
 		$host = $_POST['masterserver'];
 		$port = $_POST["port"];
 		$command = $commands[$_POST["command"]]["cmd"];
@@ -108,7 +108,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 
 		echo "recieving <strong>$recv_bytes</strong> bytes in <strong>$packets</strong> packets...<strong>OK</strong></li>";
-      
+	  
 		if ($packets>0) {
 			echo "<li>Backend Answer: ".$answer."</li>";
 		} 
@@ -116,7 +116,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		{
 			echo "<li><em>No packets received &mdash; check if backend dead or not listening on $host:$port</em></li>";
 		}
-      
+	  
 		echo "<li>Closing connection to backend...";
 		socket_close($socket);
 		echo "<strong>OK</strong></li>";
@@ -126,8 +126,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
 		else
 		{
-        
-?>        
+		
+?>
 
 <p>After every configuration change made in the Administration Center, you should reload the daemon configuration.  To do so, enter the hostname or IP address of your HLXCE daemon and choose the reload option.  You can also shut down your daemon from this panel.  <strong>NOTE: The daemon can not be restarted through the web interface!</strong></p>
 
@@ -161,5 +161,5 @@ For support and installation notes visit http://www.hlxcommunity.com
 </form>
 
 <?php
-    }
+	}
 ?>    

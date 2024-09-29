@@ -1049,8 +1049,8 @@ $admintasks['tools_editdetails_player'] = new AdminTask('Edit Player Details', 8
 $admintasks['tools_editdetails_clan'] = new AdminTask('Edit Clan Details', 80, 'subtool', 'Edit a clan\'s profile information.');
 
 // Reset Tools
-$admintasks['tools_reset'] = new AdminTask('Full or Partial Reset', 100, 'tool', 'Resets chosen data globally or for selected game', 'reset');
-$admintasks['tools_reset_2'] = new AdminTask('Clean up Statistics', 100, 'tool', 'Delete all inactive players, clans and corresponding events from the database.', 'reset');
+$admintasks['tools_reset'] = new AdminTask('Full or Partial Reset', 80, 'tool', 'Resets chosen data globally or for selected game', 'reset');
+$admintasks['tools_reset_2'] = new AdminTask('Clean up Statistics', 80, 'tool', 'Delete all inactive players, clans and corresponding events from the database.', 'reset');
 
 // Game Settings Tools
 $admintasks['tools_settings_copy'] = new AdminTask('Duplicate Game settings', 100, 'tool', 'Duplicate a whole game settings tree to split servers of same gametype', 'settingstool');

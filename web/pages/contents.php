@@ -223,6 +223,32 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 		}
 ?>	
+			<tr class="discord-row">
+				<td class="game-table-cell" style="height:30px; text-align:left;">
+					<a href="https://discord.nide.gg" target="_blank" class="fSmall">
+						<img src="<?php echo IMAGE_PATH; ?>/discord.png" style="vertical-align:middle; margin-right: 5px;" alt="Discord" />
+						NiDE.GG Discord
+					</a>
+				</td>
+				<td class="game-table-cell" style="text-align:center;">
+<?php
+$server_code = "d7mQP8K7";
+$url = "https://discord.com/api/v9/invites/".$server_code."?with_counts=true&with_expiration=true";      
+$jsonIn = file_get_contents($url);
+$json_obj = json_decode($jsonIn, $assoc = false);
+$total = $json_obj ->approximate_member_count;
+$guild_id = '579962159270985733';
+$data = json_decode(file_get_contents("https://discordapp.com/api/guilds/{$guild_id}/widget.json"), true);
+$membersOnline = isset($data['presence_count']) ? $data['presence_count'] : 0;
+		if ($membersOnline == 0)
+			echo "$total";
+		else
+			echo "$membersOnline / $total";
+?>
+</td>
+				<td class="game-table-cell" style="text-align:center;">-</td>
+				<td class="game-table-cell" style="text-align:center;">-</td>
+			</tr>
 				</table>
 		
 		</div><br /><br />

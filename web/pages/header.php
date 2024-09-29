@@ -159,10 +159,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 	// Determine if we should show SourceBans links/Forum links
 	$extratabs = NULL;
 	if ($g_options['sourcebans_address'] && file_exists($iconpath . "/title-sourcebans.png")) {
-		$extratabs .= "<li><a href=\"". $g_options['sourcebans_address'] . "\" target=\"_blank\"><img src=\"" . $iconpath . "/title-sourcebans.png\" alt=\"SourceBans\" /></a></li>\n";
+		$extratabs .= "<li class='header_tabs'><a href=\"". $g_options['sourcebans_address'] . "\" target=\"_blank\">Sourcebans</a></li>\n";
 	}
 	if ($g_options['forum_address'] && file_exists($iconpath . "/title-forum.png")) {
-		$extratabs .= "<li><a href=\"" . $g_options['forum_address'] . "\" target=\"_blank\"><img src=\"" . $iconpath . "/title-forum.png\" alt=\"Forum\" /></a></li>\n";
+		$extratabs .= "<li class='header_tabs'><a href=\"" . $g_options['forum_address'] . "\" target=\"_blank\">Forums</a></li>\n";
 	}
 ?>
 <div class="block">
@@ -194,10 +194,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 		<div class="headertabs">
 			<ul>
-				<li><a href="<?php echo $g_options['scripturl'] ?>"><img src="<?php echo $iconpath; ?>/title-contents.png" alt="Contents" /></a></li>
-				<li><a href="<?php echo $g_options['scripturl'] ?>?mode=search"><img src="<?php echo $iconpath; ?>/title-search.png" alt="Search" /></a></li>
+				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>">Contents</a></li>
+				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=search">Search</a></li>
 				<?php if ($extratabs) { print $extratabs; } ?>				
-				<li><a href="<?php echo $g_options['scripturl'] ?>?mode=help"><img src="<?php echo $iconpath; ?>/title-help.png" alt="Help" /></a></li>
+				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=help">Help</li>
 			</ul>
 
 		</div>

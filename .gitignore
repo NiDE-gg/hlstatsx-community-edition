@@ -2,3 +2,6 @@
 /web/.idea
 /.vscode
 /.vagrant
+.DS_Store
+web/hlstatsimg/progress/*
+web/config.php

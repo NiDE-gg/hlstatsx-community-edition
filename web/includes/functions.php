@@ -441,9 +441,10 @@ function getEmailLink($email, $maxlength = 40)
  * getImage()
  * 
  * @param string $filename
+ * @param string $externalURL Optional external URL to check
  * @return mixed Either the image if exists, or false otherwise
  */
-function getImage($filename)
+function getImage($filename, $externalURL = null)
 {
 	preg_match('/^(.*\/)(.+)$/', $filename, $matches);
 	$relpath = $matches[1];
@@ -452,32 +453,53 @@ function getImage($filename)
 	$path = IMAGE_PATH . $filename;
 	$url = IMAGE_PATH . $relpath . rawurlencode($realfilename);
 
-	// check if image exists
-	if (file_exists($path . '.png'))
-	{
-		$ext = 'png';
-	} elseif (file_exists($path . '.gif'))
-	{
-		$ext = 'gif';
-	} elseif (file_exists($path . '.jpg'))
-	{
-		$ext = 'jpg';
+	// Vérification du lien externe en premier
+	if ($externalURL !== null) {
+		// Remplace les variables dans le lien
+		$externalURL = str_replace('$map', $realfilename, $externalURL);
+
+		// Vérifier si le fichier distant existe
+		if (checkRemoteFileExists("$externalURL")) {
+			$size = getImageSize($externalURL);
+
+			return array('url' => $externalURL, 'path' => $externalURL, 'width' => $size[0], 'height' => $size[1], 
+				'size' => $size[3]);
+		}
 	}
-	else
-	{
+
+	// Vérifier si l'image locale existe
+	if (file_exists($path . '.png')) {
+		$ext = 'png';
+	} elseif (file_exists($path . '.gif')) {
+		$ext = 'gif';
+	} elseif (file_exists($path . '.jpg')) {
+		$ext = 'jpg';
+	} else {
 		$ext = '';
 	}
 
-	if ($ext)
-	{
+	if ($ext) {
 		$size = getImageSize("$path.$ext");
 
-		return array('url' => "$url.$ext", 'path' => "$path.$ext", 'width' => $size[0], 'height' => $size[1],
+		return array('url' => "$url.$ext", 'path' => "$path.$ext", 'width' => $size[0], 'height' => $size[1], 
 			'size' => $size[3]);
 	}
 
-    return false;
+	return false;
 }
+
+/**
+ * Vérifie si un fichier distant existe à l'URL donnée
+ * 
+ * @param string $url
+ * @return bool True si le fichier existe, false sinon
+ */
+function checkRemoteFileExists($url)
+{
+	$headers = @get_headers($url);
+	return $headers && strpos($headers[0], '200') !== false;
+}
+
 
 function mystripslashes($text)
 {

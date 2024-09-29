@@ -1,31 +1,380 @@
+:root {
+	--theme-page_background: var(--theme-fluent_dark_page_background);
+    --item-timeline--boxShadow: 0 0 0 4px rgb(var(--theme-page_background));
+    --theme-link: var(--theme-fluent_dark_link);
+    --theme-text_light: var(--theme-fluent_dark_text_light);
+    --border-1px: 1px solid rgba(var(--theme-text_light), .15);
+    --form-field--borderColor: rgba(var(--theme-text_light), .4);
+    --form-field--borderHoverColor: rgba(var(--theme-text_light), .8);
+    --theme-text_color: var(--theme-fluent_dark_text_color);
+    --theme-header: var(--theme-fluent_dark_header);
+    --theme-header_text: var(--theme-fluent_dark_header_text);
+    --theme-area_background_reset: var(--theme-fluent_dark_area_background_reset);
+    --theme-button_bar: var(--theme-fluent_dark_button_bar);
+    --theme-widget_title_bar: var(--theme-fluent_dark_widget_title_bar);
+    --theme-very_light_button: var(--theme-fluent_dark_very_light_button);
+    --theme-widget_title_font: var(--theme-fluent_dark_widget_title_font);
+    --box--backgroundColor: rgb(var(--theme-area_background_reset));
+    --theme-main_nav_tab: var(--theme-fluent_dark_main_nav_tab);
+    --theme-main_nav_tab_font: var(--theme-fluent_dark_main_nav_tab_font);
+    --theme-light_button_font: var(--theme-fluent_dark_light_button_font);
+    --theme-area_background_light: var(--theme-fluent_dark_area_background_light);
+    --theme-area_background: var(--theme-fluent_dark_area_background);
+    --theme-footer_text: var(--theme-fluent_dark_footer_text);
+    --theme-text_dark: var(--theme-fluent_dark_text_dark);
+    --theme-light_button: var(--theme-fluent_dark_light_button);
+    --theme-selected: var(--theme-fluent_dark_selected);
+    --theme-tag: var(--theme-fluent_dark_tag);
+    --theme-tag_font: var(--theme-fluent_dark_tag_font);
+    --theme-moderated: var(--theme-fluent_dark_moderated);
+    --theme-moderated_light: var(--theme-fluent_dark_moderated_light);
+    --theme-moderated_text: var(--theme-fluent_dark_moderated_text);
+    --theme-moderated_text_light: var(--theme-fluent_dark_moderated_text_light);
+    --theme-area_background_dark: var(--theme-fluent_dark_area_background_dark);
+    --positive-light: #0e2f26;
+    --positive-dark: #4bb15c;
+    --negative-dark: #c33030;
+    --intermediate-dark: #f78438;
+    --intermediate-light: #483104;
+    --input-success__background-color: #162f00;
+    --input-error__background-color: #560808;
+    --input-error__border-color: #ca2323;
+    --ipsButton--background-hover: 0, 0, 0, .08;
+    --theme-overlaid_button: 107, 107, 107, .5;
+    --theme-very_light_button_font_border: 255, 255, 255;
+    --popup--boxShadow: 0 3px 20px rgba(0, 0, 0, .1);
+    --theme-main_nav_transparent: 31, 31, 31;
+    --backdrop-background: var(--theme-area_background_reset), .7;
+    --gotop-background: 255, 255, 255, .16;
+	--swiper-navigation-size: 44px;
+	--swiper-theme-color: #007aff;
+	--color-1: #f33e0d;
+    --color-1-rgb: 243, 62, 13;
+    --color-2: #a42806;
+    --gradient-primary: linear-gradient(180deg, var(--color-1) 0%, var(--color-2) 100%);
+    --gradient-primary-2: linear-gradient(90deg, var(--color-1) 0%, var(--color-2) 100%);
+    --c--h: 210;
+    --c-1: hsl(var(--c--h), 40%, 98%);
+    --c-2: hsl(var(--c--h), 30%, 96%);
+    --c-3: hsl(var(--c--h), 25%, 91%);
+    --c-4: hsl(var(--c--h), 22%, 84%);
+    --c-5: hsl(var(--c--h), 20%, 65%);
+    --c-6: hsl(var(--c--h), 15%, 46%);
+    --c-7: hsl(var(--c--h), 15%, 38%);
+    --c-8: hsl(var(--c--h), 20%, 30%);
+    --c-9: hsl(var(--c--h), 25%, 22%);
+    --c-10: hsl(var(--c--h), 30%, 19%);
+    --c-11: hsl(var(--c--h), 35%, 14%);
+    --c-12: hsl(var(--c--h), 40%, 10%);
+	--theme-main_nav: var(--theme-fluent_pers_jscolor_color);
+    --theme-section_title: var(--theme-fluent_pers_jscolor_color);
+    --theme-item_status: var(--theme-fluent_pers_jscolor_color);
+    --theme-link_hover: var(--theme-fluent_pers_jscolor_color);
+    --theme-link_button: var(--theme-fluent_pers_jscolor_color);
+    --theme-very_light_button_font: var(--theme-fluent_pers_jscolor_color);
+    --theme-elWidgetControls-background: var(--theme-fluent_pers_jscolor_color);
+    --theme-normal_button: var(--theme-fluent_pers_jscolor_color);
+    --theme-primary_button: var(--theme-fluent_pers_jscolor_color);
+    --theme-brand_primary: var(--theme-fluent_pers_jscolor_color);
+    --theme-comment_count: var(--theme-fluent_pers_jscolor_color);
+    --theme-tab_background: var(--theme-fluent_pers_jscolor_color);
+    --theme-timeline_color: var(--theme-fluent_pers_jscolor_color);
+    --theme-mentions: var(--theme-fluent_pers_jscolor_color);
+    --theme-item_status: var(--theme-fluent_pers_jscolor_color);
+    --form-field--focusShadow: rgba(var(--theme-active_input_border), 0.3) 0px 0px 0px 4px;
+    --backdrop-filter-value: blur(15px);
+    --responsive-header--height: 80px;
+    --header--height: 80px;
+    --gotop-background: 0, 0, 0, .4;
+    --gotop-color: 255, 255, 255;
+    --ipsButton--background-hover: 255, 255, 255, .08;
+    --theme-overlaid_button: 0, 0, 0, .5;
+    --theme-very_light_button_font_border: 0, 0, 0;
+    --swiper-theme-color: #007aff;
+    --theme-main_nav_transparent: 255, 255, 255;
+    --container--width: 1630px;
+	--sp-0: 0px;
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-7: 32px;
+    --sp-8: 40px;
+    --sp-9: 48px;
+    --sp-10: 64px;
+    --radius-1: 4px;
+    --radius-2: 8px;
+    --border-1px: 1px solid rgba(var(--theme-text_light), 0.15);
+    --size-1: 20px;
+    --size-2: 24px;
+    --size-3: 30px;
+    --size-4: 36px;
+    --size-5: 44px;
+    --size-6: 56px;
+    --size-7: 72px;
+    --size-8: 92px;
+    --positive-dark: #2C8C69;
+    --positive-light: #e3f3ec;
+    --negative-dark: #C53030;
+    --negative-light: #FFF5F5;
+    --intermediate-dark: #DD6B20;
+    --intermediate-light: #FFFAF0;
+    --informational-dark: #2981bf;
+    --informational-light: #e9f0f5;
+    --general-dark: #7f858d;
+    --general-light: #f0f4f8;
+    --box--boxShadow: 0px 2px 4px -1px rgba(var(--theme-area_background_dark), 0.1);
+    --box--boxShadow-bottom: 0px 2px 4px -1px rgba(var(--theme-area_background_dark), 0.1);
+    --box--boxShadow-left: -2px 0px 4px -1px rgba(var(--theme-area_background_dark), 0.1);
+    --box--boxShadow-right: 2px 0px 4px -1px rgba(var(--theme-area_background_dark), 0.1);
+    --box--boxShadow-top: 0px -2px 4px -1px rgba(var(--theme-area_background_dark), 0.1);
+    --box--backgroundColor: rgb(var(--theme-area_background_reset));
+    --box--radius: var(--radius-1);
+    --solved--borderColor: 44, 140, 105;
+    --popup--radius: var(--radius-1);
+    --popup--border: 1px solid rgba(var(--theme-area_background_dark), 0.1);
+    --popup--boxShadow: 0 8px 50px rgba(0, 0, 0, 0.1), 0px 4px 15px rgba(0, 0, 0, 0.05);
+    --dialog--boxShadow: 0px 5px 55px rgba(var(--theme-area_background_dark), 0.4), 0px 7px 24px -12px rgba(var(--theme-area_background_dark), 0.7);
+    --header--height: 80px;
+    --responsive-header--height: 55px;
+    --logo--height: 100%;
+    --responsive-logo--height: var(--logo--height);
+    --primary-navigation--height: 52px;
+    --secondary-navigation--height: 50px;
+    --form-field--radius: var(--radius-1);
+    --form-field--borderColor: rgba(var(--theme-text_light), 0.4);
+    --form-field--borderHoverColor: rgba(var(--theme-text_light), 0.8);
+    --form-field--focusShadow: rgba(var(--theme-active_input_border), 0.3) 0px 0px 0px 4px;
+    --button--radius: var(--radius-1);
+    --trophy-first--background: #fac746;
+    --trophy-first--color: #704926;
+    --trophy-second--background: #c0c0c0;
+    --trophy-third--background: #cd7f32;
+    --container--width: 1340px;
+    --minimal_container--width: 1000px;
+    --theme-active_input_border: 255, 71, 0;
+    --theme-alternate_button: 251, 92, 35;
+    --theme-alternate_button_font: 255, 255, 255;
+    --theme-area_background: 247, 247, 247;
+    --theme-area_background_dark: 31, 31, 31;
+    --theme-area_background_light: 247, 247, 247;
+    --theme-area_background_reset: 243, 243, 243;
+    --theme-brand_primary: 23, 126, 201;
+    --theme-button_bar: 68, 68, 68;
+    --theme-comment_count: 255, 255, 255;
+    --theme-comment_count_font: 255, 255, 255;
+    --theme-featured: 44, 140, 105;
+    --theme-fluent_dark_area_background: 12, 13, 16;
+    --theme-fluent_dark_area_background_dark: 22, 22, 22;
+    --theme-fluent_dark_area_background_light: 31, 33, 41;
+    --theme-fluent_dark_area_background_reset: 12, 13, 16;
+    --theme-fluent_dark_button_bar: 22, 22, 22;
+    --theme-fluent_dark_footer_text: 214, 214, 214;
+    --theme-fluent_dark_header: 15, 16, 21;
+    --theme-fluent_dark_header_text: 255, 255, 255;
+    --theme-fluent_dark_light_button: 64, 64, 64;
+    --theme-fluent_dark_light_button_font: 255, 255, 255;
+    --theme-fluent_dark_link: 230, 230, 230;
+    --theme-fluent_dark_main_nav_font: 255, 255, 255;
+    --theme-fluent_dark_main_nav_tab: 25, 25, 25;
+    --theme-fluent_dark_main_nav_tab_font: 255, 255, 255;
+    --theme-fluent_dark_moderated: 252, 247, 249;
+    --theme-fluent_dark_moderated_light: 33, 0, 0;
+    --theme-fluent_dark_moderated_text: 214, 169, 193;
+    --theme-fluent_dark_moderated_text_light: 128, 128, 128;
+    --theme-fluent_dark_page_background: 31, 31, 31;
+    --theme-fluent_dark_selected: 0, 32, 49;
+    --theme-fluent_dark_tag: 221, 107, 32;
+    --theme-fluent_dark_tag_font: 255, 224, 213;
+    --theme-fluent_dark_text_color: 204, 204, 204;
+    --theme-fluent_dark_text_dark: 255, 255, 255;
+    --theme-fluent_dark_text_light: 120, 123, 134;
+    --theme-fluent_dark_very_light_button: 22, 22, 22;
+    --theme-fluent_dark_widget_title_bar: 255, 71, 0;
+    --theme-fluent_dark_widget_title_font: 255, 255, 255;
+    --theme-fluent_forums_unread_color: 175, 45, 9;
+    --theme-fluent_global_background_color: 0, 0, 0;
+    --theme-fluent_global_background_more_dark_color: 15, 16, 21;
+    --theme-fluent_global_background_more_light_color: 233, 233, 233;
+    --theme-fluent_header_background_color: 0, 0, 0;
+    --theme-fluent_pers_jscolor_color: 255, 71, 0;
+    --theme-fluent_special_snow_color: 185, 185, 185;
+    --theme-fluent_swiper_1_background_color: 243, 251, 255;
+    --theme-fluent_swiper_1_color: 0, 0, 0;
+    --theme-fluent_swiper_10_background_color: 243, 251, 255;
+    --theme-fluent_swiper_10_color: 0, 0, 0;
+    --theme-fluent_swiper_2_background_color: 243, 251, 255;
+    --theme-fluent_swiper_2_color: 0, 0, 0;
+    --theme-fluent_swiper_3_background_color: 243, 251, 255;
+    --theme-fluent_swiper_3_color: 0, 0, 0;
+    --theme-fluent_swiper_4_background_color: 243, 251, 255;
+    --theme-fluent_swiper_4_color: 0, 0, 0;
+    --theme-fluent_swiper_5_background_color: 243, 251, 255;
+    --theme-fluent_swiper_5_color: 0, 0, 0;
+    --theme-fluent_swiper_6_background_color: 243, 251, 255;
+    --theme-fluent_swiper_6_color: 0, 0, 0;
+    --theme-fluent_swiper_7_background_color: 243, 251, 255;
+    --theme-fluent_swiper_7_color: 0, 0, 0;
+    --theme-fluent_swiper_8_background_color: 243, 251, 255;
+    --theme-fluent_swiper_8_color: 0, 0, 0;
+    --theme-fluent_swiper_9_background_color: 243, 251, 255;
+    --theme-fluent_swiper_9_color: 0, 0, 0;
+    --theme-fluent_user_1_color: 228, 0, 0;
+    --theme-fluent_user_1_color_background: 210, 0, 0;
+    --theme-fluent_user_1_color_text: 255, 255, 255;
+    --theme-fluent_user_1_text_color: 255, 255, 255;
+    --theme-fluent_user_10_color_background: 0, 0, 0;
+    --theme-fluent_user_10_color_text: 0, 0, 0;
+    --theme-fluent_user_2_color: 143, 206, 0;
+    --theme-fluent_user_2_color_background: 0, 0, 0;
+    --theme-fluent_user_2_color_text: 0, 0, 0;
+    --theme-fluent_user_2_text_color: 255, 255, 255;
+    --theme-fluent_user_3_color_background: 0, 0, 0;
+    --theme-fluent_user_3_color_text: 0, 0, 0;
+    --theme-fluent_user_4_color_background: 0, 0, 0;
+    --theme-fluent_user_4_color_text: 0, 0, 0;
+    --theme-fluent_user_5_color_background: 0, 0, 0;
+    --theme-fluent_user_5_color_text: 0, 0, 0;
+    --theme-fluent_user_6_color_background: 0, 0, 0;
+    --theme-fluent_user_6_color_text: 0, 0, 0;
+    --theme-fluent_user_7_color_background: 0, 0, 0;
+    --theme-fluent_user_7_color_text: 0, 0, 0;
+    --theme-fluent_user_8_color_background: 0, 0, 0;
+    --theme-fluent_user_8_color_text: 0, 0, 0;
+    --theme-fluent_user_9_color_background: 0, 0, 0;
+    --theme-fluent_user_9_color_text: 0, 0, 0;
+    --theme-footer_text: 53, 60, 65;
+    --theme-header: 234, 229, 228;
+    --theme-header_text: 45, 55, 72;
+    --theme-important_button: 202, 30, 30;
+    --theme-important_button_font: 255, 255, 255;
+    --theme-item_status: 18, 101, 161;
+    --theme-light_button: 64, 64, 64;
+    --theme-light_button_font: 255, 255, 255;
+    --theme-link: 40, 41, 46;
+    --theme-link_button: 23, 126, 201;
+    --theme-link_hover: 23, 126, 201;
+    --theme-main_nav: 18, 101, 161;
+    --theme-main_nav_font: 255, 255, 255;
+    --theme-main_nav_tab: 24, 24, 24;
+    --theme-main_nav_tab_font: 45, 55, 72;
+    --theme-mentions: 61, 101, 148;
+    --theme-moderated: 43, 12, 15;
+    --theme-moderated_light: 245, 225, 233;
+    --theme-moderated_text: 136, 14, 79;
+    --theme-moderated_text_light: 164, 118, 143;
+    --theme-normal_button: 23, 126, 201;
+    --theme-normal_button_font: 255, 255, 255;
+    --theme-notification_bubble: 182, 0, 0;
+    --theme-page_background: 234, 229, 228;
+    --theme-pagination_active: 255, 71, 0;
+    --theme-post_highlight: 253, 245, 231;
+    --theme-post_highlight_border: 129, 98, 46;
+    --theme-prefix: 23, 126, 201;
+    --theme-price: 182, 63, 63;
+    --theme-primary_button: 23, 126, 201;
+    --theme-primary_button_font: 255, 255, 255;
+    --theme-profile_header: 51, 51, 51;
+    --theme-rating_on: 255, 152, 0;
+    --theme-secondary_title: 48, 54, 60;
+    --theme-secondary_title_font: 130, 142, 153;
+    --theme-section_title: 255, 255, 255;
+    --theme-section_title_font: 255, 255, 255;
+    --theme-selected: 235, 244, 249;
+    --theme-selected_border: 23, 126, 201;
+    --theme-tab_background: 74, 85, 104;
+    --theme-tag: 253, 228, 181;
+    --theme-tag_font: 156, 66, 33;
+    --theme-text_color: 30, 34, 37;
+    --theme-text_dark: 30, 34, 37;
+    --theme-text_light: 133, 146, 169;
+    --theme-text_very_light: 255, 255, 255;
+    --theme-timeline_color: 45, 55, 72;
+    --theme-very_light_button: 255, 255, 255;
+    --theme-very_light_button_font: 14, 76, 121;
+    --theme-widget_title_bar: 255, 71, 0;
+    --theme-widget_title_font: 255, 255, 255;
+
+	--theme-page_background: var(--theme-fluent_dark_page_background);
+  	--item-timeline--boxShadow: 0 0 0 4px rgb( var(--theme-page_background) );
+  	--theme-link: var(--theme-fluent_dark_link);
+  	--theme-text_light: var(--theme-fluent_dark_text_light);
+  	--border-1px: 1px solid rgba( var(--theme-text_light), .15 );
+  	--form-field--borderColor: rgba( var(--theme-text_light), .4 );
+  	--form-field--borderHoverColor: rgba( var(--theme-text_light), .8 );
+  	--theme-text_color: var(--theme-fluent_dark_text_color);
+  	--theme-header: var(--theme-fluent_dark_header);
+  	--theme-header_text: var(--theme-fluent_dark_header_text);
+  	--theme-area_background_reset: var(--theme-fluent_dark_area_background_reset);
+  	--theme-button_bar: var(--theme-fluent_dark_button_bar);
+  	--theme-widget_title_bar: var(--theme-fluent_dark_widget_title_bar);
+  	--theme-very_light_button: var(--theme-fluent_dark_very_light_button);
+  	--theme-widget_title_font: var(--theme-fluent_dark_widget_title_font);
+  	--box--backgroundColor:rgb( var(--theme-area_background_reset) );
+  	--theme-main_nav_tab: var(--theme-fluent_dark_main_nav_tab);
+	--theme-main_nav_tab_font: var(--theme-fluent_dark_main_nav_tab_font);
+  	--theme-light_button_font: var(--theme-fluent_dark_light_button_font);
+  	--theme-area_background_light: var(--theme-fluent_dark_area_background_light);
+  	--theme-area_background: var(--theme-fluent_dark_area_background);
+  	--theme-footer_text: var(--theme-fluent_dark_footer_text);
+  	--theme-text_dark: var(--theme-fluent_dark_text_dark);
+  	--theme-light_button: var(--theme-fluent_dark_light_button);
+  	--theme-selected: var(--theme-fluent_dark_selected);
+  	--theme-tag: var(--theme-fluent_dark_tag);
+  	--theme-tag_font: var(--theme-fluent_dark_tag_font);
+  	--theme-moderated: var(--theme-fluent_dark_moderated);
+  	--theme-moderated_light: var(--theme-fluent_dark_moderated_light);
+  	--theme-moderated_text: var(--theme-fluent_dark_moderated_text);
+  	--theme-moderated_text_light: var(--theme-fluent_dark_moderated_text_light);
+  	--theme-area_background_dark: var(--theme-fluent_dark_area_background_dark);
+  	
+  	--positive-light: #0e2f26;
+  	--positive-dark: #4bb15c;
+  	--negative-dark: #c33030;
+  	--intermediate-dark: #f78438;
+  	--intermediate-light: #483104;
+  
+  	--input-success__background-color: #162f00;
+  	--input-error__background-color: #560808;
+  	--input-error__border-color: #ca2323;
+  
+  	--ipsButton--background-hover: 0, 0, 0, .08;
+  	--theme-overlaid_button: 107, 107, 107, .5;
+
+  	--theme-very_light_button_font_border: 255, 255, 255;
+  	--popup--boxShadow: 0 3px 20px rgba(0, 0, 0, .1);
+  	--theme-main_nav_transparent: 31, 31, 31;
+    --backdrop-background: var(--theme-area_background_reset), .7;
+  
+  	--gotop-background: 255, 255, 255, .16;
+  	--form-field--borderColor: rgba(128, 128, 128, .2);
+}
+
 body {
-	background-color:#D4D0C8;
-	color:#000000;
-	margin-left:10px;
-	margin-right:10px;
-	margin-top:10px;
-	margin-bottom:10px;
+	background-color:rgb( var(--theme-fluent_global_background_more_dark_color) );
+	font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 13.0px;
+    line-height: 1.5;
+    color: rgb(var(--theme-widget_title_font));
+    height: 100%;
+    margin: 0;
 }
 
 tr, td, div, span, body {
-	font-family:Verdana, Arial, sans-serif;
-	font-size: 8pt;
+	/* font-size: 8pt; */
 }
 
-a:link {
-	color:#000000;
-}
-
-a:visited {
-	color:#000000;
-}
-
-a:active {
-	color:#000000;
+a {
+	color: rgb( var(--theme-link) );
+	text-decoration: none;
+	background-color: transparent;
+    -webkit-text-decoration-skip: objects;
 }
 
 a:hover {
-	color: #000000;
+	color: rgb( var(--theme-link_hover) );
 }
 
 ul {
@@ -44,27 +393,28 @@ img {
 }
 
 .fSmall {
-	font-family:Verdana, Arial, sans-serif;
-	font-size: 7pt;
+	/* font-size: 7pt; */
 }
 .fHeading {
-	font-family:Verdana, Arial, sans-serif;
-	font-size: 8pt;
+	/* font-size: 8pt; */
 	font-weight:bold;
 }
 
 .fTitle {
-	font-family:Arial, sans-serif;
 	font-size: 12pt;
 	font-weight:bold;
 }        
 
 .bg1 {
-	background-color:#FFFFFF;
+	box-shadow: var(--box--boxShadow);
+    border-radius: var(--box--radius);
+    background-color: var(--box--backgroundColor);
 }
      
 .bg2 {
-	background-color:#FAFAFA;
+	box-shadow: var(--box--boxShadow);
+    border-radius: var(--box--radius);
+    background-color: var(--box--backgroundColor);
 }     
 
 .data-table {
@@ -75,30 +425,31 @@ img {
 	width: 100%;
 }
 
-.data-table  td {
+.data-table td {
 	border-style: solid;
 	border-width: 1px;
 	border-color: #99AAAA;
 	padding: 4px;
-	text-align: left;
+	text-align: center;
 }
 	 
 .data-table-head  {
-	background-color:#ABCCD6;
-	color:#000000;
+	background-color:#1a7abf;
 	vertical-align: bottom;
 }
 
 .game-table-row {
-	background-color: white;
+	background-color: #0f1015;
 }
 
-.game-table-row-hover {
-	background-color: #eaebeb;
+.game-table-row:hover {
+	background-color: rgb(20, 35, 51);
+	-webkit-transition: background-color 0.2s ease;
+	transition: background-color 0.2s ease;
 }
 
 .game-table-cell {
-	color: black;
+	color: rgb(var(--theme-widget_title_font));
 	vertical-align: middle;
 	border-style: solid;
 	border-width: 1px;
@@ -107,7 +458,7 @@ img {
 }
 
 .game-table-cell a {
-	color: black;
+	color: rgb(var(--theme-widget_title_font));
 }
 
 .livestats-table {
@@ -133,8 +484,17 @@ img {
 }
 
 .location {
-	background-color:#EFEFEF;
-	height: 22px;
+	background: linear-gradient(45deg, #bb3400 0%, #FD6F01 70%, #FFB000 100%);
+    height: 30px;
+    font-size: 16.0px;
+    line-height: 1;
+    font-weight: bold;
+    padding: var(--sp-1) var(--sp-2);
+    margin: 0;
+    color: rgb(var(--theme-section_title_font));
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    border-bottom: 1px solid rgba(var(--theme-text_light), 0.15);
 }
 
 .location ul {
@@ -231,7 +591,6 @@ img {
 .errorhead {
 	background-color: #CC0000;
 	color: white;
-	font-family: arial, helvetica, sans-serif;
 	font-size: 12pt;
 	font-weight: bold;
 }
@@ -239,7 +598,6 @@ img {
 .errortext {
 	background-color: white;
 	color: black;
-	font-family: arial, helvetica, sans-serif;
 	font-size: 12pt;
 }
 
@@ -286,7 +644,6 @@ img {
 	color:#666;
 	width:120px;
 	font-weight:bold;
-	font-family:Verdana, Arial, sans-serif;
 	font-size: 8pt;	
 }
 
