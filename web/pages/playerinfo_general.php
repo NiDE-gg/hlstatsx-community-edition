@@ -104,9 +104,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 							if ($playerdata['country'])
 							{
 								echo 'Location: ';
-								if ($playerdata['city']) {
-									echo htmlspecialchars($playerdata['city'], ENT_COMPAT) . ', ';
-								}
+								// Disabled for privacy reason
+								// if ($playerdata['city']) {
+								//	echo htmlspecialchars($playerdata['city'], ENT_COMPAT) . ', ';
+								//}
 								echo '<a href="'.$g_options['scripturl'].'?mode=countryclansinfo&amp;flag='.$playerdata['flag']."&amp;game=$game\">" . $playerdata['country'] . '</a>';
 							}
 							else
