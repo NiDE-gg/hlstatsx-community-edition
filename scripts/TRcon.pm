@@ -318,7 +318,7 @@ sub getPlayers
                 (\d+)\s+		# userid
 				(?:\d+\s+|)     # extra number in L4D, not sure what this is??
                 "(.+)"\s+		# name
-                (.+)\s+		    # uniqueid
+                (\S+)\s+		# uniqueid
                 ([\d:]+)\s+		# time
                 (\d+)\s+		# ping
                 (\d+)\s+		# loss
