@@ -129,7 +129,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td>
 						<?php
 							if (!preg_match('/^BOT/i', $uqid)) {
-								$steam3_id = '[U:' . (substr($uqid, 0, 1) + substr($uqid, 2) * 2) . ']';
+								$steam3_id = '[U:1:' . (substr($uqid, 0, 1) + substr($uqid, 2) * 2) . ']';
 								echo "Steam3: <a href=\"http://steamcommunity.com/profiles/$coid\" target=\"_blank\">$steam3_id</a>";
 							} else {
 								echo "Steam3: (BOT)";
