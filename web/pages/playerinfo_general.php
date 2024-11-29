@@ -47,7 +47,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<table class="data-table">
 			<tr class="data-table-head">
 					<td style="vertical-align:top;">Player Profile<br /><br /></td>
-					<td style="text-align:center; vertical-align:middle;" rowspan="7" id="player_avatar">
+					<td style="text-align:center; vertical-align:middle;" rowspan="9" id="player_avatar">
 						<?php
 							$db->query
 							("
@@ -125,6 +125,30 @@ For support and installation notes visit http://www.hlxcommunity.com
 						?>
 					</td>
 				</tr>
+				<tr class="bg1">
+					<td>
+						<?php
+							if (!preg_match('/^BOT/i', $uqid)) {
+								$steam3_id = '[U:' . (substr($uqid, 0, 1) + substr($uqid, 2) * 2) . ']';
+								echo "Steam3: <a href=\"http://steamcommunity.com/profiles/$coid\" target=\"_blank\">$steam3_id</a>";
+							} else {
+								echo "Steam3: (BOT)";
+							}
+						?>
+					</td>
+				</tr>
+				<tr class="bg2">
+					<td>
+						<?php
+							if (!preg_match('/^BOT/i', $uqid)) {
+								echo "Steam64: <a href=\"http://steamcommunity.com/profiles/$coid\" target=\"_blank\">$coid</a>";
+							} else {
+								echo "Steam64: (BOT)";
+							}
+						?>
+					</td>
+				</tr>
+			</tr>
 				<tr class="bg1">
 					<td>Status: <strong><?php echo $status; ?></strong></td>
 				</tr>
