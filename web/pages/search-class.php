@@ -36,6 +36,52 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
+// Helper functions for SteamID conversions
+
+	/**
+	 * Convert Steam64 ID to database format (1:Z)
+	 * @param string $steam64
+	 * @return string|false
+	 */
+	function steam64ToDatabaseFormat($steam64) {
+		if (!is_numeric($steam64)) {
+			return false;
+		}
+		$steam64 = (int)$steam64;
+		$y = $steam64 % 2;
+		$z = ($steam64 - 76561197960265728) >> 1;
+		return "$y:$z";
+	}
+
+	/**
+	 * Convert Steam3 ID to database format (1:Z)
+	 * @param string $steam3
+	 * @return string|false
+	 */
+	function steam3ToDatabaseFormat($steam3) {
+		if (preg_match("/^U:1:(\d+)$/", $steam3, $matches)) {
+			$z = (int)$matches[1];
+			$y = $z % 2;
+			$z = $z >> 1;
+			return "$y:$z";
+		}
+		return false;
+	}
+
+	/**
+	 * Convert Steam2 ID to database format (1:Z)
+	 * @param string $steam2
+	 * @return string|false
+	 */
+	function steam2ToDatabaseFormat($steam2) {
+		if (preg_match("/^STEAM_\d+:(\d+):(\d+)$/", $steam2, $matches)) {
+			$y = (int)$matches[1];
+			$z = (int)$matches[2];
+			return "$y:$z";
+		}
+		return false;
+	}
+
 // Search Class
 	class Search
 	{
@@ -60,7 +106,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			}
 		}
 
-		function drawForm ($getvars = array(), $searchtypes = -1)
+		function drawForm($getvars = array(), $searchtypes = -1)
 		{
 			global $g_options, $db;
 
@@ -91,7 +137,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<tr style="vertical-align:middle;" class="bg1">
 					<td nowrap="nowrap" style="width:30%;">Search For:</td>
 					<td style="width:70%;">
-						<input type="text" name="q" size="20" maxlength="128" value="<?php echo htmlspecialchars($this->query, ENT_QUOTES); ?>" style="width:300px;" />
+						<input type="text" name="q" size="20" maxlength="128" value="<?php echo htmlspecialchars($this->query, ENT_QUOTES); ?>" style="width:300px;" placeholder="Enter Name, Steam2, Steam3, or Steam64 ID" />
 					</td>
 				</tr>
 				<tr style="vertical-align:middle;" class="bg1">
@@ -106,7 +152,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td nowrap="nowrap" style="width:30%;">Game:</td>
 					<td style="width:70%;">
 						<?php
-							$games = array ();
+							$games = array();
 							$games[''] = '(All)';
 							$result = $db->query("
 								SELECT
@@ -139,7 +185,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 		}
-		function drawResults ($link_player=-1, $link_clan=-1)
+		function drawResults($link_player = -1, $link_clan = -1)
 		{
 			global $g_options, $db;
 			if ($link_player == -1) $link_player = "mode=playerinfo&amp;player=%k";
@@ -152,9 +198,19 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<br /><br />
 
 <?php
-			$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
+			if (empty($this->query))
+			{
+				echo "Search query cannot be empty.";
+				return;
+			}
+
+			if ($this->type != 'uniqueid') // Always remove the SteamID prefix for non-uniqueid searches
+			{
+				$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
+				$sr_query = preg_replace('/\s/', '%', $sr_query);
+			}
+
 			$sr_query = $db->escape($sr_query);
-			$sr_query = preg_replace('/\s/', '%', $sr_query);
 			if ($this->type == 'player')
 			{
 				$table = new Table
@@ -248,6 +304,28 @@ For support and installation notes visit http://www.hlxcommunity.com
 			}
 			elseif ($this->type == 'uniqueid')
 			{
+				// Detect and convert SteamID to database format
+				$sr_query = trim($this->query);
+				$sr_query = trim($this->query, "[]");
+
+				if (preg_match("/^U:1:\d+$/", $sr_query)) // Convert Steam3 to database format
+				{
+					$sr_query = steam3ToDatabaseFormat($sr_query);
+				}
+				elseif (is_numeric($sr_query) && strlen($sr_query) >= 17) // Convert Steam64 to database format
+				{
+					$sr_query = steam64ToDatabaseFormat($sr_query);
+				}
+				elseif (preg_match("/^STEAM_\d+:\d+:\d+$/", $sr_query)) // Convert Steam2 to database format
+				{
+					$sr_query = steam2ToDatabaseFormat($sr_query);
+				}
+				else
+				{
+					echo "Invalid SteamID format.";
+					return; // Stop execution if the SteamID is invalid
+				}
+
 				$table = new Table
 				(
 					array
