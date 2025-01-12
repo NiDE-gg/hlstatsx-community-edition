@@ -2007,6 +2007,12 @@ sub doEvent_WorldAction
 	my $rcmd = $g_servers{$s_addr}->{broadcasting_command};
 	my ($action) = @_;
 	my $desc;
+
+	# Always update player count on round start
+	if ($action eq "Round_Start") {
+		$g_servers{$s_addr}->updatePlayerCount();
+	}
+
 	my $act_players = $g_servers{$s_addr}->{num_trackable_players};
 	my $min_players = $g_servers{$s_addr}->{minplayers};
 	
