@@ -223,6 +223,8 @@ function pageHeader($title = '', $location = '')
 	global $db, $g_options;
 	if ( defined('PAGE') && PAGE == 'HLSTATS' )
 		include (PAGE_PATH . '/header.php');
+	elseif ( defined('PAGE') && PAGE == 'INGAME' )
+		include (PAGE_PATH . '/ingame/header.php');
 }
 
 
@@ -242,6 +244,8 @@ function pageFooter()
 	global $g_options;
 	if ( defined('PAGE') && PAGE == 'HLSTATS' )
 		include (PAGE_PATH . '/footer.php');
+	elseif ( defined('PAGE') && PAGE == 'INGAME' )
+		include (PAGE_PATH . '/ingame/footer.php');
 }
 
 /**
@@ -453,12 +457,10 @@ function getImage($filename, $externalURL = null)
 	$path = IMAGE_PATH . $filename;
 	$url = IMAGE_PATH . $relpath . rawurlencode($realfilename);
 
-	// Vérification du lien externe en premier
 	if ($externalURL !== null) {
-		// Remplace les variables dans le lien
+		$externalURL = str_replace('$map', $realfilename, $externalURL);
 		$externalURL = str_replace('$map', $realfilename, $externalURL);
 
-		// Vérifier si le fichier distant existe
 		if (checkRemoteFileExists("$externalURL")) {
 			$size = getImageSize($externalURL);
 
@@ -467,7 +469,6 @@ function getImage($filename, $externalURL = null)
 		}
 	}
 
-	// Vérifier si l'image locale existe
 	if (file_exists($path . '.png')) {
 		$ext = 'png';
 	} elseif (file_exists($path . '.gif')) {
@@ -489,10 +490,10 @@ function getImage($filename, $externalURL = null)
 }
 
 /**
- * Vérifie si un fichier distant existe à l'URL donnée
+ * Checks if a remote file exists at the given URL
  * 
  * @param string $url
- * @return bool True si le fichier existe, false sinon
+ * @return bool True if the file exists, false otherwise
  */
 function checkRemoteFileExists($url)
 {
