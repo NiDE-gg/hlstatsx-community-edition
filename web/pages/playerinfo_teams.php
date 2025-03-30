@@ -228,6 +228,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 		INSERT INTO hlstats_Frags_as (playerId, deaths, role)
 		SELECT killerId, victimId, victimRole
 		FROM hlstats_Events_Frags
+		WHERE killerId = $player
+		UNION ALL
+		SELECT victimId, killerId, killerRole
+		FROM hlstats_Events_Frags
 		WHERE victimId = $player
 	");
 
@@ -248,8 +252,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$db->query("
 		INSERT INTO hlstats_Frags_as_res (killsTotal, deathsTotal, role)
 		SELECT 
-			COUNT(kills) AS kills, 
-			COUNT(deaths) AS deaths,
+			SUM(CASE WHEN playerId = $player THEN 1 ELSE 0 END) AS kills,
+			SUM(CASE WHEN deaths = $player THEN 1 ELSE 0 END) AS deaths,
 			role
 		FROM hlstats_Frags_as
 		GROUP BY role
