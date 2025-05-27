@@ -306,19 +306,22 @@ function printModernPagination($currentPage, $totalPages, $baseUrl) {
 }
 
 /**
- * Enhanced section title that adapts to theme
+ * Enhanced section title wrapper that works with existing function
+ * Call this instead of printSectionTitle() when you want modern styling
  */
-function printSectionTitle($title) {
-    global $g_options;
-    
+function printSectionTitleModern($title, $icon = '') {
     if (isModernTheme()) {
-        printModernSectionTitle($title);
+        printModernSectionTitle($title, $icon);
     } else {
-        // Original function behavior
-        echo '<div class="subblock">';
-        echo '<div class="block_icon">game</div>';
-        echo '<div class="block_title">' . htmlspecialchars($title) . '</div>';
-        echo '</div>';
+        // Use the existing function from functions.php
+        if (function_exists('printSectionTitle')) {
+            printSectionTitle($title);
+        } else {
+            // Fallback if function doesn't exist
+            echo '<div class="subblock">';
+            echo '<div class="block_title">' . htmlspecialchars($title) . '</div>';
+            echo '</div>';
+        }
     }
 }
 ?>
