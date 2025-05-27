@@ -221,8 +221,18 @@ function makeQueryString($key, $value, $notkeys = array())
 function pageHeader($title = '', $location = '')
 {
 	global $db, $g_options;
-	if ( defined('PAGE') && PAGE == 'HLSTATS' )
-		include (PAGE_PATH . '/header.php');
+	
+	// Check if modern theme is selected
+	$selectedStyle = (isset($_COOKIE['style']) && $_COOKIE['style']) ? $_COOKIE['style'] : $g_options['style'];
+	$isModernTheme = ($selectedStyle === 'modern.css');
+	
+	if ( defined('PAGE') && PAGE == 'HLSTATS' ) {
+		if ($isModernTheme && file_exists(PAGE_PATH . '/header_modern.php')) {
+			include (PAGE_PATH . '/header_modern.php');
+		} else {
+			include (PAGE_PATH . '/header.php');
+		}
+	}
 	elseif ( defined('PAGE') && PAGE == 'INGAME' )
 		include (PAGE_PATH . '/ingame/header.php');
 }
@@ -242,8 +252,18 @@ function pageHeader($title = '', $location = '')
 function pageFooter()
 {
 	global $g_options;
-	if ( defined('PAGE') && PAGE == 'HLSTATS' )
-		include (PAGE_PATH . '/footer.php');
+	
+	// Check if modern theme is selected
+	$selectedStyle = (isset($_COOKIE['style']) && $_COOKIE['style']) ? $_COOKIE['style'] : $g_options['style'];
+	$isModernTheme = ($selectedStyle === 'modern.css');
+	
+	if ( defined('PAGE') && PAGE == 'HLSTATS' ) {
+		if ($isModernTheme && file_exists(PAGE_PATH . '/footer_modern.php')) {
+			include (PAGE_PATH . '/footer_modern.php');
+		} else {
+			include (PAGE_PATH . '/footer.php');
+		}
+	}
 	elseif ( defined('PAGE') && PAGE == 'INGAME' )
 		include (PAGE_PATH . '/ingame/footer.php');
 }

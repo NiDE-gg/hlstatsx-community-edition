@@ -123,6 +123,7 @@ define('PAGE', 'HLSTATS');
 require(INCLUDE_PATH . '/class_db.php');
 require(INCLUDE_PATH . '/class_table.php');
 require(INCLUDE_PATH . '/functions.php');
+require(INCLUDE_PATH . '/functions_modern.php');
 
 $db_classname = 'DB_' . DB_TYPE;
 if ( class_exists($db_classname) )

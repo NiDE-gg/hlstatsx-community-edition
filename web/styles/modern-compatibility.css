@@ -1,0 +1,301 @@
+/*
+ * HLstatsX Community Edition - Modern Theme Compatibility
+ * Additional styles to ensure legacy elements work well with modern theme
+ */
+
+/* Legacy data-table compatibility */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: var(--hlx-bg-primary);
+}
+
+.data-table-head td {
+    background-color: var(--hlx-primary) !important;
+    color: white !important;
+    font-weight: 600;
+    padding: 1rem;
+    border: none;
+}
+
+.data-table tr:not(.data-table-head) td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--hlx-border);
+    background-color: var(--hlx-bg-primary);
+}
+
+.data-table tr:not(.data-table-head):hover td {
+    background-color: var(--hlx-bg-secondary);
+}
+
+/* Legacy block styling enhancement */
+.block {
+    background-color: var(--hlx-bg-primary) !important;
+    border-radius: 0.75rem !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid var(--hlx-border) !important;
+}
+
+.subblock {
+    background-color: transparent !important;
+    border: none !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Legacy content area */
+.content {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Legacy navigation improvements */
+.fancyNav {
+    display: none !important; /* Hidden in favor of modern nav */
+}
+
+/* Legacy form elements */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+    border: 1px solid var(--hlx-border);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--hlx-bg-primary);
+    color: var(--hlx-text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--hlx-primary);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+}
+
+/* Legacy buttons */
+input[type="submit"],
+input[type="button"],
+.button {
+    background-color: var(--hlx-primary);
+    color: white;
+    border: 1px solid var(--hlx-primary);
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+.button:hover {
+    background-color: var(--hlx-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    color: white;
+}
+
+/* Legacy font classes with modern typography */
+.fNormal {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--hlx-text-primary);
+}
+
+.fSmall {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--hlx-text-secondary);
+}
+
+.fHeading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--hlx-text-primary);
+}
+
+/* Country flags styling */
+.flag {
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Rank images */
+.rank-image {
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Weapon/Award icons */
+.weapon-icon,
+.award-icon {
+    border-radius: 0.25rem;
+    transition: transform 0.2s ease;
+}
+
+.weapon-icon:hover,
+.award-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Legacy dividers */
+hr {
+    border: none;
+    height: 1px;
+    background-color: var(--hlx-border);
+    margin: 1.5rem 0;
+}
+
+/* Progress bars (used in some legacy pages) */
+.progress-bar-legacy {
+    background-color: var(--hlx-bg-secondary);
+    border-radius: 0.25rem;
+    height: 0.5rem;
+    overflow: hidden;
+}
+
+.progress-bar-legacy .progress-fill {
+    background: linear-gradient(90deg, var(--hlx-primary), var(--hlx-success));
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Legacy warning/error messages */
+.warning,
+.error,
+.success,
+.info {
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.warning {
+    background-color: #fef3cd;
+    border-left-color: var(--hlx-warning);
+    color: #856404;
+}
+
+.error {
+    background-color: #f8d7da;
+    border-left-color: var(--hlx-danger);
+    color: #721c24;
+}
+
+.success {
+    background-color: #d1edff;
+    border-left-color: var(--hlx-success);
+    color: #0f5132;
+}
+
+.info {
+    background-color: #cff4fc;
+    border-left-color: var(--hlx-info);
+    color: #055160;
+}
+
+/* Dark mode adjustments for legacy classes */
+[data-theme="dark"] .warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+[data-theme="dark"] .error {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #f5c2c7;
+}
+
+[data-theme="dark"] .success {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #75b798;
+}
+
+[data-theme="dark"] .info {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: #6edff6;
+}
+
+/* Legacy pagination */
+.pagination-legacy {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+}
+
+.pagination-legacy a,
+.pagination-legacy span {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--hlx-border);
+    border-radius: 0.375rem;
+    text-decoration: none;
+    color: var(--hlx-text-primary);
+    background-color: var(--hlx-bg-primary);
+    transition: all 0.2s ease;
+}
+
+.pagination-legacy a:hover {
+    background-color: var(--hlx-primary);
+    color: white;
+    border-color: var(--hlx-primary);
+}
+
+.pagination-legacy .current {
+    background-color: var(--hlx-primary);
+    color: white;
+    border-color: var(--hlx-primary);
+}
+
+/* Legacy tooltips */
+.tooltip-legacy {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip-legacy:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive adjustments for legacy elements */
+@media (max-width: 768px) {
+    .data-table {
+        font-size: 0.875rem;
+    }
+    
+    .data-table td,
+    .data-table-head td {
+        padding: 0.5rem;
+    }
+    
+    .block {
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+}
