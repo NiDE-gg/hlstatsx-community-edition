@@ -14,5 +14,5 @@
     $db->query("UPDATE hlstats_Options SET `value` = '$dbversion' WHERE `keyname` = 'dbversion'");
 
 	// Fix case 'Administrative-Territorial Units of the Left Bank of the Dniester'
-    $db->query("ALTER TABLE `hlstats_Players` CHANGE `state` `state` VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL;");
+    $db->query("ALTER TABLE `hlstats_Players` CHANGE `state` `state` VARCHAR(128) NOT NULL default '';");
 ?>
