@@ -66,7 +66,7 @@ class Table
 	var $startitem;
 
 	var $maxpagenumbers = 20;
-
+	public $sort_default_order;
 
 	function __construct($columns, $keycol, $sort_default, $sort_default2,
 	                $showranking=false, $numperpage=50, $var_page='page',
@@ -513,6 +513,7 @@ class TableColumn
 	var $flag;
 	var $skill_change;
 	var $heatmap;
+	public $fname;
 
 	function __construct($name, $title, $attrs="", $fname=null)
 	{
