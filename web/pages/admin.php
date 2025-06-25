@@ -246,6 +246,7 @@ class AdminTask
 	var $acclevel = 0;
 	var $type = '';
 	var $description = '';
+	public $group;
 
 	function __construct($title, $acclevel, $type = 'general', $description = '', $group = '')
 	{
