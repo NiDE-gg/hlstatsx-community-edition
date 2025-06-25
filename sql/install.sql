@@ -4094,7 +4094,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Players` (
   `lastName` varchar(64) NOT NULL default '',
   `lastAddress` varchar(32) NOT NULL default '',
   `city` varchar(64) NOT NULL default '',
-  `state` varchar(64) NOT NULL default '',
+  `state` varchar(128) NOT NULL default '',
   `country` varchar(64) NOT NULL default '',
   `flag` varchar(16) NOT NULL default '',
   `lat` FLOAT(7,4) NULL,
