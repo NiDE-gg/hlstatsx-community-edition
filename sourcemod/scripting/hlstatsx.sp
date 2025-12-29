@@ -30,7 +30,7 @@
 #include <cstrike>
 #include <clientprefs>
  
-#define VERSION "1.6.19"
+#define VERSION "1.6.20"
 #define HLXTAG "HLstatsX:CE"
 
 enum GameType {
@@ -58,6 +58,7 @@ new Handle: hlx_block_chat_commands;
 new Handle: hlx_message_prefix;
 new Handle: hlx_protect_address;
 new Handle: hlx_server_tag;
+new Handle: hlx_block_status;
 new Handle: sv_tags;
 new Handle: message_recipients;
 new const String: blocked_commands[][] = { "rank", "skill", "points", "place", "session", "session_data", 
@@ -218,7 +219,8 @@ public OnPluginStart()
 	hlx_protect_address = CreateConVar("hlx_protect_address", "", "Address to be protected for logging/forwarding");
 	hlx_server_tag = CreateConVar("hlx_server_tag", "1", "If enabled, adds \"HLstatsX:CE\" to server tags on supported games. 1 = Enabled (default), 0 = Disabled",
 		_, true, 0.0, true, 1.0);
-	
+	hlx_block_status = CreateConVar("hlx_block_status", "0", "If enabled, blocks the status command when HLstatsX is installed. 1 = Enabled, 0 = Disabled (default)");
+
 	g_hCustomTags = CreateArray(SVTAGSIZE);
 	sv_tags = FindConVar("sv_tags");
 
@@ -1829,6 +1831,11 @@ public Action:hlx_block_commands(client, const String:command[], args)
 			{
 				start_index++;
 			}
+		}
+
+		if (GetConVarBool(hlx_block_status) && StrEqual(origin_command, "status", false))
+		{
+			return Plugin_Stop;
 		}
 
 		new String: command_type[32] = "say";
