@@ -69,12 +69,16 @@ Getopt::Long::Configure ("bundling");
 ## Functions
 ##
 
-
-sub is_number ($) { ( $_[0] ^ $_[0] ) eq '0' }
+sub is_number
+{
+	my ($str) = @_;
+	return 0 unless defined $str;
+	return $str =~ /^-?\d+$/;
+}
 
 
 #
-# void printEvent (int code, string description)
+# void printEvent (string|int code, string description). Code = message type
 #
 # Logs event information to stdout.
 #

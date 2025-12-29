@@ -286,7 +286,12 @@ sub getProxyKey
 	return $proxy_key;
 }
 
-sub is_number ($) { ( $_[0] ^ $_[0] ) eq '0' }
+sub is_number
+{
+	my ($str) = @_;
+	return 0 unless defined $str;
+	return $str =~ /^-?\d+$/;
+}
 
 
 ############## Main program ##############
@@ -387,7 +392,7 @@ while ($server->recv($datagram,1024,$flags)) {
 			} 
 		} else {
 			$msg = "FAILED PROXY REQUEST ($ipaddr:$ipport)\n";
-			&printEvent("E403", "Sending FAILED PROXY REQUEST to $ipaddr:$ipport", 1);
+			&printEvent(403, "Sending FAILED PROXY REQUEST to $ipaddr:$ipport", 1);
 		}
 
 
@@ -453,4 +458,3 @@ while ($server->recv($datagram,1024,$flags)) {
 		}
 	}
 }
-

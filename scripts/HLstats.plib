@@ -428,9 +428,8 @@ sub abbreviate
 	}
 }
 
-
 #
-# void printEvent (int code, string description)
+# void printEvent (string|int code, string description). Code = message type
 #
 # Logs event information to stdout.
 #
