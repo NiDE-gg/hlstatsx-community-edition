@@ -36,11 +36,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
-    if (!defined('IN_HLSTATS')) {
-        die('Do not access this file directly.');
-    }
+	if (!defined('IN_HLSTATS')) {
+		die('Do not access this file directly.');
+	}
 
-    // Player Rankings
+	// Player Rankings
 	$db->query("
 		SELECT
 			hlstats_Games.name
@@ -51,14 +51,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 	");
 
 	if ($db->num_rows() < 1) {
-        error("No such game '$game'.");
+		error("No such game '$game'.");
 	}
 
-    list($gamename) = $db->fetch_row();
+	list($gamename) = $db->fetch_row();
 
-    $db->free_result();
+	$db->free_result();
 
-    if (isset($_GET['minkills'])) {
+	if (isset($_GET['minkills'])) {
 		$minkills = valid_request($_GET['minkills'], true);
 	} else {
 		$minkills = 1;
@@ -70,11 +70,48 @@ For support and installation notes visit http://www.hlxcommunity.com
 		array ($gamename=>"%s?game=$game", 'Player Rankings'=>'')
 	);
 
-	$rank_type = 0;
-	if (isset($_GET['rank_type'])) {
-		$rank_type = valid_request(strval($_GET['rank_type']), false);
+	$rank_type = filter_input(INPUT_GET, 'rank_type', FILTER_VALIDATE_INT, [
+		'options' => ['default' => 0, 'min_range' => -2, 'max_range' => 50]
+	]);
+
+	$result = $db->query("
+		SELECT
+			hlstats_Players_History.eventTime
+		FROM
+			hlstats_Players_History
+		GROUP BY
+			hlstats_Players_History.eventTime
+		ORDER BY
+			hlstats_Players_History.eventTime DESC
+		LIMIT
+			0,
+			50
+	");
+
+	$i = 1;
+	$dates = array();
+	$options = [
+		0  => 'Total Ranking',
+		-1 => 'Last Week',
+		-2 => 'Last Month'
+	];
+
+	while ($rowdata = $db->fetch_array()) {
+		$dates[] = $rowdata;
+		$options[$i++] = $rowdata['eventTime'];
 	}
 
+	// Check rank_type index range
+	// `count - 1` for array elements it is already done in the code below
+	$maxRank = count($dates);
+
+	if ($rank_type === -1 || $rank_type === -2) {
+		$rank_type = $rank_type;
+	} elseif ($maxRank > 0) {
+		$rank_type = max(0, min($rank_type, $maxRank));
+	} else {
+		$rank_type = 0;
+	}
 // Autocomplete function below implemented by KingJ. Heavy modified to use HTML request instead of JSON.
 ?>
 
@@ -106,38 +143,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<form method="get" action="<?php echo $g_options['scripturl']; ?>" style="margin:0px;padding:0px;">
 				<input type="hidden" name="mode" value="players" />
 				<input type="hidden" name="game" value="<?php echo $game; ?>" />
+
 				<strong>&#8226;</strong> Ranking View
-				<?php
-					$result = $db->query
-					("
-						SELECT
-							hlstats_Players_History.eventTime
-						FROM
-							hlstats_Players_History
-						GROUP BY
-							hlstats_Players_History.eventTime
-						ORDER BY
-							hlstats_Players_History.eventTime DESC
-						LIMIT
-							0,
-							50
-					");
-					echo '<select name="rank_type"><option value="0">Total Ranking</option>';
-					echo '<option value="-1">Last Week</option>';
-					echo '<option value="-2">Last Month</option>';
-					$i = 1;
-					$dates = array ();
-					while ($rowdata = $db->fetch_array())
-					{
-						$dates[] = $rowdata; 
-						if ($rank_type == $i) 
-							echo '<option value="'.$i.'" selected>'.$rowdata['eventTime'].'</option>';
-						else
-							echo '<option value="'.$i.'">'.$rowdata['eventTime'].'</option>';
-						$i++;
-					}
-					echo '</select>';
-				?>
+
+				<select name="rank_type">
+					 <?php foreach ($options as $value => $label): ?>
+						<option value="<?=$value?>" <?=($rank_type == $value) ? 'selected' : ''?>><?=htmlspecialchars($label)?></option>
+					<?php endforeach; ?>
+				</select>
+
 				<input type="submit" value="View" class="smallsubmit" />
 			</form>
 		</div>
@@ -156,12 +170,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 						'Player',
 						'width=26&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')
 					),
-                                        new TableColumn
-                                        (
-                                                'mmrank',
-                                                'Rank',
-                                                'width=4&type=elorank'
-                                        ),
+					new TableColumn
+					(
+							'mmrank',
+							'Rank',
+							'width=4&type=elorank'
+					),
 					new TableColumn
 					(
 						'skill',
@@ -337,24 +351,21 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
 		else
 		{
-			if ($rank_type == "-1")
-			{
+			if ($rank_type == "-1") {
 				$maxEvent = mktime(0, 0, 0, date("m"), date("d"), date("Y"));
 				$minEvent = $maxEvent - (86400 * 7);
-			}
-			if ($rank_type == "-2")
-			{
+			} else if ($rank_type == "-2") {
 				$maxEvent = mktime(0, 0, 0, date("m"), date("d"), date("Y"));
 				$minEvent = $maxEvent - (86400 * 30);
 			}
-			if (!isset($minEvent))
-			{
-				$minEvent = explode("-", $dates[$rank_type-1]['eventTime']);
+
+			if (!isset($minEvent)) {
+				$minEvent = explode("-", $dates[$rank_type - 1]['eventTime']);
 				$minEvent = mktime(0, 0, 0, $minEvent[1], $minEvent[2], $minEvent[0]);
 				$maxEvent = $minEvent + 86400;
 			}
-			$result = $db->query
-			("
+
+			$result = $db->query("
 				SELECT
 					SQL_CALC_FOUND_ROWS
 					hlstats_Players_History.playerId,
@@ -409,7 +420,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					foreach ($_GET as $k=>$v) {
 						$v = valid_request($v, false);
 
-                        if ($k != 'minkills') {
+						if ($k != 'minkills') {
 							echo "<input type=\"hidden\" name=\"" . htmlspecialchars($k) . "\" value=\"" . htmlspecialchars($v) . "\" />\n";
 						}
 					}
