@@ -8,6 +8,7 @@
     use Utils\Logger;
     use Repository\OptionsRepository;
     use Repository\GameRepository;
+    use Repository\PlayerRepository;
     use Service\OptionService;
 
     $container = new class
@@ -66,6 +67,14 @@
 
     $container->set(GameRepository::class, function($c) {
         return new GameRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(PlayerRepository::class, function($c) {
+        return new PlayerRepository(
+            $c->get('pdo'),
+            $c->get('logger'),
+            $c->get(OptionService::class)
+        );
     });
 
     return $container;

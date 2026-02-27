@@ -71,6 +71,10 @@ require ('config.php');
 require (INCLUDE_PATH . '/class_db.php');
 require (INCLUDE_PATH . '/functions.php');
 
+$container = require ROOT_PATH . '/bootstrap.php';
+$playerRepo = $container->get(\Repository\PlayerRepository::class);
+$optionService = $container->get(\Service\OptionService::class);
+
 $db_classname = 'DB_' . DB_TYPE;
 if (class_exists($db_classname))
 {
@@ -80,9 +84,6 @@ else
 {
 	error('Database class does not exist.  Please check your config.php file for DB_TYPE');
 }
-
-$container = require ROOT_PATH . '/bootstrap.php';
-$optionService = $container->get(\Service\OptionService::class);
 
 $g_options = $optionService->getAllOptions();
 if (empty($g_options)) {
@@ -276,14 +277,7 @@ if ($player_id > 0) {
 		$plKills = $playerdata['kills'];
 		$playerDeaths = $playerdata['deaths'];
 
-		$rank = get_player_rank(
-			$db,
-			$plGame,
-			$rankType,
-			$plValue,
-			$plKills,
-			$playerDeaths
-		);
+		$rank = $playerRepo->getPlayerRank($plGame, $rankType, $plValue, $plKills, $playerDeaths);
 
 		if (is_null($rank)) {
 			$rank = 'Unknown';
@@ -427,11 +421,10 @@ if ($player_id > 0) {
 	$timestamp   = $playerdata['connection_time'];
 	$days        = floor($timestamp / 86400);
 	$hours       = $days * 24;   
-	$hours       += floor($timestamp / 3600) % 24;
-	if ($hours < 10) {
-		$hours = '0' . (int)$hours;
-	}
-	$min         = floor($timestamp / 60) % 60;
+	$hours       += floor($timestamp / 3600 % 24);
+	if ($hours < 10)
+		$hours = '0'.$hours;
+	$min         = floor($timestamp / 60 % 60);
 	if ($min < 10)
 		$min = '0'.$min; 
 	$sec         = floor($timestamp % 60);

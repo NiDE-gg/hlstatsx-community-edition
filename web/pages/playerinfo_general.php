@@ -39,6 +39,9 @@ For support and installation notes visit http://www.hlxcommunity.com
     if (!defined('IN_HLSTATS')) {
         die('Do not access this file directly.');
     }
+
+	$container = require ROOT_PATH . '/bootstrap.php';
+    $playerRepo = $container->get(\Repository\PlayerRepository::class);
 ?>
 
 	<?php printSectionTitle('Player Information'); ?>
@@ -424,14 +427,7 @@ For support and installation notes visit http://www.hlxcommunity.com
                                 $plKills = $playerdata['kills'];
                                 $playerDeaths = $playerdata['deaths'];
 
-                                $rank = get_player_rank(
-                                    $db,
-                                    $plGame,
-                                    $rankType,
-                                    $plValue,
-                                    $plKills,
-                                    $playerDeaths
-                                );
+                                $rank = $playerRepo->getPlayerRank($plGame, $rankType, $plValue, $plKills, $playerDeaths);
 
                                 if (is_null($rank)) {
                                     $rank = 'Unknown';

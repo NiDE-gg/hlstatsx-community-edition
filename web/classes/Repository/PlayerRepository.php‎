@@ -2,17 +2,21 @@
 	namespace Repository;
 
 	use PDO;
+    use PDOException;
 	use Utils\Logger;
+    use Service\OptionService;
 
 	class PlayerRepository
 	{
 		private PDO $pdo;
 		private Logger $logger;
+		private OptionService $optionService;
 
-		public function __construct(PDO $pdo, Logger $logger)
+		public function __construct(PDO $pdo, Logger $logger, OptionService $optionService)
 		{
 			$this->pdo = $pdo;
 			$this->logger = $logger;
+            $this->optionService = $optionService;
 		}
 
 		public function getPlayerSuggestions(string $game, string $search, int $limit = 30) : array
@@ -49,4 +53,63 @@
 				return [];
 			}
 		}
+
+        public function getPlayerRank(string $game, string $rankingType, int $playerPoints, int $playerKills, int $playerDeaths) : ?int
+        {
+            $allowedRankingType = $this->optionService->getRankingTypeChoices();
+            if (empty($allowedRankingType)) {
+                $allowedRankingType = ['kills', 'skill']; // default params
+            }
+
+            if (!in_array($rankingType, $allowedRankingType, true)) {
+                return null;
+            }
+
+            $tempDeaths = $playerDeaths;
+            if ($tempDeaths == 0) {
+                $tempDeaths = 1;
+            }
+
+            $kpd = $playerKills / $tempDeaths;
+
+            $sql = "
+                SELECT
+                    COUNT(*) + 1
+                FROM
+                    hlstats_Players
+                WHERE
+                    game = :game
+                AND
+                    hideranking = 0
+                AND
+                    kills >= 1
+                AND (
+                    {$rankingType} > :points
+                    OR (
+                        {$rankingType} = :points
+                        AND (kills / IF(deaths = 0, 1, deaths) > :kpd)
+                    )
+                )
+            ";
+
+            try {
+                $stmt = $this->pdo->prepare($sql);
+
+                $stmt->execute([
+                    'game'  => $game,
+                    'points' => $playerPoints,
+                    'kpd'   => $kpd,
+                ]);
+
+                $count = $stmt->fetchColumn();
+                if ($count === false) {
+                    return null;
+                }
+
+                return (int)$count;
+            } catch (PDOException $e) {
+                $this->logger->error("Failed to get player rank: " . $e->getMessage());
+                return null;
+            }
+        }
 	}

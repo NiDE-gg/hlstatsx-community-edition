@@ -36,12 +36,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
+    // Player Details
     if (!defined('IN_HLSTATS')) {
         die('Do not access this file directly.');
     }
 
-	// Player Details
-	
+    $container = require ROOT_PATH . '/bootstrap.php';
+    $playerRepo = $container->get(\Repository\PlayerRepository::class);
+
 	$player = valid_request(intval($_GET['player']), true);
 	$uniqueid  = valid_request(strval($_GET['uniqueid']), false);
 	$game = valid_request(strval($_GET['game']), false);
@@ -177,14 +179,7 @@ For support and installation notes visit http://www.hlxcommunity.com
                         $plKills = $playerdata['kills'];
                         $playerDeaths = $playerdata['deaths'];
 
-                        $rank = get_player_rank(
-                            $db,
-                            $plGame,
-                            $rankType,
-                            $plValue,
-                            $plKills,
-                            $playerDeaths
-                        );
+                        $rank = $playerRepo->getPlayerRank($plGame, $rankType, $plValue, $plKills, $playerDeaths);
 
                         if (is_null($rank)) {
                             $rank = 'Unknown';
