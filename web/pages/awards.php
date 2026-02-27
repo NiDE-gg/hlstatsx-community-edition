@@ -83,7 +83,7 @@
     }
 
     $options = $optionService->getAllOptions();
-    ?>
+?>
 
     <?php if ($options['playerinfo_tabs'] == '1') : ?>
         <div id="main">

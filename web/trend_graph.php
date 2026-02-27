@@ -53,13 +53,7 @@
 	}
 
 	$container = require ROOT_PATH . '/bootstrap.php';
-	$optionService = $container->get(\Service\OptionService::class);
 
-	$g_options = $optionService->getAllOptions();
-	if (empty($g_options)) {
-		error('Warning: Could not find any options in the database. Check HLStats configuration.');
-	}
-	
 	$bg_color = array('red' => 90, 'green' => 90, 'blue' => 90);
 	if (isset($_GET['bgcolor']) && is_string($_GET['bgcolor'])) {
 		$bg_color = hex2rgb(valid_request($_GET['bgcolor'], false));
@@ -70,7 +64,10 @@
 		$color = hex2rgb(valid_request($_GET['color'], false));
 	}
 
-	$player = valid_request(intval($_GET['player'] ?? ''), true);
+	if (isset($_GET['player'])) {
+		$player = (int)$_GET['player'];
+	}
+
 	if (!$player) {
 		exit();
 	}
@@ -81,32 +78,35 @@
 	$date = array();
 	$rowcnt = $db->num_rows();
 	$last_time = 0;
-	for ($i = 1; $i <= $rowcnt; $i++)
-	{
+	for ($i = 1; $i <= $rowcnt; $i++) {
 		$row = $db->fetch_array($res);
+
 		array_unshift($skill, ($row['skill']==0)?0:($row['skill']/1000));
 		array_unshift($skill_change, $row['skill_change']);
-		if ($i == 1 || $i == round($rowcnt/2) || $i == $rowcnt)
-		{
+
+		if ($i == 1 || $i == round($rowcnt/2) || $i == $rowcnt) {
 			array_unshift($date, date("M-j", $row['ts']));
 			$last_time = $row['ts'];
-		}
-		else
-		{
+		} else {
 			array_unshift($date, '');
 		}
 	}
-	
-	$cache_image = IMAGE_PATH . "/progress/trend_{$player}_{$last_time}.png";
-	if (file_exists($cache_image))
-	{
-		$file_timestamp = @filemtime($cache_image);
-		if ($file_timestamp + IMAGE_UPDATE_INTERVAL > time()) {
-			header('Content-type: image/png');
-			// header("Cache-Control: public, s-maxage=" . IMAGE_UPDATE_INTERVAL . ", max-age=" . IMAGE_UPDATE_INTERVAL); // Cache it in the browser
-			readfile($cache_image);
-			exit();
-		}
+
+	$params = [
+		'player' => $player,
+		'bgcolor' => $bg_color,
+		'color' => $color,
+		'last_time' => $last_time,
+	];
+
+	$cache_key = md5(serialize($params));
+	$cache_image = IMAGE_PATH . "/progress/trend_{$cache_key}.png";
+
+	if (file_exists($cache_image)) {
+		header('Content-type: image/png');
+		readfile($cache_image);
+
+		exit();
 	}
 	
 	$Chart = new pChart(380, 200);
@@ -115,13 +115,10 @@
 	$Chart->setGraphArea(50, 28, 339, 174);
 	$Chart->drawGraphAreaGradient(40, 40, 40, -50);
 	
-	if (count($date) < 2)
-	{
+	if (count($date) < 2) {
 		$Chart->setFontProperties(IMAGE_PATH . '/sig/font/DejaVuSans.ttf', 11);
 		$Chart->drawTextBox(100, 90, 180, 110, "Not Enough Session Data", 0, 0, 0, 0, ALIGN_LEFT, FALSE, 255, 255, 255, 0);
-	}
-	else
-	{	
+	} else {
 		$DataSet = new pData;
 		$DataSet->AddPoint($skill, 'SerieSkill');
 		$DataSet->AddPoint($skill_change, 'SerieSession');
@@ -163,10 +160,6 @@
 		$Chart->drawHorizontalLegend(235, -1, $DataSet->GetDataDescription(),
 			0, 0, 0, 0, 0, 0, $color['red'], $color['green'], $color['blue'], FALSE);
 	}
-	
+
 	$Chart->Render($cache_image);
-	// header("Location: $cache_image");
-	header('Content-type: image/png');
-	// header("Cache-Control: public, s-maxage=" . IMAGE_UPDATE_INTERVAL . ", max-age=" . IMAGE_UPDATE_INTERVAL); // Cache it in the browser
-	readfile($cache_image);
-?>
+	header("Location: $cache_image");
