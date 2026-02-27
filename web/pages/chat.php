@@ -499,6 +499,7 @@ class Auth
 					Filter: <input type="text" name="filter" value="<?=eHtml($filter);?>">
 
 					<input type="submit" value="View" class="smallsubmit">
+					<input type="button" value="Clear" class="smallsubmit" onclick="window.location.href='?mode=chat&game=<?= urlencode($checkGame); ?>';">
 				</form>
 			</span>
 
