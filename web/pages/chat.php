@@ -288,7 +288,7 @@ class Auth
 	$delayChat = (int)CHAT_DELAY_TIME;
 	$delayChatSafeHtml = htmlspecialchars($delayChat, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-	if ($delayChat > 0 && $delayChat <= 15) {
+	if ($delayChat > 0 && $delayChat <= CHAT_DELAY_MAX_TIME) {
 		$delayChatSafeSql = $db->escape($delayChat);
 		$delaySql = "AND `eventTime` <= (NOW() - INTERVAL {$delayChatSafeSql} MINUTE)";
 	}
@@ -368,10 +368,10 @@ class Auth
 				<div style="font-size:0.9em; color:#8d90a3; margin-top:10px;">
 					*Messages are delayed by <?=$delayChatSafeHtml;?> minutes to prevent real-time tracking.
 				</div>
-			<?php endif ?>
+			<?php endif; ?>
 		</div>
 	</div>
-	<div style="clear:both;padding-top:20px;"></div>
+	<div style="clear:both;padding-top:10px;"></div>
 		<?php
 			if ($showserver == 0)
 			{

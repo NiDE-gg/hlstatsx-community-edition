@@ -101,9 +101,10 @@ define("IMAGE_UPDATE_INTERVAL", 300);
 define('GOOGLE_MAPS_API_KEY', "");
 
 // Add a chat delay to prevent real-time tracking and provide information that can help in-game.
-// Only allowed from 1 minute to 15, other values ​​disable this.
+// Only allowed from 1 minute to 20, other values ​​disable this.
 // Disabled by default.
 define('CHAT_DELAY_TIME', 0);
+define('CHAT_DELAY_MAX_TIME', 20);
 
 //define("DB_DEBUG", true);
 
