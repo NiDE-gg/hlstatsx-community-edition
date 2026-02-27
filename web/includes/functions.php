@@ -40,6 +40,53 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
+function buildSearchSqlSafe($db, $search)
+{
+	$search = trim($search);
+	if ($search === '') {
+		return "";
+	}
+
+	$len = mb_strlen($search, 'UTF-8');
+	$like_filter = $db->escape(addcslashes($search, '%_'));
+	$match_filter = $db->escape($search);
+
+	// 'MATCH' - doesn't work for text shorter than 4 characters. Fixed without editing the mysql cfg.
+	if ($len <= 3) {
+		if ($len == 1) {
+			return " AND hlstats_Events_Chat.message LIKE '%{$like_filter}%'";
+		}
+
+		return " AND (
+			hlstats_Events_Chat.message = '{$like_filter}'
+			OR hlstats_Events_Chat.message LIKE '{$like_filter} %'
+			OR hlstats_Events_Chat.message LIKE '% {$like_filter}'
+			OR hlstats_Events_Chat.message LIKE '% {$like_filter} %'
+		)";
+	}
+
+	return " AND MATCH (hlstats_Events_Chat.message) AGAINST ('{$match_filter}' IN BOOLEAN MODE)";
+}
+
+// Support for legacy code, it used array $_REQUEST, for _GET, and _POST?
+// Filter arrays
+function getChatFilterParam()
+{
+	$retFilter = '';
+
+	$postFilter = filter_input(INPUT_POST, 'filter', FILTER_UNSAFE_RAW);
+	$getFilter = filter_input(INPUT_GET, 'filter', FILTER_UNSAFE_RAW);
+
+	if ($postFilter !== null && $postFilter !== false) {
+		$retFilter = $postFilter;
+	} elseif ($getFilter !== null && $getFilter !== false) {
+		$retFilter = $getFilter;
+	}
+
+	$retFilter = (string)$retFilter;
+	return trim($retFilter);
+}
+
 function eHtml($str)
 {
     return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');

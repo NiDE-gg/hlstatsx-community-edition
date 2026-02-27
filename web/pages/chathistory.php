@@ -200,54 +200,6 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$sectionTitle = printSectionTitle($parseTitle);
 
 	$playerInfoUrl = $urlSafe . "?mode=playerinfo&amp;player={$player}";
-
-	// Functions
-	function buildSearchSqlSafe($db, $search)
-	{
-		$search = trim($search);
-		if ($search === '') {
-			return "";
-		}
-
-		$len = mb_strlen($search, 'UTF-8');
-		$like_filter = $db->escape(addcslashes($search, '%_'));
-		$match_filter = $db->escape($search);
-
-		// 'MATCH' - doesn't work for text shorter than 4 characters. Fixed without editing the mysql cfg.
-		if ($len <= 3) {
-			if ($len == 1) {
-				return " AND hlstats_Events_Chat.message LIKE '%{$like_filter}%'";
-			}
-
-			return " AND (
-				hlstats_Events_Chat.message = '{$like_filter}'
-				OR hlstats_Events_Chat.message LIKE '{$like_filter} %'
-				OR hlstats_Events_Chat.message LIKE '% {$like_filter}'
-				OR hlstats_Events_Chat.message LIKE '% {$like_filter} %'
-			)";
-		}
-
-		return " AND MATCH (hlstats_Events_Chat.message) AGAINST ('{$match_filter}' IN BOOLEAN MODE)";
-	}
-
-	// Support for legacy code, it used array $_REQUEST, for _GET, and _POST?
-	// Filter arrays
-	function getChatFilterParam()
-	{
-		$retFilter = '';
-
-		$postFilter = filter_input(INPUT_POST, 'filter', FILTER_UNSAFE_RAW);
-		$getFilter = filter_input(INPUT_GET, 'filter', FILTER_UNSAFE_RAW);
-
-		if ($postFilter !== null && $postFilter !== false) {
-			$retFilter = $postFilter;
-		} elseif ($getFilter !== null && $getFilter !== false) {
-			$retFilter = $getFilter;
-		}
-
-		$retFilter = (string)$retFilter;
-		return trim($retFilter);
-	}
 ?>
 
 <!--HTML BLOCK-->
@@ -261,7 +213,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<input type="hidden" name="mode" value="chathistory" />
 				<input type="hidden" name="player" value="<?=$player;?>" />
 				<strong>&#8226;</strong>
-				Filter: <input type="text" name="filter" id="filter_input" value="<?=htmlspecialchars($filter, ENT_QUOTES, 'UTF-8');?>" />
+				Filter: <input type="text" name="filter" id="filter_input" value="<?=eHtml($filter);?>" />
 				<input type="submit" value="View" class="smallsubmit" />
 				<input type="button" value="Clear" class="smallsubmit" onclick="document.getElementById('filter_input').value=''; this.form.submit();">
 			</form>
