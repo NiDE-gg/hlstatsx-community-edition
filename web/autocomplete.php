@@ -1,72 +1,52 @@
 <?php
-	// Code to autocomplete the search bar on the player list page,
-	// displays something like tooltips.
-	declare(strict_types = 1);
 
-	const IN_HLSTATS = true;
+    // Code to autocomplete the search bar on the player list page,
+    // displays something like tooltips.
+    declare(strict_types = 1);
 
-	// Load required files
-	require('config.php');
-	require_once __DIR__ . '/includes/autoload.php';
-	require(INCLUDE_PATH . '/functions.php');
+    const IN_HLSTATS = true;
 
-	// Filter search input
-	$search = filter_input(INPUT_GET, 'search', FILTER_UNSAFE_RAW);
-	if (empty($search) || !is_string($search)) {
-		exit;
-	}
+    // Load required files
+    require('config.php');
+    $container = require ROOT_PATH . '/bootstrap.php';
+    require(INCLUDE_PATH . '/functions.php');
 
-	$search = trim($search);
-	$searchLen = strlen($search);
-	if ($searchLen < 2 || $searchLen > 64) {
-		exit;
-	}
+    // Filter search input
+    $search = filter_input(INPUT_GET, 'search', FILTER_UNSAFE_RAW);
+    if (empty($search) || !is_string($search)) {
+        exit;
+    }
 
-	use Config\DatabaseOptions;
-	use Database\PDODriver;
-	use Repository\PlayerRepository;
-	use Repository\GameRepository;
-	use Utils\Logger;
+    $search = trim($search);
+    $searchLen = strlen($search);
+    if ($searchLen < 2 || $searchLen > 64) {
+        exit;
+    }
 
-	$logger = new Logger();
+    // Filter game input
+    $game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
 
-	// Create db class
-	$dbOptions = new DatabaseOptions([
-		'host'     => DB_ADDR,
-		'user'     => DB_USER,
-		'pass'     => DB_PASS,
-		'name'     => DB_NAME,
-		'pconnect' => DB_PCONNECT,
-		'charset'  => DB_CHARSET,
-	]);
+    $gameRepo = $container->get(\Repository\GameRepository::class);
+    $allowedGames = $gameRepo->getGameCodes();
 
-	$pdoClass = new PDODriver($dbOptions, $logger);
-	$pdo = $pdoClass->getPDO();
+    $retError = "";
+    if (!checkValidGame($game, $allowedGames, $retError)) {
+        print $retError;
+        exit;
+    }
 
-	// Filter game input
-	$game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
+    $playerRepo = $container->get(\Repository\PlayerRepository::class);
+    $arrayNames = $playerRepo->getPlayerSuggestions($game, $search, 30);
 
-	$gameRepo = new GameRepository($pdo, $logger);
-	$allowedGames = $gameRepo->getGameCodes();
+    if (empty($arrayNames)) {
+        exit;
+    }
 
-	$retError = "";
-	if (!checkValidGame($game, $allowedGames, $retError)) {
-		//print $retError;
-		exit;
-	}
+    $retHtml = "";
+    foreach ($arrayNames as $name) {
+        $retHtml .= '<li class="playersearch">';
+        $retHtml .= eHtml($name);
+        $retHtml .= "</li>" . "\n";
+    }
 
-	$playerRepo = new PlayerRepository($pdo, $logger);
-	$arrayNames = $playerRepo->getPlayerSuggestions($game, $search, 30);
-
-	if (empty($arrayNames)) {
-		exit;
-	}
-
-	$retHtml = "";
-	foreach ($arrayNames as $name) {
-		$retHtml .= '<li class="playersearch">';
-		$retHtml .= eHtml($name);
-		$retHtml .= "</li>" . "\n";
-	}
-
-	print $retHtml;
+    print $retHtml;

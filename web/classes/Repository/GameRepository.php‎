@@ -39,6 +39,7 @@
 
                 if (empty($gameCodes)) {
                     $this->logger->error('No games found in database with hidden=0');
+                    return null;
                 }
             } catch (PDOException $e) {
                 $this->logger->error('Failed to fetch game codes: ' . $e->getMessage());
