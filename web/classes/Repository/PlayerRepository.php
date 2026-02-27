@@ -121,7 +121,7 @@
                 AND (
                     {$rankingType} > :points
                     OR (
-                        {$rankingType} = :points
+                        {$rankingType} = :points_eq
                         AND (kills / IF(deaths = 0, 1, deaths) > :kpd)
                     )
                 )
@@ -131,9 +131,10 @@
                 $stmt = $this->pdo->prepare($sql);
 
                 $stmt->execute([
-                    'game'  => $game,
-                    'points' => $playerPoints,
-                    'kpd'   => $kpd,
+                    'game'      => $game,
+                    'points'    => $playerPoints,
+                    'points_eq' => $playerPoints,
+                    'kpd'       => $kpd,
                 ]);
 
                 $count = $stmt->fetchColumn();
