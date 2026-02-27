@@ -40,6 +40,59 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
+function getGamesList($db)
+{
+	static $gameCodes = null;
+	if ($gameCodes === null) {
+		$gameCodes = [];
+		$result = $db->query("SELECT code FROM hlstats_Games WHERE hidden = '0'");
+
+		if (!$result) {
+			return $gameCodes;
+		}
+
+		while ($row = $db->fetch_row($result)) {
+			$gameCodes[] = $row[0];
+		}
+	}
+
+	return $gameCodes;
+}
+
+function checkValidGame($db, $gameStr, &$retError)
+{
+	// Not object and array
+	if (!is_string($gameStr)) {
+		$retError = 'Invalid game parameter.';
+		return false;
+	}
+
+	$gameStr = trim($gameStr);
+	if ($gameStr === '') {
+		$retError = 'Game parameter missing.';
+		return false;
+	}
+
+	// Path traversal and XSS fixes
+	if (!preg_match('/^[a-zA-Z0-9_]+$/', $gameStr)) {
+		$retError = 'Invalid game code.';
+		return false;
+	}
+
+	$allowedGames = getGamesList($db);
+	if (!is_array($allowedGames)) {
+		$retError = 'Failed to get list of allowed games.';
+		return false;
+	}
+
+	if (!in_array($gameStr, $allowedGames, true)) {
+		$retError = 'This game is not allowed.';
+		return false;
+	}
+
+	return true;
+}
+
 function buildSearchSqlSafe($db, $search)
 {
 	$search = trim($search);
