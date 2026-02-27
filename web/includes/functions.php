@@ -466,8 +466,12 @@ function getLink($url, $type = 'http://', $target = '_blank')
  * @param integer $maxlength
  * @return string Formatted email tag
  */
-function getEmailLink(string $email, int $maxLength = 40) : string
+function getEmailLink(?string $email, int $maxLength = 40) : string
 {
+    if (empty($email)) {
+        return '';
+    }
+
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return '';
     }
