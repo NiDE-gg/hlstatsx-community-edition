@@ -363,36 +363,6 @@ class Auth
 					<?php endforeach; ?>
 				</select>
 
-				<?php
-					$result = $db->query
-					("
-						SELECT
-							hlstats_Servers.serverId,
-							hlstats_Servers.name
-						FROM
-							hlstats_Servers
-						WHERE
-							hlstats_Servers.game='$game'
-						ORDER BY
-							hlstats_Servers.sortorder,
-							hlstats_Servers.name,
-							hlstats_Servers.serverId ASC
-						LIMIT
-							0,
-							50
-					");
-
-					echo '<select name="server_id"><option value="0">All Servers</option>';
-					while ($rowdata = $db->fetch_array())
-					{
-						if ($showserver == $rowdata['serverId'])
-							echo '<option value="'.$rowdata['serverId'].'" selected>'.$rowdata['name'].'</option>';
-						else
-							echo '<option value="'.$rowdata['serverId'].'">'.$rowdata['name'].'</option>';
-					}
-					echo '</select>';
-					$filter=isset($_REQUEST['filter'])?$_REQUEST['filter']:"";
-				?>
 				Filter: <input type="text" name="filter" value="<?php echo htmlentities($filter); ?>" /> 
 				<input type="submit" value="View" class="smallsubmit" />
 			</form>
