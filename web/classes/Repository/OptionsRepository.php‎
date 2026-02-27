@@ -17,6 +17,28 @@
             $this->logger = $logger;
         }
 
+        public function getOptionChoices(string $keyName): ?array
+        {
+            $sql = "
+                SELECT
+                    `value`
+                FROM
+                    `hlstats_Options_Choices`
+                WHERE
+                    `keyname` = :keyname
+            ";
+
+            try {
+                $stmt = $this->pdo->prepare($sql);
+
+                $stmt->execute(['keyname' => $keyName]);
+                return $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (PDOException $e) {
+                $this->logger->error("Failed to fetch choices for key '$keyName': " . $e->getMessage());
+                return null;
+            }
+        }
+
         public function getAllOptions() : array
         {
             $sql = "

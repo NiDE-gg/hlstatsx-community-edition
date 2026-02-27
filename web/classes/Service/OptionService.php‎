@@ -12,6 +12,8 @@
 
         private string $defaultScriptUrl;
 
+        private ?array $cachedOptions = null;
+
         public function __construct(OptionsRepository $optionsRepo, Logger $logger, string $defaultScriptUrl)
         {
             $this->optionsRepo = $optionsRepo;
@@ -19,14 +21,24 @@
             $this->defaultScriptUrl = $defaultScriptUrl;
         }
 
-        public function getAllOptions(): array
+        public function getRankingTypeChoices(): ?array
         {
-            $options = $this->optionsRepo->getAllOptions();
-            if (empty($options)) {
-                return [];
+            return $this->optionsRepo->getOptionChoices('rankingtype');
+        }
+
+        public function getAllOptions() : array
+        {
+            if ($this->cachedOptions === null) {
+                $options = $this->optionsRepo->getAllOptions();
+
+                if (!empty($options)) {
+                    $options = $this->validateOptions($options);
+                }
+
+                $this->cachedOptions = $options;
             }
 
-            return $this->validateOptions($options);
+            return $this->cachedOptions;
         }
 
         private function validateOptions(array $options) : array
