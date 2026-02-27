@@ -474,18 +474,27 @@ class Table
 		}
 	}
 
-	function _echoPageNumber ($number, $label, $prefix='', $postfix='')
+	function _echoPageNumber($number, $label, $prefix = '', $postfix = '')
 	{
 		global $g_options;
 
-		echo "$prefix<a href=\"" . $g_options['scripturl'] . '?'
-			. makeQueryString($this->var_page, $number);
-		if ($this->sorthash)
-			echo "#$this->sorthash";
-		
-		if ($this->ajax)
-			echo "\" onclick=\"Tabs.refreshTab({'" . $this->var_page . "': " . $number . "}); return false;";
-		echo "\">$label</a>$postfix ";
+		$queryStr = makeQueryString($this->var_page, $number);
+		$url = $g_options['scripturl'] . '?' . $queryStr;
+
+		if ($this->sorthash) {
+			$url .= "#{$this->sorthash}";
+		}
+
+		$urlSafe = eHtml($url);
+
+		$onclick = '';
+		if ($this->ajax) {
+			$flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+			$ajaxData = json_encode([$this->var_page => $number], $flags);
+			$onclick = ' onclick="Tabs.refreshTab(' . $ajaxData . '); return false;"';
+		}
+
+		echo "{$prefix}<a href=\"{$urlSafe}\"{$onclick}>{$label}</a>{$postfix} ";
 	}
 }
 
