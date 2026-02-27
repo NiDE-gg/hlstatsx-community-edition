@@ -47,6 +47,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 		die('No player ID specified or invalid ID.');
 	}
 
+	$player = (int)$player;
+
 	$db->query
 	("
 		SELECT
@@ -55,7 +57,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		FROM
 			hlstats_Players
 		WHERE
-			hlstats_Players.playerId = $player
+			hlstats_Players.playerId = {$player}
 	");
 
 	if ($db->num_rows() != 1) {
@@ -72,6 +74,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT, 'UTF-8');
 	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT, 'UTF-8');
+
 	$game = $playerdata['game'];
 	$gameSafeSql = $db->escape($game);
 	$db->query
@@ -96,11 +99,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 		array ($gamename, 'Chat History', $pl_name),
 		array
 		(
-			$gamename=>$g_options['scripturl'] . "?game=$game",
-			'Player Rankings'=>$g_options['scripturl'] . "?mode=players&game=$game",
-			'Player Details'=>$g_options['scripturl'] . "?mode=playerinfo&player=$player",
-			'Chat History'=>''
+			$gamename => $g_options['scripturl'] . "?game={$game}",
+			'Player Rankings' => $g_options['scripturl'] . "?mode=players&game={$game}",
+			'Player Details' => $g_options['scripturl'] . "?mode=playerinfo&player={$player}",
+			'Chat History' => ''
 		),
+
 		$playername = ""
 	);
 
@@ -144,13 +148,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 		'sort',
 		'sortorder'
 	);
-	$surl = $g_options['scripturl'];
-	
-	$whereclause = "hlstats_Events_Chat.playerId = $player ";
+
+	$urlSafe = htmlspecialchars($g_options['scripturl'], ENT_QUOTES, 'UTF-8');
+
+	$whereclause = "hlstats_Events_Chat.playerId = {$player} ";
 
 	$filter = getChatFilterParam();
 	$whereclause .= buildSearchSqlSafe($db, $filter);
-	
+
 	$result = $db->query
 	("
 		SELECT
@@ -165,13 +170,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 		ON
 			hlstats_Events_Chat.serverId = hlstats_Servers.serverId
 		WHERE
-			$whereclause
+			{$whereclause}
 		ORDER BY
-			$table->sort $table->sortorder,
-			$table->sort2 $table->sortorder
+			{$table->sort} {$table->sortorder},
+			{$table->sort2} {$table->sortorder}
 		LIMIT
-			$table->startitem,
-			$table->numperpage
+			{$table->startitem},
+			{$table->numperpage}
 	");
 
 	$resultCount = $db->query
@@ -185,10 +190,16 @@ For support and installation notes visit http://www.hlxcommunity.com
 		ON
 			hlstats_Events_Chat.serverId = hlstats_Servers.serverId
 		WHERE
-			$whereclause
+			{$whereclause}
 	");
-			
+
 	list($numitems) = $db->fetch_row($resultCount);
+
+	$deleteDays = isset($g_options['DeleteDays']) ? (int)$g_options['DeleteDays'] : 30;
+	$parseTitle = "Player Chat History (Last {$deleteDays} Days)";
+	$sectionTitle = printSectionTitle($parseTitle);
+
+	$playerInfoUrl = $urlSafe . "?mode=playerinfo&amp;player={$player}";
 
 	// Functions
 	function buildSearchSqlSafe($db, $search)
@@ -237,36 +248,38 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$retFilter = (string)$retFilter;
 		return trim($retFilter);
 	}
-	
 ?>
+
+<!--HTML BLOCK-->
 <div class="block">
-<?php
-	printSectionTitle('Player Chat History (Last '.$g_options['DeleteDays'].' Days)');
-?>
+	<?=$sectionTitle;?>
+
 	<div class="subblock">
 		<div style="float:left;">
 			<span>
-			<form method="get" action="<?php echo $g_options['scripturl']; ?>" style="margin:0px;padding:0px;">
+			<form method="get" action="<?=$urlSafe;?>" style="margin:0px;padding:0px;">
 				<input type="hidden" name="mode" value="chathistory" />
-				<input type="hidden" name="player" value="<?php echo $player; ?>" />
+				<input type="hidden" name="player" value="<?=$player;?>" />
 				<strong>&#8226;</strong>
-				Filter: <input type="text" name="filter" value="<?= htmlspecialchars($filter, ENT_QUOTES, 'UTF-8') ?>" />
+				Filter: <input type="text" name="filter" id="filter_input" value="<?=htmlspecialchars($filter, ENT_QUOTES, 'UTF-8');?>" />
 				<input type="submit" value="View" class="smallsubmit" />
-				<input type="button" value="Clear" class="smallsubmit" onclick="document.getElementsByName('filter')[0].value=''; this.form.submit();" />
+				<input type="button" value="Clear" class="smallsubmit" onclick="document.getElementById('filter_input').value=''; this.form.submit();">
 			</form>
 			</span>
 		</div>
 	</div>
+
 	<div style="clear: both; padding-top: 20px;"></div>
-<?php
-	if ($numitems > 0)
-	{
-		$table->draw($result, $numitems, 95);
-	}
-?><br /><br />
+	<?php
+		if ($numitems > 0) {
+			$table->draw($result, $numitems, 95);
+		}
+	?>
+	<br><br>
+
 	<div class="subblock">
 		<div style="float:right;">
-			Go to: <a href="<?php echo $g_options['scripturl'] . "?mode=playerinfo&amp;player=$player"; ?>"><?php echo $pl_name; ?>'s Statistics</a>
+			Go to: <a href="<?=$playerInfoUrl;?>"><?=$pl_name;?>'s Statistics</a>
 		</div>
 	</div>
 </div>
