@@ -547,16 +547,6 @@ function printSectionTitle($title, $echo = true)
 	echo $html;
 }
 
-function getStyleText($style)
-{
-	return "\t<link rel=\"stylesheet\" type=\"text/css\" href=\"./css/$style.css\" />\n";
-}
-
-function getJSText($js)
-{
-	return "\t<script type=\"text/javascript\" src=\"".INCLUDE_PATH."/js/$js.js\"></script> \n";
-}
-
 /**
  * Convert colors Usage:  color::hex2rgb("FFFFFF")
  * 
