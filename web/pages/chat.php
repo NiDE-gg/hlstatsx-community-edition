@@ -81,7 +81,7 @@ class Auth
 			$this->ok = true;
 			$this->error = false;
 			$this->session = true;
-			
+
 			if(!$this->checkPass())
 			{
 				unset($_SESSION['loggedin']);
@@ -228,7 +228,7 @@ class Auth
 		die('Do not access this file directly.');
 	}
 
-	use Config\DatabaseOptions;
+    use Config\DatabaseOptions;
     use Database\PDODriver;
     use Repository\GameRepository;
     use Utils\Logger;
@@ -265,8 +265,9 @@ class Auth
 	}
 
 	$showserver = (int)$showserver;
+
 	$gameSafeSql = $db->escape($checkGame);
-	$gameSafeHtml = htmlspecialchars($checkGame, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+	$gameSafeHtml = htmlspecialchars($checkGame, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 	$scriptUrlSafeHtml = eHtml($g_options['scripturl']);
 	$fullUrl = $g_options['scripturl'] . '?game=' . urlencode($checkGame);
 
@@ -288,10 +289,7 @@ class Auth
 		array ($gamename => "%s?game={$gameSafeHtml}", 'Server Chat Statistics' => '')
 	);
 
-	flush();
-
 	$servername = "(All Servers)";
-
 	if ($showserver != 0) {
 		$servername = getServerNameById($db, $showserver);
 		$servername = ($servername !== null) ? "({$servername})" : "(Unknown Server)";
@@ -310,7 +308,6 @@ class Auth
 
 	$deleteDaysSafe = isset($g_options['DeleteDays']) ? (int)$g_options['DeleteDays'] : 30;
 	$pageTitle = sprintf('%s %s Server Chat Log (Last %d Days)', $gamename, $servername, $deleteDaysSafe);
-	$sectionTitle = printSectionTitle($pageTitle, false);
 
 	$columns = getChatColumns($showserver);
 	$table = new Table(
@@ -340,6 +337,10 @@ class Auth
 		FROM
 			hlstats_Events_Chat
 		INNER JOIN
+			hlstats_Players
+		ON
+			hlstats_Players.playerId = hlstats_Events_Chat.playerId
+		INNER JOIN
 			hlstats_Servers
 		ON
 			hlstats_Servers.serverId = hlstats_Events_Chat.serverId
@@ -360,10 +361,6 @@ class Auth
 			count(*)
 		FROM
 			hlstats_Events_Chat
-		INNER JOIN
-			hlstats_Players
-		ON
-			hlstats_Players.playerId = hlstats_Events_Chat.playerId
 		INNER JOIN
 			hlstats_Servers
 		ON
@@ -505,6 +502,7 @@ class Auth
 				<form method="get" action="<?=eHtml($g_options['scripturl']);?>" style="margin:0px;padding:0px;">
 					<input type="hidden" name="mode" value="chat" />
 					<input type="hidden" name="game" value="<?=$gameSafeHtml;?>">
+
 					<strong>&#8226;</strong> Show Chat from
 
 					<select name="server_id">
@@ -535,8 +533,10 @@ class Auth
 	</div>
 
 	<div style="clear:both;padding-top:10px;"></div>
-		<?php $table->draw($resultMsgs, $numitems, 95);?>
-		<br><br>
+
+	<?php $table->draw($resultMsgs, $numitems, 95);?>
+	<br><br>
+
 	<div class="subblock">
 		<div style="float:right;">
 			Go to: <a href="<?=eHtml($fullUrl);?>"><?=eHtml($gamename);?></a>
