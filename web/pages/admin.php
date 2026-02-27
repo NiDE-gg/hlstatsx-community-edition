@@ -36,12 +36,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
-    if (!defined('IN_HLSTATS')) {
-        die('Do not access this file directly.');
-    }
+if (!defined('IN_HLSTATS')) {
+    die('Do not access this file directly.');
+}
 
-if ( empty($game) )
-{
+global $db;
+
+if (empty($game)) {
 	$resultGames = $db->query("
         SELECT
             code,
@@ -55,6 +56,7 @@ if ( empty($game) )
         LIMIT 0,1
 
 	");
+
 	list($game) = $db->fetch_row($resultGames);
 }
 
@@ -72,11 +74,14 @@ class Auth
 	{
 		//@session_start();
 
-		if (valid_request($_POST['authusername'], false))
-		{
-			$this->username = valid_request($_POST['authusername'], false);
-			$this->password = valid_request($_POST['authpassword'], false);
-			$this->savepass = valid_request($_POST['authsavepass'], false);
+        $authUsername = isset($_POST['authusername']) ? $_POST['authusername'] : '';
+        $authPassword = isset($_POST['authpassword']) ? $_POST['authpassword'] : '';
+        $authSavePass = isset($_POST['authsavepass']) ? $_POST['authsavepass'] : '';
+
+		if (!empty($authUsername) && valid_request($authUsername, false)) {
+			$this->username = valid_request($authUsername, false);
+			$this->password = valid_request($authPassword, false);
+			$this->savepass = valid_request($authSavePass, false);
 			$this->sessionStart = 0;
 
 			# clear POST vars so as not to confuse the receiving page
@@ -85,17 +90,14 @@ class Auth
 
 			$this->session = false;
 
-			if($this->checkPass()==true)
-			{
+			if ($this->checkPass() == true) {
 				// if we have success, save it in this users SESSION
-				$_SESSION['username']=$this->username;
-				$_SESSION['password']=$this->password;
-				$_SESSION['authsessionStart']=time();
+				$_SESSION['username'] = $this->username;
+				$_SESSION['password'] = $this->password;
+				$_SESSION['authsessionStart'] = time();
 				$_SESSION['acclevel'] = $this->userdata['acclevel'];
 			}
-		}
-		elseif (isset($_SESSION['loggedin']))
-		{
+		} elseif (isset($_SESSION['loggedin'])) {
 			$this->username = $_SESSION['username'];
 			$this->password = $_SESSION['password'];
 			$this->savepass = 0;
@@ -104,13 +106,10 @@ class Auth
 			$this->error = false;
 			$this->session = true;
 			
-			if(!$this->checkPass())
-			{
+			if (!$this->checkPass()) {
 				unset($_SESSION['loggedin']);
 			}
-		}
-		else
-		{
+		} else {
 			$this->ok = false;
 			$this->error = false;
 
@@ -125,14 +124,14 @@ class Auth
 		global $db;
 
 		$db->query("
-				SELECT
-					*
-				FROM
-					hlstats_Users
-				WHERE
-					username='$this->username'
-				LIMIT 1
-			");
+            SELECT
+                *
+            FROM
+                hlstats_Users
+            WHERE
+                username = '$this->username'
+            LIMIT 1
+        ");
 
 		if ($db->num_rows() == 1)
 		{
@@ -870,19 +869,20 @@ class PropertyPage
 				}
 				else
 				{
-					$setstrings[] = $prop->name . "='" . valid_request($_POST[$prop->name], 0) . "'";
+                    $postValue = isset($_POST[$prop->name]) ? $_POST[$prop->name] : '';
+					$setstrings[] = $prop->name . "='" . valid_request($postValue, 0) . "'";
 				}
 			}
 		}
 
 		$db->query("
-				UPDATE
-					" . $this->table . "
-				SET
-					" . implode(",\n", $setstrings) . "
-				WHERE
-					" . $this->keycol . "='" . $db->escape($this->keyval) . "'
-			");
+            UPDATE
+                " . $this->table . "
+            SET
+                " . implode(",\n", $setstrings) . "
+            WHERE
+                " . $this->keycol . "='" . $db->escape($this->keyval) . "'
+        ");
 	}
 }
 
@@ -995,17 +995,15 @@ function message($icon, $msg)
 <?php
 }
 
-
 $auth = new Auth;
-if($auth->ok===false)
-{
+if ($auth->ok === false) {
 	return;
 }
 
 pageHeader(array('Admin'), array('Admin' => ''));
 
-$selTask = valid_request($_GET['task'], false);
-$selGame = valid_request($_GET['game'], false);
+$selTask = isset($_GET['task']) ? valid_request($_GET['task'], false) : '';
+$selGame = isset($_GET['game']) ? valid_request($_GET['game'], false) : '';
 ?>
 
 <table width="100%" align="center" border="0" cellspacing="0" cellpadding="0">
@@ -1014,17 +1012,17 @@ $selGame = valid_request($_GET['game'], false);
 	<td><?php
 
 // General Settings
-$admintasks['options'] = new AdminTask('HLstatsX:CE Settings', 100);
+$admintasks['options'] = new AdminTask('HLstatsX:CE Settings', 80);
 $admintasks['adminusers'] = new AdminTask('Admin Users', 100);
-$admintasks['games'] = new AdminTask('Games', 100);
+$admintasks['games'] = new AdminTask('Games', 80);
 $admintasks['hostgroups'] = new AdminTask('Host Groups', 100);
-$admintasks['clantags'] = new AdminTask('Clan Tag Patterns', 100);
-$admintasks['voicecomm'] = new AdminTask('Manage Voice Servers', 100);
+$admintasks['clantags'] = new AdminTask('Clan Tag Patterns', 80);
+$admintasks['voicecomm'] = new AdminTask('Manage Voice Servers', 80);
 
 // Game Settings
-$admintasks['newserver'] = new AdminTask('Add Server', 100, 'game');
-$admintasks['servers'] = new AdminTask('Edit Servers', 100, 'game');
-$admintasks['serversettings'] = new AdminTask('&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;Server Details', 100, 'game');
+$admintasks['newserver'] = new AdminTask('Add Server', 80, 'game');
+$admintasks['servers'] = new AdminTask('Edit Servers', 80, 'game');
+$admintasks['serversettings'] = new AdminTask('&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;Server Details', 80, 'game');
 $admintasks['actions'] = new AdminTask('Actions', 80, 'game');
 $admintasks['teams'] = new AdminTask('Teams', 80, 'game');
 $admintasks['roles'] = new AdminTask('Roles', 80, 'game');
@@ -1037,12 +1035,12 @@ $admintasks['ranks'] = new AdminTask('Ranks (triggered by Kills)', 80, 'game');
 $admintasks['ribbons'] = new AdminTask('Ribbons (triggered by Awards)', 80, 'game');
 
 // Tools
-$admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 100, 'tool', 'Reload or stop your HLX: CE Daemons');
+$admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 80, 'tool', 'Reload or stop your HLX: CE Daemons');
 $admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 80, 'tool', 'Edit a player or clan\'s profile information.');
 $admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 80, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
 $admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');
 $admintasks['tools_optimize'] = new AdminTask('Optimize Database', 100, 'tool', 'This operation tells the MySQL server to clean up the database tables, optimizing them for better performance. It is recommended that you run this at least once a month.');
-//$admintasks['tools_synchronize'] = new AdminTask('Synchronize Statistics', 100, 'tool', 'Sychronize all players with the offical global ELstatsNEO banlist with catched VAC cheaters.');
+//$admintasks['tools_synchronize'] = new AdminTask('Synchronize Statistics', 80, 'tool', 'Sychronize all players with the offical global ELstatsNEO banlist with catched VAC cheaters.');
 $admintasks['tools_resetdbcollations'] = new AdminTask('Reset All DB Collations to UTF8', 100, 'tool', 'Reset DB Collations to UTF-8 if you receive collation errors after an upgrade from another HLstats(X)-based system.');
 
 // Sub-Tools
@@ -1050,11 +1048,11 @@ $admintasks['tools_editdetails_player'] = new AdminTask('Edit Player Details', 8
 $admintasks['tools_editdetails_clan'] = new AdminTask('Edit Clan Details', 80, 'subtool', 'Edit a clan\'s profile information.');
 
 // Reset Tools
-$admintasks['tools_reset'] = new AdminTask('Full or Partial Reset', 80, 'tool', 'Resets chosen data globally or for selected game', 'reset');
-$admintasks['tools_reset_2'] = new AdminTask('Clean up Statistics', 80, 'tool', 'Delete all inactive players, clans and corresponding events from the database.', 'reset');
+$admintasks['tools_reset'] = new AdminTask('Full or Partial Reset', 100, 'tool', 'Resets chosen data globally or for selected game', 'reset');
+$admintasks['tools_reset_2'] = new AdminTask('Clean up Statistics', 100, 'tool', 'Delete all inactive players, clans and corresponding events from the database.', 'reset');
 
 // Game Settings Tools
-$admintasks['tools_settings_copy'] = new AdminTask('Duplicate Game settings', 100, 'tool', 'Duplicate a whole game settings tree to split servers of same gametype', 'settingstool');
+$admintasks['tools_settings_copy'] = new AdminTask('Duplicate Game settings', 80, 'tool', 'Duplicate a whole game settings tree to split servers of same gametype', 'settingstool');
 
 
 // Show Tool
