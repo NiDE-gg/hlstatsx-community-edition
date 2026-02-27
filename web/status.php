@@ -318,17 +318,15 @@ if ($server_data['addr'] != '')  {
 	if ($map_image == 1)
 	{
 		$mapimg = getImage("/games/{$game}/maps/{$server_data['act_map']}");
-		if ($mapimg && !file_exists($mapimg['path'])) {
+		if (!file_exists($mapimg['path'])) {
 			$mapimg = getImage("/games/{$game}/maps/default");
 			if (!file_exists($mapimg['path'])) {
 				$mapimg = getImage("/nomap");
 			}
-		} else {
-			$mapimg = getImage("/nomap");
 		}
 		
 		echo '<tr><td align="center" colspan="2">';
-		echo '<a target="_blank" href="'.$g_options['scriptbase'].'/hlstats.php?mode=mapinfo&amp;map='.$server_data['act_map'].'&amp;game='.$game.'"><img src="' . ($mapimg['url'] ?? '') . '" style="width:'.$width.'px;border:0px" alt="'.$server_data['act_map'].'" title="'.$server_data['act_map'].'" /></a>'; 
+		echo '<a target="_blank" href="'.$g_options['scriptbase'].'/hlstats.php?mode=mapinfo&amp;map='.$server_data['act_map'].'&amp;game='.$game.'"><img src="'.$mapimg['url'].'" style="width:'.$width.'px;border:0px" alt="'.$server_data['act_map'].'" title="'.$server_data['act_map'].'" /></a>'; 
 		echo '</td></tr>';
 	}
 
@@ -395,7 +393,7 @@ if ($server_data['addr'] != '')  {
 				teamshots, 
 				teamhits, 
 				teamjointime, 
-				IFNULL(playerlist_bgcolor,'#EFEFEF') as playerlist_bgcolor, 
+				IFNULL(playerlist_bgcolor,'#D5D5D5') as playerlist_bgcolor, 
 				IFNULL(playerlist_color,'#050505') AS playerlist_color, 
 				IFNULL(playerlist_index, 99 ) AS playerlist_index
 			FROM 

@@ -82,13 +82,7 @@ class DB_mysql
 
 		if ( $use_pconnect )
 		{
-			if (function_exists('mysqli_pconnect')) {
-				# Deprecated function
-				$this->link = @mysqli_pconnect($db_addr, $db_user, $db_pass);
-			} else {
-				# See: https://www.php.net/manual/en/mysqli.construct.php
-				$this->link = @mysqli_connect("p:$db_addr", $db_user, $db_pass);
-			}
+			$this->link = @mysqli_pconnect($db_addr, $db_user, $db_pass);
 		}
 		else
 		{

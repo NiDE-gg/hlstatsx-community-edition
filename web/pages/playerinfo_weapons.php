@@ -39,7 +39,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	$container = require ROOT_PATH . '/bootstrap.php';
+    $container = require ROOT_PATH . '/bootstrap.php';
     $gameRepo = $container->get(\Repository\GameRepository::class);
     $realgame = $gameRepo->getGameByCode($game, 'realgame');
 
@@ -154,8 +154,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				OR hlstats_Weapons.weaponId IS NULL
 			)
 		GROUP BY
-			hlstats_Events_Frags.weapon,
-			hlstats_Weapons.modifier
+			hlstats_Events_Frags.weapon
 		ORDER BY
 			$tblWeapons->sort $tblWeapons->sortorder,
 			$tblWeapons->sort2 $tblWeapons->sortorder

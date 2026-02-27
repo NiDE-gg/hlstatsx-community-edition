@@ -105,9 +105,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<!-- U R A SMACKHEAD -->
 
 	<link rel="SHORTCUT ICON" href="favicon.ico" />
-	<script type="text/javascript">window.JSONBrowser = window.JSON;</script>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/mootools.js"></script>
-	<script type="text/javascript"> window.JSON.parse = window.JSONBrowser.parse; window.JSON.stringify = window.JSONBrowser.stringify; </script>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/SqueezeBox.js"></script>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/heatmap.js"></script>
 <?php
@@ -156,10 +154,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 	// Determine if we should show SourceBans links/Forum links
 	$extratabs = NULL;
 	if ($g_options['sourcebans_address'] && file_exists($iconpath . "/title-sourcebans.png")) {
-		$extratabs .= "<li class='header_tabs'><a href=\"". $g_options['sourcebans_address'] . "\" target=\"_blank\">Sourcebans</a></li>\n";
+		$extratabs .= "<li><a href=\"". $g_options['sourcebans_address'] . "\" target=\"_blank\"><img src=\"" . $iconpath . "/title-sourcebans.png\" alt=\"SourceBans\" /></a></li>\n";
 	}
 	if ($g_options['forum_address'] && file_exists($iconpath . "/title-forum.png")) {
-		$extratabs .= "<li class='header_tabs'><a href=\"" . $g_options['forum_address'] . "\" target=\"_blank\">Forums</a></li>\n";
+		$extratabs .= "<li><a href=\"" . $g_options['forum_address'] . "\" target=\"_blank\"><img src=\"" . $iconpath . "/title-forum.png\" alt=\"Forum\" /></a></li>\n";
 	}
 ?>
 <div class="block">
@@ -191,10 +189,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 		<div class="headertabs">
 			<ul>
-				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>">Contents</a></li>
-				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=search">Search</a></li>
+				<li><a href="<?php echo $g_options['scripturl'] ?>"><img src="<?php echo $iconpath; ?>/title-contents.png" alt="Contents" /></a></li>
+				<li><a href="<?php echo $g_options['scripturl'] ?>?mode=search"><img src="<?php echo $iconpath; ?>/title-search.png" alt="Search" /></a></li>
 				<?php if ($extratabs) { print $extratabs; } ?>				
-				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=help">Help</li>
+				<li><a href="<?php echo $g_options['scripturl'] ?>?mode=help"><img src="<?php echo $iconpath; ?>/title-help.png" alt="Help" /></a></li>
 			</ul>
 
 		</div>
@@ -204,9 +202,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 			if ($g_options['sitename'] && $g_options['siteurl'])
 			{
-				echo '<li><a href="' . preg_replace('/http:\/\//', '', $g_options['siteurl']) . '">'. $g_options['sitename'] . '</a> <span class="arrow">&raquo;</span></li>';
+				echo '<li><a href="http://' . preg_replace('/http:\/\//', '', $g_options['siteurl']) . '">'. $g_options['sitename'] . '</a> <span class="arrow">&raquo;</span></li>';
 			}
-			echo '<li><a href="' . $_SERVER['PHP_SELF'] . '">HLstatsX</a>';
+			echo '<li><a href="http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'] . '">HLstatsX</a>';
 
 
 			$i=0;
