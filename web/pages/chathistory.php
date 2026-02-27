@@ -36,14 +36,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
-	if (!defined('IN_HLSTATS')) {
+	if (!defined('IN_HLSTATS')){
 		die('Do not access this file directly.');
 	}
 
-    // Player Chat History
-	$player = valid_request(intval($_GET['player']), true) or error('No player ID specified.');
+	// Player Chat History
+	$player = filter_input(INPUT_GET, 'player', FILTER_VALIDATE_INT);
+	if ($player === null || $player === false) {
+		error('No player ID specified or invalid ID.');
+		die('No player ID specified or invalid ID.');
+	}
 
-	$db->query("
+	$db->query
+	("
 		SELECT
 			unhex(replace(hex(hlstats_Players.lastName), 'E280AE', '')) as lastName,
 			hlstats_Players.game
@@ -58,18 +63,17 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 
 	$playerdata = $db->fetch_array();
-
 	$pl_name = $playerdata['lastName'];
+	$pl_shortname = $pl_name;
 
 	if (strlen($pl_name) > 10) {
 		$pl_shortname = substr($pl_name, 0, 8) . '...';
-	} else {
-		$pl_shortname = $pl_name;
 	}
 
-	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT);
-	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT);
+	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT, 'UTF-8');
+	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT, 'UTF-8');
 	$game = $playerdata['game'];
+	$gameSafeSql = $db->escape($game);
 	$db->query
 	("
 		SELECT
@@ -77,9 +81,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 		FROM
 			hlstats_Games
 		WHERE
-			hlstats_Games.code = '$game'
+			hlstats_Games.code = '{$gameSafeSql}'
 	");
 
+	$gamename = "";
 	if ($db->num_rows() != 1) {
 		$gamename = ucfirst($game);
 	} else {
@@ -100,7 +105,6 @@ For support and installation notes visit http://www.hlxcommunity.com
 	);
 
 	flush();
-
 	$table = new Table
 	(
 		array
@@ -142,12 +146,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 	);
 	$surl = $g_options['scripturl'];
 	
-	$whereclause="hlstats_Events_Chat.playerId = $player ";
-	$filter=isset($_REQUEST['filter'])?$_REQUEST['filter']:"";
-	if(!empty($filter))
-	{
-				$whereclause.="AND MATCH (hlstats_Events_Chat.message) AGAINST ('" . $db->escape($filter) . "' in BOOLEAN MODE)";
-	}
+	$whereclause = "hlstats_Events_Chat.playerId = $player ";
+
+	$filter = getChatFilterParam();
+	$whereclause .= buildSearchSqlSafe($db, $filter);
 	
 	$result = $db->query
 	("
@@ -163,7 +165,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		ON
 			hlstats_Events_Chat.serverId = hlstats_Servers.serverId
 		WHERE
-			$whereclause	
+			$whereclause
 		ORDER BY
 			$table->sort $table->sortorder,
 			$table->sort2 $table->sortorder
@@ -171,7 +173,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			$table->startitem,
 			$table->numperpage
 	");
-	
+
 	$resultCount = $db->query
 	("
 		SELECT
@@ -187,6 +189,54 @@ For support and installation notes visit http://www.hlxcommunity.com
 	");
 			
 	list($numitems) = $db->fetch_row($resultCount);
+
+	// Functions
+	function buildSearchSqlSafe($db, $search)
+	{
+		$search = trim($search);
+		if ($search === '') {
+			return "";
+		}
+
+		$len = mb_strlen($search, 'UTF-8');
+		$like_filter = $db->escape(addcslashes($search, '%_'));
+		$match_filter = $db->escape($search);
+
+		// 'MATCH' - doesn't work for text shorter than 4 characters. Fixed without editing the mysql cfg.
+		if ($len <= 3) {
+			if ($len == 1) {
+				return " AND hlstats_Events_Chat.message LIKE '%{$like_filter}%'";
+			}
+
+			return " AND (
+				hlstats_Events_Chat.message = '{$like_filter}'
+				OR hlstats_Events_Chat.message LIKE '{$like_filter} %'
+				OR hlstats_Events_Chat.message LIKE '% {$like_filter}'
+				OR hlstats_Events_Chat.message LIKE '% {$like_filter} %'
+			)";
+		}
+
+		return " AND MATCH (hlstats_Events_Chat.message) AGAINST ('{$match_filter}' IN BOOLEAN MODE)";
+	}
+
+	// Support for legacy code, it used array $_REQUEST, for _GET, and _POST?
+	// Filter arrays
+	function getChatFilterParam()
+	{
+		$retFilter = '';
+
+		$postFilter = filter_input(INPUT_POST, 'filter', FILTER_UNSAFE_RAW);
+		$getFilter = filter_input(INPUT_GET, 'filter', FILTER_UNSAFE_RAW);
+
+		if ($postFilter !== null && $postFilter !== false) {
+			$retFilter = $postFilter;
+		} elseif ($getFilter !== null && $getFilter !== false) {
+			$retFilter = $getFilter;
+		}
+
+		$retFilter = (string)$retFilter;
+		return trim($retFilter);
+	}
 	
 ?>
 <div class="block">
@@ -200,8 +250,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<input type="hidden" name="mode" value="chathistory" />
 				<input type="hidden" name="player" value="<?php echo $player; ?>" />
 				<strong>&#8226;</strong>
-				Filter: <input type="text" name="filter" value="<?php echo htmlentities($filter); ?>" /> 
+				Filter: <input type="text" name="filter" value="<?= htmlspecialchars($filter, ENT_QUOTES, 'UTF-8') ?>" />
 				<input type="submit" value="View" class="smallsubmit" />
+				<input type="button" value="Clear" class="smallsubmit" onclick="document.getElementsByName('filter')[0].value=''; this.form.submit();" />
 			</form>
 			</span>
 		</div>
