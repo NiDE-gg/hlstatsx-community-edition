@@ -224,20 +224,32 @@ class Auth
 		return;
 	}
 
-    if (!defined('IN_HLSTATS')) {
-        die('Do not access this file directly.');
-    }
-
-	// Global Server Chat History
-	$showserver = 0;
-	if (isset($_GET['server_id'])) {
-		$showserver = valid_request(strval($_GET['server_id']), true);
+	if (!defined('IN_HLSTATS')) {
+		die('Do not access this file directly.');
 	}
 
+	$checkGame = isset($game) ? $game : '';
+	$errorMsg = "";
+	if (!checkValidGame($db, $checkGame, $errorMsg)) {
+		error("{$errorMsg}");
+		die("{$errorMsg}");
+	}
+
+	// Global Server Chat History
+	$showserver = filter_input(INPUT_GET, 'server_id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'default' => 0]]);
+	if ($showserver === false) {
+		$showserver = 0;
+	}
+
+	$showServerSafeSql = $db->escape($showserver);
+	$gameSafeSql = $db->escape($checkGame);
+	$gameSafeHtml = htmlspecialchars($checkGame, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+
+	$whereclause = "";
 	if ($showserver == 0) {
-		$whereclause = "hlstats_Servers.game='$game'";
+		$whereclause = "hlstats_Servers.game='{$gameSafeSql}'";
 	} else {
-		$whereclause = "hlstats_Servers.game='$game' AND hlstats_Events_Chat.serverId=$showserver";
+		$whereclause = "hlstats_Servers.game='{$gameSafeSql}' AND hlstats_Events_Chat.serverId={$showServerSafeSql}";
 	}
 
 	$db->query
@@ -247,11 +259,11 @@ class Auth
 		FROM
 			hlstats_Games
 		WHERE
-			hlstats_Games.code = '$game'
+			hlstats_Games.code = '{$gameSafeSql}'
 	");
 
 	if ($db->num_rows() < 1) {
-        error("No such game '$game'.");
+		error("No such game '{$gameSafeHtml}'.");
 	}
 
 	list($gamename) = $db->fetch_row();
@@ -261,16 +273,16 @@ class Auth
 	pageHeader
 	(
 		array ($gamename, 'Server Chat Statistics'),
-		array ($gamename=>"%s?game=$game", 'Server Chat Statistics'=>'')
+		array ($gamename => "%s?game={$gameSafeHtml}", 'Server Chat Statistics' => '')
 	);
 
 	flush();
 
 	$servername = "(All Servers)";
-	
+
 	if ($showserver != 0)
 	{
-		$result=$db->fetch_array
+		$result = $db->fetch_array
 		(
 			$db->query
 			("
@@ -279,7 +291,7 @@ class Auth
 				FROM
 					hlstats_Servers
 				WHERE
-					hlstats_Servers.serverId = ".$db->escape($showserver)."
+					hlstats_Servers.serverId = " . $db->escape($showserver) . "
 			")
 		);
 		$servername = "(" . $result['name'] . ")";
@@ -346,12 +358,13 @@ class Auth
 
 <div class="block">
 	<?=$sectionTitle;?>
+
 	<div class="subblock">
 		<div style="float:left;">
 			<span>
 			<form method="get" action="<?php echo $g_options['scripturl']; ?>" style="margin:0px;padding:0px;">
 				<input type="hidden" name="mode" value="chat" />
-				<input type="hidden" name="game" value="<?php echo $game; ?>" />
+				<input type="hidden" name="game" value="<?=$gameSafeHtml;?>" />
 				<strong>&#8226;</strong> Show Chat from
 
 				<select name="server_id">
@@ -366,10 +379,12 @@ class Auth
 					<?php endforeach; ?>
 				</select>
 
-				Filter: <input type="text" name="filter" value="<?=eHtml($filter); ?>" />
+				Filter: <input type="text" name="filter" value="<?=eHtml($filter);?>" />
+
 				<input type="submit" value="View" class="smallsubmit" />
 			</form>
 			</span>
+
 			<?php if (!empty($delaySql)) : ?>
 				<div style="font-size:0.9em; color:#8d90a3; margin-top:10px;">
 					*Messages are delayed by <?=eHtml($delayChat);?> minutes to prevent real-time tracking.
@@ -377,6 +392,7 @@ class Auth
 			<?php endif; ?>
 		</div>
 	</div>
+
 	<div style="clear:both;padding-top:10px;"></div>
 		<?php
 			if ($showserver == 0)
@@ -467,8 +483,7 @@ class Auth
 			}
 			$whereclause2 = buildSearchSqlSafe($db, $filter);
 
-			$result = $db->query
-			("
+			$selectSql = "
 				SELECT SQL_NO_CACHE 
 					hlstats_Events_Chat.eventTime,
 					unhex(replace(hex(hlstats_Players.lastName), 'E280AE', '')) as lastName,
@@ -495,10 +510,11 @@ class Auth
 				LIMIT
 					$table->startitem,
 					$table->numperpage;
-			", true, false);
+			";
 
-			$db->query
-			("
+			$result = $db->query($selectSql, true, false);
+
+			$sqlCount = "
 				SELECT
 		 			count(*)
 				FROM
@@ -514,11 +530,13 @@ class Auth
 				WHERE
 					$whereclause $whereclause2
 				{$delaySql}
-			");
+			";
 
-			if ($db->num_rows() < 1) $numitems = 0;
-			else 
-			{
+			$db->query($sqlCount);
+
+			if ($db->num_rows() < 1) {
+				$numitems = 0;
+			} else {
 				list($numitems) = $db->fetch_row();
 			}
 			$db->free_result();	
@@ -527,7 +545,7 @@ class Auth
 		?><br /><br />
 	<div class="subblock">
 		<div style="float:right;">
-			Go to: <a href="<?php echo $g_options["scripturl"] . "?game=$game"; ?>"><?php echo $gamename; ?></a>
+			Go to: <a href="<?php echo $g_options["scripturl"] . "?game={$gameSafeHtml}"; ?>"><?php echo $gamename; ?></a>
 		</div>
 	</div>
 </div>
