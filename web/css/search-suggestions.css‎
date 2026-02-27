@@ -1,0 +1,47 @@
+.autocomplete-items
+{
+	position: absolute;
+	border-top: none;
+	z-index: 99;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: #fff;
+	max-height: 200px;
+	overflow-y: auto;
+	box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.autocomplete-loading
+{
+	background-image: url('../css/spinner.gif');
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+	background-size: 16px 16px;
+	padding-right: 20px;
+}
+
+.autocomplete-items li
+{
+	padding: 2px;
+	cursor: pointer;
+	list-style: none;
+	border-bottom: 1px solid #dfdddd;
+	margin-bottom: 0px; /* Fix old css in hlstats */
+}
+
+.autocomplete-items li:hover
+{
+	background-color: #e9e9e9;
+}
+
+.autocomplete-items li:last-child
+{
+	border-bottom: none;
+}
+
+#playersearch:focus
+{
+	outline: none;
+	box-shadow: 0 0 0 1px #007bff;
+}

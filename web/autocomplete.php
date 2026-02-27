@@ -23,9 +23,7 @@
 
 	// Filter input
 	$game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
-	$search = filter_input(INPUT_GET, 'value', FILTER_UNSAFE_RAW)
-		?: filter_input(INPUT_POST, 'value', FILTER_UNSAFE_RAW)
-		?: '';
+	$search = filter_input(INPUT_GET, 'search', FILTER_UNSAFE_RAW);
 
 	$retError = "";
 	if (!checkValidGame($db, $game, $retError)) {

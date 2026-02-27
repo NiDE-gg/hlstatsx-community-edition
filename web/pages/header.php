@@ -103,12 +103,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<link rel="stylesheet" type="text/css" href="styles/<?php echo $selectedStyle; ?>" />
 	<link rel="stylesheet" type="text/css" href="css/SqueezeBox.css" />
 	<!-- U R A SMACKHEAD -->
-<?php
-	if ($mode == 'players')
-	{
-		echo "\t<link rel=\"stylesheet\" type=\"text/css\" href=\"css/Autocompleter.css\" />\n";
-	}
-?>
+
 	<link rel="SHORTCUT ICON" href="favicon.ico" />
 	<script type="text/javascript">window.JSONBrowser = window.JSON;</script>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/mootools.js"></script>

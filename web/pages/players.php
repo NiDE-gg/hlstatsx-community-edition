@@ -112,23 +112,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 	} else {
 		$rank_type = 0;
 	}
-// Autocomplete function below implemented by KingJ. Heavy modified to use HTML request instead of JSON.
 ?>
 
 <div class="block">
 	<?php printSectionTitle('Player Rankings');	?>
 	<div class="subblock">
 		<div style="float:left;">
-			<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/Observer.js"></script>
-			<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/Autocompleter.js"></script>
-			<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/Autocompleter.Request.js"></script>
-			<script type="text/javascript">
-				document.addEvent('domready', function() {
-					new Autocompleter.Request.HTML('playersearch', 'autocomplete.php?game=<?php echo $game; ?>', {
-						'indicatorClass': 'autocompleter-loading'
-					});
-				});
-			</script>
+			<link rel="stylesheet" type="text/css" href="css/search-suggestions.css">
+			<script src="<?=INCLUDE_PATH;?>/js/search-suggestions.js"></script>
 
 			<form method="get" action="<?php echo $g_options['scripturl']; ?>" style="margin:0px;padding:0px;">
 				<input type="hidden" name="mode" value="search" />
