@@ -466,30 +466,24 @@ function getLink($url, $type = 'http://', $target = '_blank')
  * @param integer $maxlength
  * @return string Formatted email tag
  */
-function getEmailLink($email, $maxlength = 40)
+function getEmailLink(string $email, int $maxLength = 40) : string
 {
-	if (preg_match('/(.+)@(.+)/', $email, $regs))
-	{
-		if (strlen($email) > $maxlength)
-		{
-			$email_title = substr($email, 0, $maxlength - 3) . '...';
-		}
-		else
-		{
-			$email_title = $email;
-		}
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return '';
+    }
 
-		$email = str_replace('"', urlencode('"'), $email);
-		$email = str_replace('<', urlencode('<'), $email);
-		$email = str_replace('>', urlencode('>'), $email);
+    $display = $email;
+    if (mb_strlen($email, 'UTF-8') > $maxLength) {
+        $display = mb_substr($email, 0, $maxLength - 3, 'UTF-8');
+        $display .= '...';
+    }
 
-		return "<a href=\"mailto:$email\">" . htmlspecialchars($email_title, ENT_COMPAT) . '</a>';
-	}
+    $url = "mailto:{$email}";
+    $link = '<a href="' . eHtml($url) . '">';
+    $link .= eHtml($display);
+    $link .= '</a>';
 
-	else
-	{
-		return '';
-	}
+    return $link;
 }
 
 /**
