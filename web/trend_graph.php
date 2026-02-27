@@ -52,7 +52,13 @@
 		error('Database class does not exist.  Please check your config.php file for DB_TYPE');
 	}
 
-	$g_options = getOptions();
+	$container = require __DIR__ . '/bootstrap.php';
+	$optionService = $container->get(\Service\OptionService::class);
+
+	$g_options = $optionService->getAllOptions();
+	if (empty($g_options)) {
+		error('Warning: Could not find any options in the database. Check HLStats configuration.');
+	}
 	
 	$bg_color = array('red' => 90, 'green' => 90, 'blue' => 90);
 	if (isset($_GET['bgcolor']) && is_string($_GET['bgcolor'])) {

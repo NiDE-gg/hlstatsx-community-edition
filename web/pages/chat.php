@@ -228,9 +228,32 @@ class Auth
 		die('Do not access this file directly.');
 	}
 
+	use Config\DatabaseOptions;
+    use Database\PDODriver;
+    use Repository\GameRepository;
+    use Utils\Logger;
+
+    $logger = new Logger();
+
+    // Create db class
+    $dbOptions = new DatabaseOptions([
+        'host'     => DB_ADDR,
+        'user'     => DB_USER,
+        'pass'     => DB_PASS,
+        'name'     => DB_NAME,
+        'pconnect' => DB_PCONNECT,
+        'charset'  => DB_CHARSET,
+    ]);
+
+    $pdoClass = new PDODriver($dbOptions, $logger);
+    $pdo = $pdoClass->getPDO();
+
+    $gameRepo = new GameRepository($pdo, $logger);
+    $allowedGames = $gameRepo->getGameCodes();
+
 	$checkGame = isset($game) ? $game : '';
 	$errorMsg = "";
-	if (!checkValidGame($db, $checkGame, $errorMsg)) {
+	if (!checkValidGame($checkGame, $allowedGames, $errorMsg)) {
 		error("{$errorMsg}");
 		die("{$errorMsg}");
 	}

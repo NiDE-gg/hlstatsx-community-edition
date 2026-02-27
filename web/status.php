@@ -98,11 +98,14 @@ else
 	error('Database class does not exist.  Please check your config.php file for DB_TYPE');
 }
 
-$g_options = getOptions();
+$container = require __DIR__ . '/bootstrap.php';
+$optionService = $container->get(\Service\OptionService::class);
 
-if (!isset($g_options['scripturl'])) {
-	$g_options['scripturl'] = isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : getenv('PHP_SELF');
+$g_options = $optionService->getAllOptions();
+if (empty($g_options)) {
+	error('Warning: Could not find any options in the database. Check HLStats configuration.');
 }
+
 
 $g_options['scriptbase'] = str_replace('/status.php', '', $g_options['scripturl']);
 

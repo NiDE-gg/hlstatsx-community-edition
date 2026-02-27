@@ -12,6 +12,9 @@
 		{
 			error_log($text); // PHP error log
 		}
-	}
 
-?>
+        public function warning(string $text) : void
+        {
+            //error_log($text); // PHP error log
+        }
+	}

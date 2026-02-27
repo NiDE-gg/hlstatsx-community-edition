@@ -40,26 +40,7 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
-function getGamesList($db)
-{
-	static $gameCodes = null;
-	if ($gameCodes === null) {
-		$gameCodes = [];
-		$result = $db->query("SELECT code FROM hlstats_Games WHERE hidden = '0'");
-
-		if (!$result) {
-			return $gameCodes;
-		}
-
-		while ($row = $db->fetch_row($result)) {
-			$gameCodes[] = $row[0];
-		}
-	}
-
-	return $gameCodes;
-}
-
-function checkValidGame($db, $gameStr, &$retError)
+function checkValidGame(string $gameStr, array $allowedGames, ?string &$retError) : bool
 {
 	// Not object and array
 	if (!is_string($gameStr)) {
@@ -79,8 +60,7 @@ function checkValidGame($db, $gameStr, &$retError)
 		return false;
 	}
 
-	$allowedGames = getGamesList($db);
-	if (!is_array($allowedGames)) {
+	if (!is_array($allowedGames) || empty($allowedGames)) {
 		$retError = 'Failed to get list of allowed games.';
 		return false;
 	}
@@ -143,28 +123,6 @@ function getChatFilterParam()
 function eHtml($str)
 {
     return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-}
-
-/**
- * getOptions()
- * 
- * @return Array All the options from the options/perlconfig table
- */
-function getOptions()
-{
-	global $db;
-	$result = $db->query("SELECT `keyname`,`value` FROM hlstats_Options WHERE opttype >= 1");
-	while ($rowdata = $db->fetch_row($result))
-	{
-		$options[$rowdata[0]] = $rowdata[1];
-	}
-	if ( !count($options) )
-	{
-		error('Warning: Could not find any options in table <b>hlstats_Options</b>, database <b>' .
-			DB_NAME . '</b>. Check HLstats configuration.');
-	}
-	$options['MinActivity'] = $options['MinActivity'] * 86400;
-	return $options;
 }
 
 // Test if flags exists

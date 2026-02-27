@@ -5,13 +5,17 @@
     use Config\DatabaseOptions;
     use PDO;
     use PDOException;
+    use Utils\Logger;
 
     class PDODriver
     {
         private PDO $pdo;
+        private Logger $logger;
 
-        public function __construct(DatabaseOptions $options)
+        public function __construct(DatabaseOptions $options, Logger $logger)
         {
+            $this->logger = $logger;
+
             $dsn = sprintf(
                 'mysql:host=%s;dbname=%s;charset=%s',
                 $options->getHost(),
@@ -32,6 +36,7 @@
             try {
                 $this->pdo = new PDO($dsn, $options->getUser(), $options->getPass(), $driverOptions);
             } catch (PDOException $e) {
+                $this->logger->error('Database connection failed: ' . $e->getMessage());
                 die('Database connection failed: ' . $e->getMessage());
             }
         }

@@ -81,7 +81,13 @@ else
 	error('Database class does not exist.  Please check your config.php file for DB_TYPE');
 }
 
-$g_options = getOptions();
+$container = require __DIR__ . '/bootstrap.php';
+$optionService = $container->get(\Service\OptionService::class);
+
+$g_options = $optionService->getAllOptions();
+if (empty($g_options)) {
+	error('Warning: Could not find any options in the database. Check HLStats configuration.');
+}
 
 @error_reporting(E_ALL ^ E_NOTICE);
 
@@ -124,9 +130,6 @@ function f_num($number) {
 		}
 	}
 }
-
-	if (!isset($g_options['scripturl']))
-		$g_options['scripturl'] = isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : getenv('PHP_SELF');
 
 	$player_id = 0;  
 	if (isset($_GET['player_id'])) {

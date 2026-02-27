@@ -1,56 +1,66 @@
 <?php
 	// Code to autocomplete the search bar on the player list page,
 	// displays something like tooltips.
-	define('IN_HLSTATS', true);
+	declare(strict_types = 1);
+
+	const IN_HLSTATS = true;
 
 	// Load required files
 	require('config.php');
-	require(INCLUDE_PATH . '/class_db.php');
-	require(INCLUDE_PATH . '/functions.php');
 	require_once __DIR__ . '/includes/autoload.php';
+	require(INCLUDE_PATH . '/functions.php');
 
-	use Repository\PlayerRepository;
-	use Utils\Logger;
-
-	// Create db class
-	$dbClassname = 'DB_' . DB_TYPE;
-	if (!class_exists($dbClassname)) {
-		//print "Database class does not exist.  Please check your config.php file for DB_TYPE";
-		die();
-	}
-
-	$db = new $dbClassname(DB_ADDR, DB_USER, DB_PASS, DB_NAME, DB_PCONNECT);
-
-	// Filter input
-	$game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
+	// Filter search input
 	$search = filter_input(INPUT_GET, 'search', FILTER_UNSAFE_RAW);
-
-	$retError = "";
-	if (!checkValidGame($db, $game, $retError)) {
-		//print $retError;
-		die();
-	}
-
 	if (empty($search) || !is_string($search)) {
-		//print "Invalid search string.";
-		die();
+		exit;
 	}
 
 	$search = trim($search);
 	$searchLen = strlen($search);
-	if ($searchLen < 2) {
-		//print "The search string is too short.";
-		die();
+	if ($searchLen < 2 || $searchLen > 64) {
+		exit;
 	}
 
-	if ($searchLen > 64) {
-		//echo "The search string is too long.";
-		die();
-	}
+	use Config\DatabaseOptions;
+	use Database\PDODriver;
+	use Repository\PlayerRepository;
+	use Repository\GameRepository;
+	use Utils\Logger;
 
 	$logger = new Logger();
-	$playerRepo = new PlayerRepository($db, $logger);
+
+	// Create db class
+	$dbOptions = new DatabaseOptions([
+		'host'     => DB_ADDR,
+		'user'     => DB_USER,
+		'pass'     => DB_PASS,
+		'name'     => DB_NAME,
+		'pconnect' => DB_PCONNECT,
+		'charset'  => DB_CHARSET,
+	]);
+
+	$pdoClass = new PDODriver($dbOptions, $logger);
+	$pdo = $pdoClass->getPDO();
+
+	// Filter game input
+	$game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
+
+	$gameRepo = new GameRepository($pdo, $logger);
+	$allowedGames = $gameRepo->getGameCodes();
+
+	$retError = "";
+	if (!checkValidGame($game, $allowedGames, $retError)) {
+		//print $retError;
+		exit;
+	}
+
+	$playerRepo = new PlayerRepository($pdo, $logger);
 	$arrayNames = $playerRepo->getPlayerSuggestions($game, $search, 30);
+
+	if (empty($arrayNames)) {
+		exit;
+	}
 
 	$retHtml = "";
 	foreach ($arrayNames as $name) {
@@ -60,4 +70,3 @@
 	}
 
 	print $retHtml;
-?>
