@@ -1,32 +1,65 @@
 <?php
-define('IN_HLSTATS', true);
+	// Code to autocomplete the search bar on the player list page,
+	// displays something like tooltips.
+	define('IN_HLSTATS', true);
 
-// Load required files
-require('config.php');
-require(INCLUDE_PATH . '/class_db.php');
-require(INCLUDE_PATH . '/functions.php');
+	// Load required files
+	require('config.php');
+	require(INCLUDE_PATH . '/class_db.php');
+	require(INCLUDE_PATH . '/functions.php');
+	require_once __DIR__ . '/includes/autoload.php';
 
-$db_classname = 'DB_' . DB_TYPE;
-if (class_exists($db_classname)) {
-	$db = new $db_classname(DB_ADDR, DB_USER, DB_PASS, DB_NAME, DB_PCONNECT);
-} else {
-	error('Database class does not exist.  Please check your config.php file for DB_TYPE');
-}
+	use Repository\PlayerRepository;
+	use Utils\Logger;
 
-$game = valid_request($_GET['game'] ?? '');
-$search = valid_request($_POST['value'] ?? '');
-
-$game_escaped = $db->escape($game);
-$search_escaped = $db->escape($search);
- 
-if (is_string($search) && strlen($search) >= 3 && strlen($search) < 64) {
-	// Building the query
-	$sql = "SELECT hlstats_PlayerNames.name FROM hlstats_PlayerNames INNER JOIN hlstats_Players ON hlstats_PlayerNames.playerId = hlstats_Players.playerId WHERE game = '{$game_escaped}' AND name LIKE '{$search_escaped}%'";
-	$result = $db->query($sql);
-
-	while($row = $db->fetch_row($result)) {
-		print "<li class=\"playersearch\">" . $row[0] . "</li>\n";
+	// Create db class
+	$dbClassname = 'DB_' . DB_TYPE;
+	if (!class_exists($dbClassname)) {
+		//print "Database class does not exist.  Please check your config.php file for DB_TYPE";
+		die();
 	}
-}
 
+	$db = new $dbClassname(DB_ADDR, DB_USER, DB_PASS, DB_NAME, DB_PCONNECT);
+
+	// Filter input
+	$game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
+	$search = filter_input(INPUT_GET, 'value', FILTER_UNSAFE_RAW)
+		?: filter_input(INPUT_POST, 'value', FILTER_UNSAFE_RAW)
+		?: '';
+
+	$retError = "";
+	if (!checkValidGame($db, $game, $retError)) {
+		//print $retError;
+		die();
+	}
+
+	if (empty($search) || !is_string($search)) {
+		//print "Invalid search string.";
+		die();
+	}
+
+	$search = trim($search);
+	$searchLen = strlen($search);
+	if ($searchLen < 2) {
+		//print "The search string is too short.";
+		die();
+	}
+
+	if ($searchLen > 64) {
+		//echo "The search string is too long.";
+		die();
+	}
+
+	$logger = new Logger();
+	$playerRepo = new PlayerRepository($db, $logger);
+	$arrayNames = $playerRepo->getPlayerSuggestions($game, $search, 30);
+
+	$retHtml = "";
+	foreach ($arrayNames as $name) {
+		$retHtml .= '<li class="playersearch">';
+		$retHtml .= eHtml($name);
+		$retHtml .= "</li>" . "\n";
+	}
+
+	print $retHtml;
 ?>

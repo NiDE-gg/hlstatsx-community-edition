@@ -1,0 +1,59 @@
+<?php
+	namespace Repository;
+
+	use DB_mysql;
+	use Utils\Logger;
+
+	class PlayerRepository
+	{
+		private DB_mysql $db;
+		private Logger $logger;
+
+		public function __construct(DB_mysql $db, Logger $logger)
+		{
+			$this->db = $db;
+			$this->logger = $logger;
+		}
+
+		public function getPlayerSuggestions(string $game, string $search, int $limit = 30) : array
+		{
+			$limitEscaped = (int)$limit;
+			$sqlLimit = ($limitEscaped > 0) ? "LIMIT {$limitEscaped}" : "";
+
+			$gameEscaped = $this->db->escape($game);
+			$searchEscaped = $this->db->escape($search);
+
+			$sql = "
+				SELECT 
+					hlstats_PlayerNames.name 
+				FROM 
+					hlstats_PlayerNames 
+				INNER JOIN 
+					hlstats_Players 
+				ON 
+					hlstats_PlayerNames.playerId = hlstats_Players.playerId 
+				WHERE 
+					game = '{$gameEscaped}' 
+				AND 
+					name LIKE '{$searchEscaped}%'
+				{$sqlLimit}
+			";
+
+			$dbResult = $this->db->query($sql);
+			if ($dbResult === false) {
+				$this->logger->error('Query failed: ' . $sql);
+
+				return [];
+			}
+
+			$retNames = [];
+			while ($row = $this->db->fetch_row($dbResult)) {
+				$retNames[] = $row[0];
+			}
+
+			$this->db->free_result($dbResult);
+			return $retNames;
+		}
+	}
+
+?>
