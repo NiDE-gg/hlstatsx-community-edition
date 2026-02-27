@@ -241,34 +241,23 @@ class Auth
 		$showserver = 0;
 	}
 
-	$showServerSafeSql = $db->escape($showserver);
+	$showserver = (int)$showserver;
 	$gameSafeSql = $db->escape($checkGame);
 	$gameSafeHtml = htmlspecialchars($checkGame, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+	$scriptUrlSafeHtml = eHtml($g_options['scripturl']);
+	$fullUrl = $g_options['scripturl'] . '?game=' . urlencode($checkGame);
 
 	$whereclause = "";
 	if ($showserver == 0) {
 		$whereclause = "hlstats_Servers.game='{$gameSafeSql}'";
 	} else {
-		$whereclause = "hlstats_Servers.game='{$gameSafeSql}' AND hlstats_Events_Chat.serverId={$showServerSafeSql}";
+		$whereclause = "hlstats_Servers.game='{$gameSafeSql}' AND hlstats_Events_Chat.serverId={$showserver}";
 	}
 
-	$db->query
-	("
-		SELECT
-			hlstats_Games.name
-		FROM
-			hlstats_Games
-		WHERE
-			hlstats_Games.code = '{$gameSafeSql}'
-	");
-
-	if ($db->num_rows() < 1) {
+	$gamename = getGameNameByCode($db, $checkGame);
+	if ($gamename === false) {
 		error("No such game '{$gameSafeHtml}'.");
 	}
-
-	list($gamename) = $db->fetch_row();
-
-	$db->free_result();
 
 	pageHeader
 	(
@@ -280,21 +269,9 @@ class Auth
 
 	$servername = "(All Servers)";
 
-	if ($showserver != 0)
-	{
-		$result = $db->fetch_array
-		(
-			$db->query
-			("
-				SELECT
-					hlstats_Servers.name
-				FROM
-					hlstats_Servers
-				WHERE
-					hlstats_Servers.serverId = " . $db->escape($showserver) . "
-			")
-		);
-		$servername = "(" . $result['name'] . ")";
+	if ($showserver != 0) {
+		$servername = getServerNameById($db, $showserver);
+		$servername = ($servername !== null) ? "({$servername})" : "(Unknown Server)";
 	}
 
 	$delaySql = "";
@@ -312,8 +289,106 @@ class Auth
 	$pageTitle = sprintf('%s %s Server Chat Log (Last %d Days)', $gamename, $servername, $deleteDaysSafe);
 	$sectionTitle = printSectionTitle($pageTitle, false);
 
+	$columns = getChatColumns($showserver);
+	$table = new Table(
+		$columns,
+		'playerId',
+		'eventTime',
+		'lastName',
+		false,
+		50,
+		"page",
+		"sort",
+		"sortorder"
+	);
+
+	$whereclause2 = buildSearchSqlSafe($db, $filter);
+
+	$selectSql = "
+		SELECT SQL_NO_CACHE
+			hlstats_Events_Chat.eventTime,
+			unhex(replace(hex(hlstats_Players.lastName), 'E280AE', '')) as lastName,
+			IF(hlstats_Events_Chat.message_mode=2, CONCAT('(Team) ', hlstats_Events_Chat.message), IF(hlstats_Events_Chat.message_mode=3, CONCAT('(Squad) ', hlstats_Events_Chat.message), hlstats_Events_Chat.message)) AS message,
+			hlstats_Servers.name AS serverName,
+			hlstats_Events_Chat.playerId,
+			hlstats_Players.flag,
+			hlstats_Events_Chat.map
+		FROM
+			hlstats_Events_Chat
+		INNER JOIN
+			hlstats_Players
+		ON
+			hlstats_Players.playerId = hlstats_Events_Chat.playerId
+		INNER JOIN
+			hlstats_Servers
+		ON
+			hlstats_Servers.serverId = hlstats_Events_Chat.serverId
+		WHERE
+			$whereclause $whereclause2
+		{$delaySql}
+		ORDER BY
+			hlstats_Events_Chat.id $table->sortorder
+		LIMIT
+			$table->startitem,
+			$table->numperpage;
+	";
+
+	$resultMsgs = $db->query($selectSql, true, false);
+
+	$sqlCount = "
+		SELECT
+			count(*)
+		FROM
+			hlstats_Events_Chat
+		INNER JOIN
+			hlstats_Players
+		ON
+			hlstats_Players.playerId = hlstats_Events_Chat.playerId
+		INNER JOIN
+			hlstats_Servers
+		ON
+			hlstats_Servers.serverId = hlstats_Events_Chat.serverId
+		WHERE
+			$whereclause $whereclause2
+		{$delaySql}
+	";
+
+	$db->query($sqlCount);
+
+	if ($db->num_rows() < 1) {
+		$numitems = 0;
+	} else {
+		list($numitems) = $db->fetch_row();
+	}
+
+	$db->free_result();
+
 	// Functions
 	// Old limit 50
+	function getGameNameByCode($db, $game)
+	{
+		$gameEscape = $db->escape($game);
+		$sqlGames = "
+			SELECT
+				hlstats_Games.name
+			FROM
+				hlstats_Games
+			WHERE
+				hlstats_Games.code = '{$gameEscape}'
+		";
+
+		$dbResult = $db->query($sqlGames);
+
+		if (!$dbResult ||$db->num_rows($dbResult) < 1) {
+			return null;
+		}
+
+		list($name) = $db->fetch_row($dbResult);
+		$db->free_result();
+
+		return $name;
+	}
+
 	function getServersByGame($db, $game, $limit = 0)
 	{
 		$sqlLimit = "";
@@ -339,50 +414,95 @@ class Auth
 		";
 
 		$servers = [];
-		$result = $db->query($serversSql);
-		if (!$result) {
+		$dbResult = $db->query($serversSql);
+		if (!$dbResult) {
 			return $servers;
 		}
 
-		while ($row = $db->fetch_array($result)) {
+		while ($row = $db->fetch_array($dbResult)) {
 			$servers[] = [
 				'serverId' => (int)$row['serverId'],
 				'name'     => $row['name']
 			];
 		}
 
-		$db->free_result($result);
+		$db->free_result($dbResult);
 		return $servers;
+	}
+
+	function getServerNameById($db, $showServerId)
+	{
+		$showServerId = (int)$showServerId;
+		$serversSql = "
+			SELECT
+				hlstats_Servers.name
+			FROM
+				hlstats_Servers
+			WHERE
+				hlstats_Servers.serverId = {$showServerId}
+		";
+
+		$dbResult = $db->query($serversSql);
+		if ($dbResult && $db->num_rows($dbResult) > 0) {
+			$row = $db->fetch_array($dbResult);
+
+			return $row['name'];
+		}
+
+		return null;
+	}
+
+	function getChatColumns($showserver) {
+		if ($showserver == 0) {
+			return [
+				new TableColumn('eventTime', 'Date', 'width=16'),
+				new TableColumn('lastName', 'Player', 'width=17&sort=no&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')),
+				new TableColumn('message', 'Message', 'width=34&sort=no&embedlink=yes'),
+				new TableColumn('serverName', 'Server', 'width=23&sort=no'),
+				new TableColumn('map', 'Map', 'width=10&sort=no')
+			];
+		}
+
+		return [
+			new TableColumn('eventTime', 'Date', 'width=16'),
+			new TableColumn('lastName', 'Player', 'width=24&sort=no&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')),
+			new TableColumn('message', 'Message', 'width=44&sort=no&embedlink=yes'),
+			new TableColumn('map', 'Map', 'width=16&sort=no')
+		];
 	}
 ?>
 
 <div class="block">
-	<?=$sectionTitle;?>
+	<span class="fHeading">
+		&nbsp;<img src="<?=TITLE_IMAGE;?>" alt="">
+		&nbsp;<?=eHtml($pageTitle);?>
+	</span>
+	<br><br>
 
 	<div class="subblock">
 		<div style="float:left;">
 			<span>
-			<form method="get" action="<?php echo $g_options['scripturl']; ?>" style="margin:0px;padding:0px;">
-				<input type="hidden" name="mode" value="chat" />
-				<input type="hidden" name="game" value="<?=$gameSafeHtml;?>" />
-				<strong>&#8226;</strong> Show Chat from
+				<form method="get" action="<?=eHtml($g_options['scripturl']);?>" style="margin:0px;padding:0px;">
+					<input type="hidden" name="mode" value="chat" />
+					<input type="hidden" name="game" value="<?=$gameSafeHtml;?>">
+					<strong>&#8226;</strong> Show Chat from
 
-				<select name="server_id">
-					<option value="0">All Servers</option>
+					<select name="server_id">
+						<option value="0">All Servers</option>
 
-					<?php foreach($serversList as $srv) : ?>
-						<?php $selected = ($showserver == $srv['serverId']) ? 'selected' : ''; ?>
+						<?php foreach($serversList as $srv) : ?>
+							<?php $selected = ($showserver == $srv['serverId']) ? 'selected' : ''; ?>
 
-						<option value="<?=eHtml($srv['serverId']);?>" <?=$selected;?>>
-							<?=eHtml($srv['name']);?>
-						</option>
-					<?php endforeach; ?>
-				</select>
+							<option value="<?=eHtml($srv['serverId']);?>" <?=$selected;?>>
+								<?=eHtml($srv['name']);?>
+							</option>
+						<?php endforeach; ?>
+					</select>
 
-				Filter: <input type="text" name="filter" value="<?=eHtml($filter);?>" />
+					Filter: <input type="text" name="filter" value="<?=eHtml($filter);?>">
 
-				<input type="submit" value="View" class="smallsubmit" />
-			</form>
+					<input type="submit" value="View" class="smallsubmit">
+				</form>
 			</span>
 
 			<?php if (!empty($delaySql)) : ?>
@@ -394,158 +514,11 @@ class Auth
 	</div>
 
 	<div style="clear:both;padding-top:10px;"></div>
-		<?php
-			if ($showserver == 0)
-			{
-				$table = new Table(
-					array
-					(
-						new TableColumn
-						(
-							'eventTime',
-							'Date',
-							'width=16'
-						),
-						new TableColumn
-						(
-							'lastName',
-							'Player',
-							'width=17&sort=no&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')
-						),
-						new TableColumn
-						(
-							'message',
-							'Message',
-							'width=34&sort=no&embedlink=yes'
-						),
-						new TableColumn
-						(
-							'serverName',
-							'Server',
-							'width=23&sort=no'
-						),
-						new TableColumn
-						(
-							'map',
-							'Map',
-							'width=10&sort=no'
-						)
-					),
-					'playerId',
-					'eventTime',
-					'lastName',
-					false,
-					50,
-					"page",
-					"sort",
-					"sortorder"
-				);
-			}
-			else
-			{
-				$table = new Table(
-					array
-					(
-						new TableColumn
-						(
-							'eventTime',
-							'Date',
-							'width=16'
-						),
-						new TableColumn
-						(
-							'lastName',
-							'Player',
-							'width=24&sort=no&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')
-						),
-						new TableColumn
-						(
-							'message',
-							'Message',
-							'width=44&sort=no&embedlink=yes'
-						),
-						new TableColumn
-						(
-							'map',
-							'Map',
-							'width=16&sort=no'
-						)
-					),
-					'playerId',
-					'eventTime',
-					'lastName',
-					false,
-					50,
-					"page",
-					"sort",
-					"sortorder"
-				);
-			}
-			$whereclause2 = buildSearchSqlSafe($db, $filter);
-
-			$selectSql = "
-				SELECT SQL_NO_CACHE 
-					hlstats_Events_Chat.eventTime,
-					unhex(replace(hex(hlstats_Players.lastName), 'E280AE', '')) as lastName,
-					IF(hlstats_Events_Chat.message_mode=2, CONCAT('(Team) ', hlstats_Events_Chat.message), IF(hlstats_Events_Chat.message_mode=3, CONCAT('(Squad) ', hlstats_Events_Chat.message), hlstats_Events_Chat.message)) AS message,
-					hlstats_Servers.name AS serverName,
-					hlstats_Events_Chat.playerId,
-					hlstats_Players.flag,
-					hlstats_Events_Chat.map
-				FROM
-					hlstats_Events_Chat
-				INNER JOIN
-					hlstats_Players
-				ON
-					hlstats_Players.playerId = hlstats_Events_Chat.playerId
-				INNER JOIN 
-					hlstats_Servers
-				ON
-					hlstats_Servers.serverId = hlstats_Events_Chat.serverId
-				WHERE
-					$whereclause $whereclause2
-				{$delaySql}
-				ORDER BY
-					hlstats_Events_Chat.id $table->sortorder
-				LIMIT
-					$table->startitem,
-					$table->numperpage;
-			";
-
-			$result = $db->query($selectSql, true, false);
-
-			$sqlCount = "
-				SELECT
-		 			count(*)
-				FROM
-					hlstats_Events_Chat
-				INNER JOIN
-					hlstats_Players
-				ON
-					hlstats_Players.playerId = hlstats_Events_Chat.playerId
-				INNER JOIN 
-					hlstats_Servers
-				ON
-					hlstats_Servers.serverId = hlstats_Events_Chat.serverId
-				WHERE
-					$whereclause $whereclause2
-				{$delaySql}
-			";
-
-			$db->query($sqlCount);
-
-			if ($db->num_rows() < 1) {
-				$numitems = 0;
-			} else {
-				list($numitems) = $db->fetch_row();
-			}
-			$db->free_result();	
-
-			$table->draw($result, $numitems, 95);
-		?><br /><br />
+		<?php $table->draw($resultMsgs, $numitems, 95);?>
+		<br><br>
 	<div class="subblock">
 		<div style="float:right;">
-			Go to: <a href="<?php echo $g_options["scripturl"] . "?game={$gameSafeHtml}"; ?>"><?php echo $gamename; ?></a>
+			Go to: <a href="<?=eHtml($fullUrl);?>"><?=eHtml($gamename);?></a>
 		</div>
 	</div>
 </div>
