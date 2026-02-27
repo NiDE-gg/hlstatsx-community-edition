@@ -108,6 +108,19 @@ define('CHAT_DELAY_MAX_TIME', 20);
 
 define('ROOT_PATH', __DIR__);
 
+// Maximum storage time for player trend image cache (in seconds).
+// Default value: 604800 seconds = 7 days.
+define('TREND_CACHE_STORAGE_TIME', 604800);
+
+// The probability of triggering the code to clear the cache of player trend images
+// so as not to overload the disk every time you visit the site
+// (specified as a percentage from 1 to 100).
+define('TREND_CACHE_PROBABILITY', 10); // 10 %
+
+// The largest number of images in the trend cache for 1 player,
+// any images above this number will be deleted.
+define('TREND_CACHE_MAX_FILES_PER_PLAYER', 5);
+
 //define("DB_DEBUG", true);
 
 ?>

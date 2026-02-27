@@ -93,14 +93,13 @@
 	}
 
 	$params = [
-		'player' => $player,
 		'bgcolor' => $bg_color,
 		'color' => $color,
 		'last_time' => $last_time,
 	];
 
 	$cache_key = md5(serialize($params));
-	$cache_image = IMAGE_PATH . "/progress/trend_{$cache_key}.png";
+	$cache_image = IMAGE_PATH . "/progress/trend_{$player}_{$cache_key}.png";
 
 	if (file_exists($cache_image)) {
 		header('Content-type: image/png');
@@ -108,7 +107,14 @@
 
 		exit();
 	}
-	
+
+	$cacheCleaner = $container->get(\Cache\CacheCleaner::class);
+	$cacheCleaner->cleanOldTrendCache(
+		$player,
+		TREND_CACHE_STORAGE_TIME,
+		TREND_CACHE_MAX_FILES_PER_PLAYER
+	);
+
 	$Chart = new pChart(380, 200);
 	$Chart->drawBackground($bg_color['red'], $bg_color['green'], $bg_color['blue']);
 	

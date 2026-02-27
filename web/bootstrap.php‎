@@ -10,6 +10,7 @@
     use Repository\GameRepository;
     use Repository\PlayerRepository;
     use Service\OptionService;
+    use Cache\CacheCleaner;
 
     $container = new class
     {
@@ -74,6 +75,15 @@
             $c->get('pdo'),
             $c->get('logger'),
             $c->get(OptionService::class)
+        );
+    });
+
+    $container->set(CacheCleaner::class, function($c) {
+        return new CacheCleaner(
+            $c->get('logger'),
+            IMAGE_PATH . '/progress/',
+            TREND_CACHE_PROBABILITY,
+            true
         );
     });
 

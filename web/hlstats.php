@@ -145,6 +145,13 @@ if (empty($g_options)) {
 	error('Warning: Could not find any options in the database. Check HLStats configuration.');
 }
 
+$cacheCleaner = $container->get(\Cache\CacheCleaner::class);
+$deleteFiles = $cacheCleaner->cleanOldTrendCache(
+	null,
+	TREND_CACHE_STORAGE_TIME,
+	TREND_CACHE_MAX_FILES_PER_PLAYER
+);
+
 ////
 //// Main
 ////
