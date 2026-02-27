@@ -228,7 +228,7 @@ class Auth
         die('Do not access this file directly.');
     }
 
-// Global Server Chat History
+	// Global Server Chat History
 	$showserver = 0;
 	if (isset($_GET['server_id'])) {
 		$showserver = valid_request(strval($_GET['server_id']), true);
@@ -293,6 +293,52 @@ class Auth
 		$delayChatSafeSql = $db->escape($delayChat);
 		$delaySql = "AND `eventTime` <= (NOW() - INTERVAL {$delayChatSafeSql} MINUTE)";
 	}
+
+	$serversList = getServersByGame($db, $checkGame);
+	$filter = isset($_REQUEST['filter']) ? $_REQUEST['filter'] : "";
+
+	// Functions
+	// Old limit 50
+	function getServersByGame($db, $game, $limit = 0)
+	{
+		$sqlLimit = "";
+		$limit = (int)$limit;
+		if ($limit > 0) {
+			$sqlLimit = "LIMIT {$limit}";
+		}
+
+		$game = $db->escape($game);
+		$serversSql = "
+			SELECT
+				hlstats_Servers.serverId,
+				hlstats_Servers.name
+			FROM
+				hlstats_Servers
+			WHERE
+				hlstats_Servers.game = '{$game}'
+			ORDER BY
+				hlstats_Servers.sortorder,
+				hlstats_Servers.name,
+				hlstats_Servers.serverId ASC
+			{$sqlLimit}
+		";
+
+		$servers = [];
+		$result = $db->query($serversSql);
+		if (!$result) {
+			return $servers;
+		}
+
+		while ($row = $db->fetch_array($result)) {
+			$servers[] = [
+				'serverId' => (int)$row['serverId'],
+				'name'     => $row['name']
+			];
+		}
+
+		$db->free_result($result);
+		return $servers;
+	}
 ?>
 
 <div class="block">
@@ -304,6 +350,19 @@ class Auth
 				<input type="hidden" name="mode" value="chat" />
 				<input type="hidden" name="game" value="<?php echo $game; ?>" />
 				<strong>&#8226;</strong> Show Chat from
+
+				<select name="server_id">
+					<option value="0">All Servers</option>
+
+					<?php foreach($serversList as $srv) : ?>
+						<?php $selected = ($showserver == $srv['serverId']) ? 'selected' : ''; ?>
+
+						<option value="<?=eHtml($srv['serverId']);?>" <?=$selected;?>>
+							<?=eHtml($srv['name']);?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+
 				<?php
 					$result = $db->query
 					("
