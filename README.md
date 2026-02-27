@@ -1,6 +1,10 @@
-## HLstatsX : Community Edition
+## HLstatsX Community Edition
 
+### 📌 Requirements
 
+- **PHP:** version 7.4 or higher required (recommended 8.0 – 8.4).
+- **MySQL / MariaDB:** version 5.7 or higher required (recommended 8.0).
+---
 HLstatsX Community Edition is an open-source project licensed
 under GNU General Public License v2 and is a real-time stats
 and ranking for Source engine based games. HLstatsX Community
