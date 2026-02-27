@@ -120,4 +120,22 @@
 
             return $deleteFilesCount;
         }
+
+        public function clearDir() : int
+        {
+            $pattern = $this->cacheDir . "trend_*.png";
+            $files = glob($pattern);
+            if (empty($files)) {
+                return 0;
+            }
+
+            $deleteCount = 0;
+            foreach ($files as $file) {
+                if (unlink($file)) {
+                    $deleteCount++;
+                }
+            }
+
+            return $deleteCount;
+        }
     }

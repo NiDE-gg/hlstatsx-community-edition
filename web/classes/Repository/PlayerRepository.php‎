@@ -19,7 +19,43 @@
             $this->optionService = $optionService;
 		}
 
-		public function getPlayerSuggestions(string $game, string $search, int $limit = 30) : array
+        public function getPlayerSkillHistory(int $player, int $limit = 30) : ?array
+        {
+            if ($player < 1) {
+                $this->logger->error("Invalid player index {$player} passed to function getPlayerSkillHistory.");
+                return null;
+            }
+
+            $limit = max(1, $limit);
+
+            $sql = "
+                SELECT
+                    UNIX_TIMESTAMP(eventTime)
+                AS
+                    ts, skill, skill_change
+                FROM
+                    hlstats_Players_History
+                WHERE
+                    playerId = :player
+                ORDER BY eventTime DESC
+                LIMIT :limit
+            ";
+
+            try {
+                $stmt = $this->pdo->prepare($sql);
+
+                $stmt->bindValue(':player', $player, PDO::PARAM_INT);
+                $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+                $stmt->execute();
+
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                $this->logger->error('Failed to get player skill history: ' . $e->getMessage());
+                return null;
+            }
+        }
+
+		public function getPlayerSuggestions(string $game, string $search, int $limit = 30) : ?array
 		{
 			$limit = max(1, $limit);
 			$sql = "
@@ -41,16 +77,15 @@
 			try {
 				$stmt = $this->pdo->prepare($sql);
 
-				$stmt->execute([
-					':game'   => $game,
-					':search' => $search . '%',
-					':limit'  => $limit,
-				]);
+                $stmt->bindValue(':game', $game, PDO::PARAM_STR);
+                $stmt->bindValue(':search', $search . '%', PDO::PARAM_STR);
+                $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+                $stmt->execute();
 
-				return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                return $stmt->fetchAll(PDO::FETCH_COLUMN);
 			} catch (\PDOException $e) {
 				$this->logger->error('PDO Exception in getPlayerSuggestions: ' . $e->getMessage());
-				return [];
+				return null;
 			}
 		}
 

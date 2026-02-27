@@ -548,11 +548,30 @@ function printSectionTitle($title, $echo = true)
 }
 
 /**
- * Convert colors Usage:  color::hex2rgb("FFFFFF")
- * 
- * @author      Tim Johannessen <root@it.dk>
- * @version    1.0.1
+ * Convert hex color to RGB array.
+ *
+ * @param string $hexVal Color in hex format (e.g. "FF00CC" or "#FF00CC").
+ * @return array{red: int, green: int, blue: int}|null Associative array or null on failure.
  */
+function tryHexToRgb($hexVal = '') : ?array
+{
+	$hexVal = ltrim($hexVal, '#');
+
+	if (!preg_match('/^[0-9A-F]{6}$/i', $hexVal)) {
+		return null;
+	}
+
+	$parts = str_split($hexVal, 2);
+	$rgb = array_map('hexdec', $parts);
+
+	return [
+		'red'   => $rgb[0],
+		'green' => $rgb[1],
+		'blue'  => $rgb[2],
+	];
+}
+
+// Deprecated function
 function hex2rgb($hexVal = '')
 {
 	$hexVal = preg_replace('[^a-fA-F0-9]', '', $hexVal);
