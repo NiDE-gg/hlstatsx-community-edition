@@ -307,18 +307,15 @@ class Auth
 	$selectSql = "
 		SELECT SQL_NO_CACHE
 			hlstats_Events_Chat.eventTime,
-			unhex(replace(hex(hlstats_Players.lastName), 'E280AE', '')) as lastName,
-			IF(hlstats_Events_Chat.message_mode=2, CONCAT('(Team) ', hlstats_Events_Chat.message), IF(hlstats_Events_Chat.message_mode=3, CONCAT('(Squad) ', hlstats_Events_Chat.message), hlstats_Events_Chat.message)) AS message,
+			hlstats_Players.lastName as lastName,
+			IF(hlstats_Events_Chat.message_mode=2, CONCAT('(Team) ', hlstats_Events_Chat.message),
+			IF(hlstats_Events_Chat.message_mode=3, CONCAT('(Squad) ', hlstats_Events_Chat.message), hlstats_Events_Chat.message)) AS message,
 			hlstats_Servers.name AS serverName,
 			hlstats_Events_Chat.playerId,
 			hlstats_Players.flag,
 			hlstats_Events_Chat.map
 		FROM
 			hlstats_Events_Chat
-		INNER JOIN
-			hlstats_Players
-		ON
-			hlstats_Players.playerId = hlstats_Events_Chat.playerId
 		INNER JOIN
 			hlstats_Servers
 		ON
