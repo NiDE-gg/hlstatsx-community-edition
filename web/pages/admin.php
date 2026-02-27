@@ -331,7 +331,7 @@ class EditList
 
 		$okcols = 0;
 		foreach ($this->columns as $col) {
-			$value = (!empty($_POST["new_$col->name"])) ? mystripslashes($_POST["new_$col->name"]) : '';
+			$value = (!empty($_POST["new_$col->name"])) ? $_POST["new_$col->name"] : '';
 			//  legacy code that should have never been here. these should never be html-escaped in the db.
 			//  if there's a problem with removing this, it needs to be fixed on the web/display end
 			//  -psychonic
@@ -434,7 +434,7 @@ class EditList
 						continue;
 					}
 
-					$value = (!empty($_POST[$row . "_" . $col->name])) ? mystripslashes($_POST[$row . "_" . $col->name]) : null;
+					$value = (!empty($_POST[$row . "_" . $col->name])) ? $_POST[$row . "_" . $col->name] : null;
 					
 					//  legacy code that should have never been here. these should never be html-escaped in the db.
 					//  if there's a problem with removing this, it needs to be fixed on the web/display end
@@ -628,13 +628,13 @@ class EditList
 				$keyval = 'new';
 				$rowdata[$col->name] = $rowdata["new_$col->name"];
 				if ($stripslashes)
-					$rowdata[$col->name] = mystripslashes($rowdata[$col->name]);
+					$rowdata[$col->name] = $rowdata[$col->name];
 			}
 			else
 			{
 				$keyval = $rowdata[$this->keycol];
 				if ($stripslashes)
-					$keyval = mystripslashes($keyval);
+					$keyval = $keyval;
 
 			}
 

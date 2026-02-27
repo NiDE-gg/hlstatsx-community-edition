@@ -550,7 +550,7 @@ class TableColumn
 		{
 			if (isset($attr_vars[$a]))
 			{
-				$this->$a = mystripslashes($attr_vars[$a]);
+				$this->$a = $attr_vars[$a];
 			}
 		}
 

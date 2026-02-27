@@ -63,14 +63,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 					$db->escape(clean_data($_POST['server_name'])),
 					$db->escape($selGame),
 					$db->escape(clean_data($_POST['public_address'])),
-					$db->escape(mystripslashes($_POST['server_rcon']))
+					$db->escape($_POST['server_rcon'])
 				));
 				$insert_id = $db->insert_id();
 				$db->query("INSERT INTO `hlstats_Servers_Config` (`serverId`, `parameter`, `value`)
 						SELECT '" . $insert_id . "', `parameter`, `value`
-						FROM `hlstats_Mods_Defaults` WHERE `code` = '" . $db->escape(mystripslashes($_POST['game_mod'])) . "';");
+						FROM `hlstats_Mods_Defaults` WHERE `code` = '" . $db->escape($_POST['game_mod']) . "';");
 				$db->query("INSERT INTO `hlstats_Servers_Config` (`serverId`, `parameter`, `value`) VALUES
-						('" . $insert_id . "', 'Mod', '" . $db->escape(mystripslashes($_POST['game_mod'])) . "');");
+						('" . $insert_id . "', 'Mod', '" . $db->escape($_POST['game_mod']) . "');");
 				$db->query("INSERT INTO `hlstats_Servers_Config` (`serverId`, `parameter`, `value`)
 						SELECT '" . $insert_id . "', `parameter`, `value`
 						FROM `hlstats_Games_Defaults` WHERE `code` = '" . $db->escape($game) . "'
@@ -90,7 +90,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	function clean_data($data)
 	{
-		return trim(htmlspecialchars(mystripslashes($data)));
+		return trim(htmlspecialchars($data));
 	}
 
     $server_ip = (!empty($_POST['server_address'])) ? clean_data($_POST['server_address']) : "";
