@@ -139,6 +139,8 @@ else
 
 $g_options = getOptions();
 
+require_once __DIR__ . '/includes/autoload.php';
+
 if (!isset($g_options['scripturl'])) {
 	$g_options['scripturl'] = isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : getenv('PHP_SELF');
 }
