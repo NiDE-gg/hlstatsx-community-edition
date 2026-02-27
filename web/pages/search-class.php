@@ -106,7 +106,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			}
 		}
 
-		function drawForm($getvars = array(), $searchtypes = -1)
+		function drawForm ($getvars = array(), $searchtypes = -1)
 		{
 			global $g_options, $db;
 
@@ -133,59 +133,62 @@ For support and installation notes visit http://www.hlxcommunity.com
 					echo '<input type="hidden" name="'.htmlspecialchars($var, ENT_QUOTES).'" value="'.htmlspecialchars($value, ENT_QUOTES)."\" />\n";
 				}
 			?>
-			<table class="data-table" style="width:30%;">
-				<tr style="vertical-align:middle;" class="bg1">
-					<td nowrap="nowrap" style="width:30%;">Search For:</td>
-					<td style="width:70%;">
-						<input type="text" name="q" size="20" maxlength="128" value="<?php echo htmlspecialchars($this->query, ENT_QUOTES); ?>" style="width:300px;" placeholder="Enter Name, Steam2, Steam3, or Steam64 ID" />
-					</td>
-				</tr>
-				<tr style="vertical-align:middle;" class="bg1">
-					<td nowrap="nowrap" style="width:30%;">In:</td>
-					<td style="width:70%;">
-						<?php
-							echo getSelect('st', $searchtypes, $this->type);
-						?>
-					</td>
-				</tr>
-				<tr style="vertical-align:middle;" class="bg1">
-					<td nowrap="nowrap" style="width:30%;">Game:</td>
-					<td style="width:70%;">
-						<?php
-							$games = array();
-							$games[''] = '(All)';
-							$result = $db->query("
-								SELECT
-									hlstats_Games.code,
-									hlstats_Games.name
-								FROM
-									hlstats_Games
-								WHERE
-									hlstats_Games.hidden = '0'
-								ORDER BY
-									hlstats_Games.name
-							");
-							while ($rowdata = $db->fetch_row($result))
-							{
-								$games[$rowdata[0]] = $rowdata[1];
-							}
-							echo getSelect('game', $games, $this->game);
-						?>
-					</td>
-				</tr>
-				<tr class="bg1">
-					<td colspan="3" style="text-align:center;">
-						<input type="submit" value=" Find Now " class="submit" />
-					</td> 
-				</tr>
-			</table>
+					<table class="data-table" style="width:30%;">
+						<tr valign="middle" class="bg1">
+							<td nowrap="nowrap" style="width:30%;">Search For:</td>
+							<td style="width:70%;">
+								<input type="text" name="q" size="20" maxlength="128" value="<?php echo htmlspecialchars($this->query, ENT_QUOTES); ?>" style="width:300px;" placeholder="Enter Name, Steam2, Steam3, or Steam64 ID" />
+							</td>
+						</tr>
+						<tr valign="middle" class="bg1">
+							<td nowrap="nowrap" style="width:30%;">In:</td>
+							<td style="width:70%;">
+								<?php
+									echo getSelect('st', $searchtypes, $this->type);
+								?>
+							</td>
+						</tr>
+						<tr valign="middle" class="bg1">
+							<td nowrap="nowrap" style="width:30%;">Game:</td>
+							<td style="width:70%;">
+								<?php
+									$games = array ();
+									$games[''] = '(All)';
+									$result = $db->query("
+										SELECT
+											hlstats_Games.code,
+											hlstats_Games.name
+										FROM
+											hlstats_Games
+										WHERE
+											hlstats_Games.hidden = '0'
+										ORDER BY
+											hlstats_Games.name
+									");
+									while ($rowdata = $db->fetch_row($result))
+									{
+										$games[$rowdata[0]] = $rowdata[1];
+									}
+									echo getSelect('game', $games, $this->game);
+								?>
+							</td>
+						</tr>
+						<tr class="bg1">
+							<td colspan="3" style="text-align:center;">
+								<input type="submit" value=" Find Now " class="submit" />
+							</td> 
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
 		</form>
 	</div>
 </div><br /><br />
 
 <?php
 		}
-		function drawResults($link_player = -1, $link_clan = -1)
+		function drawResults ($link_player=-1, $link_clan=-1)
 		{
 			global $g_options, $db;
 			if ($link_player == -1) $link_player = "mode=playerinfo&amp;player=%k";
@@ -193,24 +196,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 
 <div class="block">
-	<a id="results"></a>
+	<a name="results"></a>
 	<?php printSectionTitle('Search Results'); ?>
 	<br /><br />
 
 <?php
-			if (empty($this->query))
-			{
-				echo "Search query cannot be empty.";
-				return;
-			}
-
-			if ($this->type != 'uniqueid') // Always remove the SteamID prefix for non-uniqueid searches
-			{
-				$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
-				$sr_query = preg_replace('/\s/', '%', $sr_query);
-			}
-
+			$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
 			$sr_query = $db->escape($sr_query);
+			$sr_query = preg_replace('/\s/', '%', $sr_query);
 			if ($this->type == 'player')
 			{
 				$table = new Table

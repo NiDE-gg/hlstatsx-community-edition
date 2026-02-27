@@ -20,7 +20,7 @@
         public function getOptionChoices(string $keyName): ?array
         {
             $sql = "
-                SELECT
+                SELECT 
                     `value`
                 FROM
                     `hlstats_Options_Choices`
