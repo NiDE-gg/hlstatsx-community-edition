@@ -203,26 +203,29 @@ function timestamp_to_str($seconds)
  * @param bool $exit
  * @return void
  */
-function error($message, $exit = true)
+function error(string $message, bool $exit = true) : void
 {
-	global $g_options;
-?>
-	<table border="1" cellspacing="0" cellpadding="5">
-		<tr>
-			<td class="errorhead">ERROR</td>
-		</tr>
-		<td class="errortext">
-			<?php
-				if (isset($_SESSION['loggedin'])) {
-					echo $message;
-				} else {
-					echo 'Oops, there is a problem (╯°□°）╯︵ ┻━┻ <br />If you see this message, please report it to Administrators.';
-				}
-			?>
-		</td>
-	</table>
-<?php if ($exit)
-		exit;
+    $html = '<table style="border:1px solid red;padding:1em;margin:1em;background:#fee;">';
+
+    $html .= '<thead style="text-align:center; color:#673636;">';
+    $html .= '<tr>';
+    $html .= '<td class="errorhead">ERROR</td>';
+    $html .= '</tr>';
+    $html .= '</thead>';
+
+    $html .= '<tbody>';
+    $html .= '<tr>';
+    $html .= '<td class="errortext">' . eHtml($message) . '</td>';
+    $html .= '</tr>';
+    $html .= '</tbody>';
+
+    $html .= '</table>';
+
+    echo $html;
+
+    if ($exit) {
+        exit;
+    }
 }
 
 
@@ -245,21 +248,16 @@ function error($message, $exit = true)
  */
 function makeQueryString($key, $value, $notkeys = array())
 {
-	if (!is_array($notkeys)) {
-		$notkeys = array();
+	$params = $_GET;
+	$params[$key] = $value;
+
+	// We remove disabled keys (for example, "page" when changing sorting)
+	foreach ($notkeys as $remove) {
+		unset($params[$remove]);
 	}
 
-	$querystring = '';
-	foreach ($_GET as $k => $v) {
-		$v = valid_request($v, false);
-		if ($k && $k != $key && !in_array($k, $notkeys)) {
-			$querystring .= urlencode($k) . '=' . rawurlencode($v) . '&amp;';
-		}
-	}
-
-	$querystring .= urlencode($key) . '=' . urlencode($value);
-
-	return $querystring;
+	// Building a query string
+	return http_build_query($params);
 }
 
 //
@@ -280,8 +278,6 @@ function pageHeader($title = '', $location = '')
 	global $db, $g_options;
 	if ( defined('PAGE') && PAGE == 'HLSTATS' )
 		include (PAGE_PATH . '/header.php');
-	elseif ( defined('PAGE') && PAGE == 'INGAME' )
-		include (PAGE_PATH . '/ingame/header.php');
 }
 
 
@@ -301,8 +297,6 @@ function pageFooter()
 	global $g_options;
 	if ( defined('PAGE') && PAGE == 'HLSTATS' )
 		include (PAGE_PATH . '/footer.php');
-	elseif ( defined('PAGE') && PAGE == 'INGAME' )
-		include (PAGE_PATH . '/ingame/footer.php');
 }
 
 /**
@@ -502,10 +496,9 @@ function getEmailLink($email, $maxlength = 40)
  * getImage()
  * 
  * @param string $filename
- * @param string $externalURL Optional external URL to check
  * @return mixed Either the image if exists, or false otherwise
  */
-function getImage($filename, $externalURL = null)
+function getImage($filename)
 {
 	preg_match('/^(.*\/)(.+)$/', $filename, $matches);
 	$relpath = $matches[1];
@@ -514,48 +507,31 @@ function getImage($filename, $externalURL = null)
 	$path = IMAGE_PATH . $filename;
 	$url = IMAGE_PATH . $relpath . rawurlencode($realfilename);
 
-	if ($externalURL !== null) {
-		$externalURL = str_replace('$map', $realfilename, $externalURL);
-		$externalURL = str_replace('$map', $realfilename, $externalURL);
-
-		if (checkRemoteFileExists("$externalURL")) {
-			$size = getImageSize($externalURL);
-
-			return array('url' => $externalURL, 'path' => $externalURL, 'width' => $size[0], 'height' => $size[1], 
-				'size' => $size[3]);
-		}
-	}
-
-	if (file_exists($path . '.png')) {
+	// check if image exists
+	if (file_exists($path . '.png'))
+	{
 		$ext = 'png';
-	} elseif (file_exists($path . '.gif')) {
+	} elseif (file_exists($path . '.gif'))
+	{
 		$ext = 'gif';
-	} elseif (file_exists($path . '.jpg')) {
+	} elseif (file_exists($path . '.jpg'))
+	{
 		$ext = 'jpg';
-	} else {
+	}
+	else
+	{
 		$ext = '';
 	}
 
-	if ($ext) {
+	if ($ext)
+	{
 		$size = getImageSize("$path.$ext");
 
-		return array('url' => "$url.$ext", 'path' => "$path.$ext", 'width' => $size[0], 'height' => $size[1], 
+		return array('url' => "$url.$ext", 'path' => "$path.$ext", 'width' => $size[0], 'height' => $size[1],
 			'size' => $size[3]);
 	}
 
-	return false;
-}
-
-/**
- * Checks if a remote file exists at the given URL
- * 
- * @param string $url
- * @return bool True if the file exists, false otherwise
- */
-function checkRemoteFileExists($url)
-{
-	$headers = @get_headers($url);
-	return $headers && strpos($headers[0], '200') !== false;
+    return false;
 }
 
 function getRealGame($game)
@@ -620,29 +596,6 @@ function get_player_rank($playerdata)
 	$rank++;
 
 	return $rank;
-}
-
-if (!function_exists('file_get_contents')) {
-      function file_get_contents($filename, $incpath = false, $resource_context = null)
-      {
-          if (false === $fh = fopen($filename, 'rb', $incpath)) {
-              trigger_error('file_get_contents() failed to open stream: No such file or directory', E_USER_WARNING);
-              return false;
-          }
-  
-          clearstatcache();
-          if ($fsize = @filesize($filename)) {
-              $data = fread($fh, $fsize);
-          } else {
-              $data = '';
-              while (!feof($fh)) {
-                  $data .= fread($fh, 8192);
-              }
-          }
-  
-          fclose($fh);
-          return $data;
-      }
 }
 
 /**
