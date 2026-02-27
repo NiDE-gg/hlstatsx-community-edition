@@ -24,7 +24,7 @@
 			$searchEscaped = $this->db->escape($search);
 
 			$sql = "
-				SELECT 
+				SELECT DISTINCT
 					hlstats_PlayerNames.name 
 				FROM 
 					hlstats_PlayerNames 
