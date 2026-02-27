@@ -887,7 +887,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Ribbons.game = '$game'
 			AND
 			(
-				ISNULL(hlstats_Players_Ribbons.playerId)
+				hlstats_Players_Ribbons.playerId IS NOT NULL
 				OR hlstats_Players_Ribbons.playerId = ".$playerdata['playerId']."
 			)
 		ORDER BY
@@ -896,6 +896,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Ribbons.special,
 			hlstats_Ribbons.awardCount DESC
 	");
+
 	$ribbonList = '';
 	$lastImage = '';
 	$awards_done = array ();
