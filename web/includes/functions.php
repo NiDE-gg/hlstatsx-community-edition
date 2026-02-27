@@ -532,14 +532,6 @@ function getImage($filename)
     return false;
 }
 
-function getRealGame($game)
-{
-	global $db;
-	$result = $db->query("SELECT realgame from hlstats_Games WHERE code='$game'");
-	list($realgame) = $db->fetch_row($result);
-	return $realgame;
-}
-
 function printSectionTitle($title, $echo = true)
 {
 	$html = '<span class="fHeading">';

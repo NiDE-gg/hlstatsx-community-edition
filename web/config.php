@@ -106,6 +106,8 @@ define('GOOGLE_MAPS_API_KEY', "");
 define('CHAT_DELAY_TIME', 0);
 define('CHAT_DELAY_MAX_TIME', 20);
 
+define('ROOT_PATH', __DIR__);
+
 //define("DB_DEBUG", true);
 
 ?>

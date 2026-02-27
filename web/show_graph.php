@@ -76,7 +76,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		error('Database class does not exist.  Please check your config.php file for DB_TYPE');
 	}
 
-	$container = require __DIR__ . '/bootstrap.php';
+	$container = require ROOT_PATH . '/bootstrap.php';
 	$optionService = $container->get(\Service\OptionService::class);
 
 	$g_options = $optionService->getAllOptions();

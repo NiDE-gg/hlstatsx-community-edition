@@ -43,7 +43,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 	if ($auth->userdata["acclevel"] < 80) {
         die ("Access denied!");
 	}
-	
+
+    $container = require ROOT_PATH . '/bootstrap.php';
+    $gameRepo = $container->get(\Repository\GameRepository::class);
+    $realgame = $gameRepo->getGameByCode($gamecode, 'realgame');
+
     function delete_server($server)
     {
     	global $db;
@@ -52,12 +56,13 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 	
 	$edlist = new EditList("serverId", "hlstats_Servers", "server",true,true,"serversettings", 'delete_server');
+
 	$edlist->columns[] = new EditListColumn("address", "IP Address", 15, true, "ipaddress", "", 15);
 	$edlist->columns[] = new EditListColumn("port", "Port", 5, true, "text", "27015", 5);
 	$edlist->columns[] = new EditListColumn("name", "Server Name", 35, true, "text", "", 255);
 	$edlist->columns[] = new EditListColumn("rcon_password", "Rcon Password", 10, false, "password", "", 128);
 	$edlist->columns[] = new EditListColumn("publicaddress", "Public Address", 20, false, "text", "", 128);
-	$edlist->columns[] = new EditListColumn("game", "Game", 20, true, "select", "hlstats_Games.name/code/realgame='".getRealGame($gamecode)."'");
+	$edlist->columns[] = new EditListColumn("game", "Game", 20, true, "select", "hlstats_Games.name/code/realgame='".$realgame."'");
 	$edlist->columns[] = new EditListColumn("sortorder", "Sort Order", 2, true, "text", "", 255);
 	
 	if ($_POST)
@@ -97,8 +102,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 
 <table width="75%" border="0" cellspacing="0" cellpadding="0">
-<tr>
-	<td align="center"><input type="submit" value="  Apply  " class="submit"></td>
-</tr>
+    <tr>
+        <td align="center"><input type="submit" value="  Apply  " class="submit"></td>
+    </tr>
 </table>
-

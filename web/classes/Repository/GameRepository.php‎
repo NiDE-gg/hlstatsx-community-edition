@@ -48,11 +48,18 @@
             return $gameCodes;
         }
 
-        public function getGameNameByCode($gameCode) : ?string
+        public function getGameByCode(string $gameCode, string $field) : ?string
         {
+            static $allowedFields = ['name', 'realgame'];
+
+            if (!in_array($field, $allowedFields, true)) {
+                $this->logger->error("Invalid field '{$field}' passed to function getGameByCode.");
+                return null;
+            }
+
             $sql = "
                 SELECT
-                    hlstats_Games.name
+                    `{$field}`
                 FROM
                     hlstats_Games
                 WHERE
@@ -66,13 +73,13 @@
                 $name = $stmt->fetchColumn();
 
                 if ($name === false) {
-                    $this->logger->warning("Game with code '$gameCode' not found.");
+                    $this->logger->warning("Game with code '{$gameCode}' not found.");
                     return null;
                 }
 
                 return $name;
             } catch (PDOException $e) {
-                $this->logger->error("Failed to fetch game name for code '$gameCode': " . $e->getMessage());
+                $this->logger->error("Failed to fetch field '{$field}' for code '{$gameCode}': " . $e->getMessage());
                 return null;
             }
         }

@@ -7,6 +7,7 @@
     use Database\PDODriver;
     use Utils\Logger;
     use Repository\OptionsRepository;
+    use Repository\GameRepository;
     use Service\OptionService;
 
     $container = new class
@@ -61,6 +62,10 @@
             $c->get('logger'),
             $defaultScriptUrl
         );
+    });
+
+    $container->set(GameRepository::class, function($c) {
+        return new GameRepository($c->get('pdo'), $c->get('logger'));
     });
 
     return $container;

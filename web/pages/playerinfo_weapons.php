@@ -39,9 +39,10 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	flush();
+	$container = require ROOT_PATH . '/bootstrap.php';
+    $gameRepo = $container->get(\Repository\GameRepository::class);
+    $realgame = $gameRepo->getGameByCode($game, 'realgame');
 
-	$realgame = getRealGame($game);
 	$result = $db->query("
 		SELECT
 			hlstats_Weapons.code,

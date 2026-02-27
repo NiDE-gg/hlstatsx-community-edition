@@ -39,11 +39,11 @@ For support and installation notes visit http://www.hlxcommunity.com
     if (!defined('IN_HLSTATS')) {
         die('Do not access this file directly.');
     }
-	
-	flush();
-	
-	$realgame = getRealGame($game);
-	
+
+    $container = require ROOT_PATH . '/bootstrap.php';
+    $gameRepo = $container->get(\Repository\GameRepository::class);
+    $realgame = $gameRepo->getGameByCode($game, 'realgame');
+
 	$result  = $db->query("SELECT `code`,`name` FROM hlstats_Weapons WHERE game='$game'");
 	while ($rowdata = $db->fetch_row($result)) {
 		$code = $rowdata[0];
