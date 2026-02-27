@@ -309,8 +309,8 @@ class Auth
 	$filter = getChatFilterParam();
 
 	$deleteDaysSafe = isset($g_options['DeleteDays']) ? (int)$g_options['DeleteDays'] : 30;
-	$pageTitle = sprintf('%s %s Server Chat Log (Last %d Days)', eHtml($gamename), eHtml($servername), $deleteDaysSafe);
-	$sectionTitle = printSectionTitle($pageTitle);
+	$pageTitle = sprintf('%s %s Server Chat Log (Last %d Days)', $gamename, $servername, $deleteDaysSafe);
+	$sectionTitle = printSectionTitle($pageTitle, false);
 
 	// Functions
 	// Old limit 50

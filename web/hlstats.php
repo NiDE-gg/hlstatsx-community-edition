@@ -38,6 +38,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 define('IN_HLSTATS', true);
 require('config.php');
+
+define('TITLE_IMAGE', IMAGE_PATH . "/downarrow.gif");
+
 $historical_cache=0;
 if(defined('HISTORICAL_CACHE'))
 {

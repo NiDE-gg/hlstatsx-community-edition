@@ -197,7 +197,7 @@
 
 	$deleteDaysSafe = isset($g_options['DeleteDays']) ? (int)$g_options['DeleteDays'] : 30;
 	$pageTitle = sprintf('Player Chat History (Last %d Days)', $deleteDaysSafe);
-	$sectionTitle = printSectionTitle($pageTitle);
+	$sectionTitle = printSectionTitle($pageTitle, false);
 
 	$playerInfoUrl = $urlSafe . "?mode=playerinfo&amp;player={$player}";
 ?>

@@ -608,9 +608,19 @@ function getRealGame($game)
 	return $realgame;
 }
 
-function printSectionTitle($title)
+function printSectionTitle($title, $echo = true)
 {
-	echo '<span class="fHeading">&nbsp;<img src="'.IMAGE_PATH."/downarrow.gif\" alt=\"\" />&nbsp;$title</span><br /><br />\n";
+	$html = '<span class="fHeading">';
+	$html .= '&nbsp;<img src="' . TITLE_IMAGE . '" alt="">';
+	$html .= '&nbsp;' . eHtml($title);
+	$html .= '</span>';
+	$html .= '<br><br>';
+
+	if (!$echo) {
+		return $html;
+	}
+
+	echo $html;
 }
 
 function getStyleText($style)
