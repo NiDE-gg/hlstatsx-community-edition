@@ -416,31 +416,38 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td style="width:45%;">Rank:</td>
 					<td style="width:55%;" colspan="2">
 						<?php
-							if (($playerdata['activity'] > 0) && ($playerdata['hideranking'] == 0))
-							{
-								$rank = get_player_rank($playerdata);
-							}
-							else
-							{
-								if ($playerdata['hideranking'] == 1)
-								{
+							$rank = 'Unknown';
+								if ($playerdata['activity'] > 0 && $playerdata['hideranking'] == 0)  {
+                                $plGame = $playerdata['game'];
+                                $rankType = $g_options['rankingtype'];
+                                $plValue = $playerdata[$rankType];
+                                $plKills = $playerdata['kills'];
+                                $playerDeaths = $playerdata['deaths'];
+
+                                $rank = get_player_rank(
+                                    $db,
+                                    $plGame,
+                                    $rankType,
+                                    $plValue,
+                                    $plKills,
+                                    $playerDeaths
+                                );
+
+                                if (is_null($rank)) {
+                                    $rank = 'Unknown';
+                                }
+							} else {
+								if ($playerdata['hideranking'] == 1) {
 									$rank = "Hidden";
-								}
-								elseif ($playerdata['hideranking'] == 2)
-								{
+								} elseif ($playerdata['hideranking'] == 2) {
 									$rank = "<span style=\"color:red;\">Banned</span>";
-								}
-								else
-								{
+								} else {
 									$rank = 'Not active';
 								}
 							} 
-							if (is_numeric($rank))
-							{
+							if (is_numeric($rank)) {
 								echo '<b>' . number_format($rank) . '</b>';
-							}
-							else
-							{
+							} else {
 								echo "<b> $rank</b>";
 							}
 						?>

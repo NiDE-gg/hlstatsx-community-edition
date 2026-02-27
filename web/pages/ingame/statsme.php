@@ -166,18 +166,39 @@ For support and installation notes visit http://www.hlxcommunity.com
 		</tr>
 		<tr class="bg1">
 			<td style="width:45%;" class="fSmall">Rank:</td>
-			<td colspan="2" style="width:55%;" class="fSmall"><?php
-				if ($playerdata['activity'] > 0) {            
-					$rank = get_player_rank($playerdata);
-				} else {
-					$rank = 'Not active';
-				}
+			<td colspan="2" style="width:55%;" class="fSmall">
+                <?php
+                    $rank = 'Unknown';
 
-				if (is_numeric($rank))
-					echo '<strong>' . number_format($rank) . '</strong>';
-				else
-					echo "<strong>$rank</strong>";
-			?></td>
+                    if ($playerdata['activity'] > 0) {
+                        $plGame = $playerdata['game'];
+                        $rankType = $g_options['rankingtype'];
+                        $plValue = $playerdata[$rankType];
+                        $plKills = $playerdata['kills'];
+                        $playerDeaths = $playerdata['deaths'];
+
+                        $rank = get_player_rank(
+                            $db,
+                            $plGame,
+                            $rankType,
+                            $plValue,
+                            $plKills,
+                            $playerDeaths
+                        );
+
+                        if (is_null($rank)) {
+                            $rank = 'Unknown';
+                        }
+                    } else {
+                        $rank = 'Not active';
+                    }
+
+                    if (is_numeric($rank))
+                        echo '<strong>' . number_format($rank) . '</strong>';
+                    else
+                        echo "<strong>$rank</strong>";
+                ?>
+            </td>
 		</tr>
 		<tr class="bg2">
 			<td class="fSmall">Points:</td>

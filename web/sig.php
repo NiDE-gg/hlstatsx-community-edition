@@ -267,15 +267,35 @@ if ($player_id > 0) {
 	$pl_count = $db->fetch_array();
 	$db->free_result();
 
-	if (($playerdata['activity'] > 0) && ($playerdata['hideranking'] == 0)) {
-		$rank = get_player_rank($playerdata);
+	$rank = 'Unknown';
+
+	if ($playerdata['activity'] > 0 && $playerdata['hideranking'] == 0) {
+		$plGame = $playerdata['game'];
+		$rankType = $g_options['rankingtype'];
+		$plValue = $playerdata[$rankType];
+		$plKills = $playerdata['kills'];
+		$playerDeaths = $playerdata['deaths'];
+
+		$rank = get_player_rank(
+			$db,
+			$plGame,
+			$rankType,
+			$plValue,
+			$plKills,
+			$playerDeaths
+		);
+
+		if (is_null($rank)) {
+			$rank = 'Unknown';
+		}
 	} else {
-		if ($playerdata['hideranking'] == 1)
+		if ($playerdata['hideranking'] == 1) {
 			$rank = 'Hidden';
-		elseif ($playerdata['hideranking'] == 2)
+		} elseif ($playerdata['hideranking'] == 2) {
 			$rank = 'Banned';
-		else
+		} else {
 			$rank = 'Not active';
+		}
 	}
 
 	if ($playerdata['activity'] == -1)

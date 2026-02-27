@@ -557,35 +557,60 @@ function getJSText($js)
 	return "\t<script type=\"text/javascript\" src=\"".INCLUDE_PATH."/js/$js.js\"></script> \n";
 }
 
-function get_player_rank($playerdata)
+// :game = $playerdata['game'];
+// $rankingType = $g_options['rankingtype'];
+// $playerDeaths = $playerdata['deaths'];
+// $playerValue = $playerdata[$rankingType]
+// $playerKills = $playerdata['kills']
+function get_player_rank(DB_mysql $db, string $game, string $rankingType, int $playerPoints, int $playerKills, int $playerDeaths) : ?int
 {
-	global $db, $g_options;
-	
-	$rank = 0;
-	$tempdeaths = $playerdata['deaths'];
-	if ($tempdeaths == 0)
-		$tempdeaths = 1;
+    $allowedRankingType = ['kills', 'skill'];
+    if (!in_array($rankingType, $allowedRankingType, true)) {
+        return null;
+    }
 
-	$query = "
-		SELECT
-			COUNT(*)
-		FROM
-			hlstats_Players
-		WHERE
-			game='".$playerdata['game']."'
-			AND hideranking = 0
-			AND kills >= 1
-			AND (
-					(".$g_options['rankingtype']." > '".$playerdata[$g_options['rankingtype']]."') OR (
-						(".$g_options['rankingtype']." = '".$playerdata[$g_options['rankingtype']]."') AND (kills/IF(deaths=0,1,deaths) > ".($playerdata['kills']/$tempdeaths).")
-					)
-			)
-	";
-	$db->query($query);
-	list($rank) = $db->fetch_row();
-	$rank++;
+    $gameEscape = $db->escape($game);
+    $rankingTypeEscape = $db->escape($rankingType);
+    $playerPoinsEscape = $db->escape($playerPoints);
 
-	return $rank;
+    $tempDeaths = $playerDeaths;
+    if ($tempDeaths == 0) {
+        $tempDeaths = 1;
+    }
+
+    $kpdEscape = $db->escape($playerKills / $tempDeaths);
+
+    $sql = "
+        SELECT
+            COUNT(*)
+        FROM
+            hlstats_Players
+        WHERE
+            game = '{$gameEscape}'
+        AND
+            hideranking = 0
+        AND
+            kills >= 1
+        AND (
+            {$rankingTypeEscape} > {$playerPoinsEscape}
+            OR (
+                {$rankingTypeEscape} = {$playerPoinsEscape}
+                AND (kills / IF(deaths = 0, 1, deaths) > {$kpdEscape})
+            )
+        )
+    ";
+
+    $dbResult = $db->query($sql);
+    if ($dbResult === false) {
+        return null;
+    }
+
+    $rank = 0;
+    list($rank) = $db->fetch_row($dbResult);
+    $rank++;
+
+    $db->free_result($dbResult);
+    return $rank;
 }
 
 /**
