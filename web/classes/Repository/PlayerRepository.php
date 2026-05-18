@@ -58,6 +58,7 @@
 		public function getPlayerSuggestions(string $game, string $search, int $limit = 30) : ?array
 		{
 			$limit = max(1, $limit);
+
 			$sql = "
 				SELECT DISTINCT
 					hlstats_PlayerNames.name 
@@ -83,7 +84,7 @@
                 $stmt->execute();
 
                 return $stmt->fetchAll(PDO::FETCH_COLUMN);
-			} catch (\PDOException $e) {
+			} catch (PDOException $e) {
 				$this->logger->error('PDO Exception in getPlayerSuggestions: ' . $e->getMessage());
 				return null;
 			}
@@ -93,18 +94,14 @@
         {
             $allowedRankingType = $this->optionService->getRankingTypeChoices();
             if (empty($allowedRankingType)) {
-                $allowedRankingType = ['kills', 'skill']; // default params
+                $allowedRankingType = ['kills', 'skill'];
             }
 
             if (!in_array($rankingType, $allowedRankingType, true)) {
                 return null;
             }
 
-            $tempDeaths = $playerDeaths;
-            if ($tempDeaths == 0) {
-                $tempDeaths = 1;
-            }
-
+			$tempDeaths = $playerDeaths ?: 1;
             $kpd = $playerKills / $tempDeaths;
 
             $sql = "
@@ -119,9 +116,9 @@
                 AND 
                     kills >= 1
                 AND (
-                    {$rankingType} > :points
+                    {$rankingType} > :points1
                     OR (
-                        {$rankingType} = :points_eq
+                        {$rankingType} = :points2
                         AND (kills / IF(deaths = 0, 1, deaths) > :kpd)
                     )
                 )
@@ -131,10 +128,10 @@
                 $stmt = $this->pdo->prepare($sql);
 
                 $stmt->execute([
-                    'game'      => $game,
-                    'points'    => $playerPoints,
-                    'points_eq' => $playerPoints,
-                    'kpd'       => $kpd,
+                    'game'  => $game,
+                    'points1' => $playerPoints,
+                    'points2' => $playerPoints,
+                    'kpd'   => $kpd,
                 ]);
 
                 $count = $stmt->fetchColumn();
