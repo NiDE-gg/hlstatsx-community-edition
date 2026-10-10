@@ -617,7 +617,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo "data_array['$key'] = ['".ucfirst($key)."',".$entry['head'].",".$entry['leftarm'].",".$entry['rightarm'].",".$entry['chest'].",".$entry['stomach'].",".$entry['leftleg'].",".$entry['rightleg'].",'".$entry['model']."'];\n";
 				$i++; 
 			}
-			$result = $db->query($query);
+			$db->data_seek(0, $result);
 			?>
 			function switch_weapon(weapon)
 				{

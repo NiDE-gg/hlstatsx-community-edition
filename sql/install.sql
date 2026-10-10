@@ -2238,7 +2238,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Entries` (
   `map` varchar(64) NOT NULL default '',
   `playerId` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
-  KEY `playerId` (`playerId`)
+  KEY `playerId` (`playerId`,`serverId`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2265,7 +2265,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Frags` (
   `pos_victim_y` MEDIUMINT default NULL,
   `pos_victim_z` MEDIUMINT default NULL,
   PRIMARY KEY  (`id`),
-  KEY `killerId` (`killerId`),
+  KEY `killerId` (`killerId`,`weapon`,`headshot`,`map`),
   KEY `victimId` (`victimId`),
   KEY `serverId` (`serverId`),
   KEY `headshot` (`headshot`),
@@ -2309,8 +2309,8 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_PlayerActions` (
   `pos_y` MEDIUMINT default NULL,
   `pos_z` MEDIUMINT default NULL,
   PRIMARY KEY  (`id`),
-  KEY `playerId` (`playerId`),
-  KEY `actionId` (`actionId`)
+  KEY `playerId` (`playerId`,`actionId`,`bonus`),
+  KEY `actionId` (`actionId`,`playerId`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2378,7 +2378,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Statsme` (
   `kills` int(6) unsigned NOT NULL default '0',
   `deaths` int(6) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
-  KEY `playerId` (`playerId`),
+  KEY `playerId` (`playerId`,`weapon`,`shots`,`hits`,`headshots`,`damage`,`kills`,`deaths`),
   KEY `weapon` (`weapon`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2403,7 +2403,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Statsme2` (
   `leftleg` int(6) unsigned NOT NULL default '0',
   `rightleg` int(6) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
-  KEY `playerId` (`playerId`),
+  KEY `playerId` (`playerId`,`weapon`,`head`,`chest`,`stomach`,`leftarm`,`rightarm`,`leftleg`,`rightleg`),
   KEY `weapon` (`weapon`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

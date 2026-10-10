@@ -127,6 +127,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_PlayerActions, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_PlayerActions.playerId AND
 				hlstats_Events_PlayerActions.actionId = hlstats_Actions.id AND
@@ -147,6 +148,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_PlayerActions, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_PlayerActions.playerId AND
 				hlstats_Events_PlayerActions.actionId = hlstats_Actions.id AND
@@ -166,6 +168,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_PlayerPlayerActions, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_PlayerPlayerActions.playerId AND
 				hlstats_Events_PlayerPlayerActions.actionId = hlstats_Actions.id AND
@@ -186,6 +189,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_PlayerPlayerActions, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_PlayerPlayerActions.playerId AND
 				hlstats_Events_PlayerPlayerActions.actionId = hlstats_Actions.id AND
@@ -208,6 +212,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_TeamBonuses, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_TeamBonuses.playerId AND
 				hlstats_Events_TeamBonuses.actionId = hlstats_Actions.id AND
@@ -228,6 +233,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_TeamBonuses, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_TeamBonuses.playerId AND
 				hlstats_Events_TeamBonuses.actionId = hlstats_Actions.id AND
@@ -291,6 +297,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_PlayerPlayerActions, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_PlayerPlayerActions.victimId AND
 				hlstats_Events_PlayerPlayerActions.actionId = hlstats_Actions.id AND
@@ -311,6 +318,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				hlstats_Events_PlayerPlayerActions, hlstats_Players, hlstats_Actions
 			WHERE
 				hlstats_Actions.code = '{$action_escaped}' AND
+				hlstats_Actions.game = '{$game_escaped}' AND
 				hlstats_Players.game = '{$game_escaped}' AND
 				hlstats_Players.playerId = hlstats_Events_PlayerPlayerActions.victimId AND
 				hlstats_Events_PlayerPlayerActions.actionId = hlstats_Actions.id AND
