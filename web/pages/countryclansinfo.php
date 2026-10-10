@@ -43,6 +43,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 	// Country Details
 	
 	$flag = valid_request($_GET['flag'], false) or error('No country ID specified.');
+	$flag_sql = $db->escape($flag);
+	$game_sql = $db->escape($game);
 
 	$SQL = "
 		SELECT
@@ -63,8 +65,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Players.flag=hlstats_Countries.flag
 			)
 		WHERE
-			hlstats_Players.game='$game'
-			AND hlstats_Players.flag='$flag'
+			hlstats_Players.game='$game_sql'
+			AND hlstats_Players.flag='$flag_sql'
 			AND hlstats_Players.hideranking = 0
 			AND activity >= 0
 		GROUP BY
@@ -83,7 +85,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$cl_tag  = str_replace(' ', '&nbsp;', htmlspecialchars($clandata['tag']));
 	$cl_full = "$cl_tag $cl_name";
 	
-	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
+	$db->query("SELECT name FROM hlstats_Games WHERE code='$game_sql'");
 	if ($db->num_rows() != 1)
 	{
 		$gamename = ucfirst($game);
@@ -309,9 +311,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 		FROM
 			hlstats_Players
 		WHERE
-			flag='$flag'
+			flag='$flag_sql'
 			AND hlstats_Players.hideranking = 0
-			AND hlstats_Players.game='$game'      
+			AND hlstats_Players.game='$game_sql'
 		GROUP BY
 			hlstats_Players.playerId
 		HAVING
@@ -330,9 +332,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 		FROM
 			hlstats_Players
 		WHERE
-			flag='$flag'
+			flag='$flag_sql'
 			AND hlstats_Players.hideranking = 0
-			AND hlstats_Players.game='$game'      
+			AND hlstats_Players.game='$game_sql'
 		GROUP BY
 			hlstats_Players.playerId
 		HAVING
