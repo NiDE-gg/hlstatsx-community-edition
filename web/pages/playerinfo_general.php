@@ -63,32 +63,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 									hlstats_PlayerUniqueIds.playerId = '$player'
 							");
 							list($uqid, $coid) = $db->fetch_row();
-						
-							$status = 'Unknown';
-							$avatar_full = IMAGE_PATH."/unknown.jpg";
-						
-							if ($coid !== '76561197960265728') {
 
-								$profileUrl = "https://steamcommunity.com/profiles/$coid?xml=1";
-		
-								$curl = curl_init();
-								curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1 );
-								curl_setopt($curl, CURLOPT_URL, $profileUrl);
+							$steamProfile = $container->get(\Service\SteamProfileService::class)->getProfile($coid !== null ? (string)$coid : null);
+							$status = htmlspecialchars($steamProfile['status']);
+							$avatar_full = $steamProfile['avatar'] !== '' ? htmlspecialchars($steamProfile['avatar']) : IMAGE_PATH."/unknown.jpg";
 
-								$xml = curl_exec($curl);
-								curl_close($curl);
-							}
-							
-							$xmlDoc = null;
-							if ($xml) {
-								$xmlDoc = simplexml_load_string($xml);
-							}
-						
-							if ($xmlDoc) {
-								$status = ucwords($xmlDoc->onlineState);
-								$avatar_full = $xmlDoc->avatarFull;
-							}
-						
 							echo("<img src=\"$avatar_full\" style=\"height:158px;width:158px;\" alt=\"Steam Community Avatar\" />");
 						?>
 					</td>

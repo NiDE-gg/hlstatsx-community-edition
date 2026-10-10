@@ -6530,6 +6530,20 @@ CREATE TABLE IF NOT EXISTS `hlstats_server_load` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `hlstats_SteamProfiles`
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_SteamProfiles` (
+  `communityId` bigint(20) unsigned NOT NULL,
+  `status` varchar(32) NOT NULL default '',
+  `avatar` varchar(255) NOT NULL default '',
+  `fetched` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`communityId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `hlstats_Teams`
 --
 

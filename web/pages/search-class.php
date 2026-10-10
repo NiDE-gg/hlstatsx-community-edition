@@ -244,6 +244,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					$andgame = "AND hlstats_Players.game='" . $this->game . "'";
 				else
 					$andgame = '';
+				// Filter names first: the optimizer otherwise scans every player. hidden = '0' already makes these inner joins.
 				$result = $db->query
 				("
 					SELECT
@@ -254,11 +255,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 						hlstats_Games.name AS gamename
 					FROM
 						hlstats_PlayerNames
-					LEFT JOIN
+					STRAIGHT_JOIN
 						hlstats_Players
 					ON
 						hlstats_Players.playerId = hlstats_PlayerNames.playerId
-					LEFT JOIN
+					STRAIGHT_JOIN
 						hlstats_Games
 					ON
 						hlstats_Games.code = hlstats_Players.game
@@ -279,11 +280,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 						COUNT(*)
 					FROM
 						hlstats_PlayerNames
-					LEFT JOIN
+					STRAIGHT_JOIN
 						hlstats_Players
 					ON
 						hlstats_Players.playerId = hlstats_PlayerNames.playerId
-					LEFT JOIN
+					STRAIGHT_JOIN
 						hlstats_Games
 					ON
 						hlstats_Games.code = hlstats_Players.game
