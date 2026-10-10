@@ -9,7 +9,9 @@
     use Repository\OptionsRepository;
     use Repository\GameRepository;
     use Repository\PlayerRepository;
+    use Repository\SteamProfileRepository;
     use Service\OptionService;
+    use Service\SteamProfileService;
     use Cache\CacheCleaner;
 
     $container = new class
@@ -76,6 +78,14 @@
             $c->get('logger'),
             $c->get(OptionService::class)
         );
+    });
+
+    $container->set(SteamProfileRepository::class, function($c) {
+        return new SteamProfileRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(SteamProfileService::class, function($c) {
+        return new SteamProfileService($c->get(SteamProfileRepository::class), $c->get('logger'));
     });
 
     $container->set(CacheCleaner::class, function($c) {

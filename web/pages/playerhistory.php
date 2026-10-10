@@ -276,7 +276,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		FROM hlstats_Events_PlayerActions
 		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_PlayerActions.serverId
 		LEFT JOIN hlstats_Actions ON hlstats_Actions.id = hlstats_Events_PlayerActions.actionId
-		WHERE playerId = $player AND hlstats_Actions.game = '$game'
+		WHERE hlstats_Events_PlayerActions.playerId = $player AND hlstats_Actions.game = '$game'
 		UNION ALL
 		SELECT 
 			'Action',
@@ -290,7 +290,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_PlayerPlayerActions.serverId
 		LEFT JOIN hlstats_Actions ON hlstats_Actions.id = hlstats_Events_PlayerPlayerActions.actionId
 		LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_PlayerPlayerActions.victimId
-		WHERE playerId = $player AND hlstats_Actions.game = '$game'
+		WHERE hlstats_Events_PlayerPlayerActions.playerId = $player AND hlstats_Actions.game = '$game'
 	");
 
 	$result = $db->query
