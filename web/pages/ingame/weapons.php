@@ -52,14 +52,17 @@ For support and installation notes visit http://www.hlxcommunity.com
 			exit;
 		}
 
+		$uniqueid_sql = $db->escape($uniqueid);
+		$game_sql = $db->escape($game);
+
 		$db->query("
 			SELECT
 				playerId
 			FROM
 				hlstats_PlayerUniqueIds
 			WHERE
-				uniqueId='$uniqueid'
-				AND game='$game'
+				uniqueId='$uniqueid_sql'
+				AND game='$game_sql'
 		");
 		
 		if ($db->num_rows() > 1) {
