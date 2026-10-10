@@ -272,8 +272,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 
 	if ($game != '') {
+		$game_sql = $db->escape($game);
 
-?>    
+?>
 		<nav>
 		<ul class="fancyNav">
 			<li><a href="<?php echo $g_options['scripturl']  . "?game=$game";  ?>" class="fHeading">Servers</a></li>
@@ -298,7 +299,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<li><a href="<?php echo $g_options['scripturl'] . "?mode=awards&amp;game=$game"; ?>" class="fHeading">Awards</a></li>
 <?php
 	// look for actions
-	$db->query("SELECT game FROM hlstats_Actions WHERE game='".$game."' LIMIT 1");
+	$db->query("SELECT game FROM hlstats_Actions WHERE game='".$game_sql."' LIMIT 1");
 	if ($db->num_rows()>0) {
 ?> 
 			<li><a href="<?php echo $g_options['scripturl'] . "?mode=actions&amp;game=$game"; ?>" class="fHeading">Actions</a></li>
@@ -308,7 +309,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<li><a href="<?php echo $g_options['scripturl'] . "?mode=weapons&amp;game=$game"; ?>" class="fHeading">Weapons</a></li>
 			<li><a href="<?php echo $g_options['scripturl'] . "?mode=maps&amp;game=$game"; ?>" class="fHeading">Maps</a></li>
 <?php
-	$result = $db->query("SELECT game from hlstats_Roles WHERE game='$game' AND hidden = '0'");
+	$result = $db->query("SELECT game from hlstats_Roles WHERE game='$game_sql' AND hidden = '0'");
 	$numitems = $db->num_rows($result);
 	if ($numitems > 0) {
 ?>

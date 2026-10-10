@@ -41,13 +41,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 
 	// Player Rankings
+	$game_sql = $db->escape($game);
 	$db->query("
 		SELECT
 			hlstats_Games.name
 		FROM
 			hlstats_Games
 		WHERE
-			hlstats_Games.code = '$game'
+			hlstats_Games.code = '$game_sql'
 	");
 
 	if ($db->num_rows() < 1) {
@@ -325,7 +326,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				FROM
 					hlstats_Players
 				WHERE
-					hlstats_Players.game = '$game'
+					hlstats_Players.game = '$game_sql'
 					AND hlstats_Players.hideranking = 0
 					AND hlstats_Players.kills >= $minkills
 				ORDER BY
@@ -382,7 +383,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				ON
 					hlstats_Players_History.playerId = hlstats_Players.playerId
 				WHERE
-					hlstats_Players_History.game = '$game'
+					hlstats_Players_History.game = '$game_sql'
 					AND hlstats_Players.hideranking = 0
 					AND activity > 0
 					AND UNIX_TIMESTAMP(hlstats_Players_History.eventTime) >= $minEvent

@@ -241,7 +241,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					'asc'
 				);
 				if ($this->game)
-					$andgame = "AND hlstats_Players.game='" . $this->game . "'";
+					$andgame = "AND hlstats_Players.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = '';
 				// Filter names first: the optimizer otherwise scans every player. hidden = '0' already makes these inner joins.
@@ -361,7 +361,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					'asc'
 				);
 				if ($this->game)
-					$andgame = "AND hlstats_PlayerUniqueIds.game='" . $this->game . "'";
+					$andgame = "AND hlstats_PlayerUniqueIds.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = '';
 				$result = $db->query
@@ -451,7 +451,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					'asc'
 				);
 				if ($this->game)
-					$andgame = "AND hlstats_Players.game='" . $this->game . "'";
+					$andgame = "AND hlstats_Players.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = '';
 				$result = $db->query
@@ -566,7 +566,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					'asc'
 				);
 				if ($this->game)
-					$andgame = "AND hlstats_Clans.game='" . $this->game . "'";
+					$andgame = "AND hlstats_Clans.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = "";
 				$result = $db->query
