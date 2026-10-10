@@ -1,0 +1,64 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project overview
+
+HLstatsX Community Edition (NiDE-gg fork of NomisCZ/hlstatsx-community-edition): real-time stats and rankings for Source/GoldSrc game servers. Requirements: PHP 7.4+ (8.0–8.4 recommended), MySQL/MariaDB 5.7+ (8.0 recommended). Licensed GPLv2.
+
+There is no build system, test suite, linter or package manager (no composer/npm). Verify PHP changes with `php -l <file>` and Perl changes with `perl -c scripts/hlstats.pl` (run from `scripts/`, needs DBI/DBD::mysql installed).
+
+## Components and data flow
+
+```
+game server --(UDP logs, via sourcemod/amxmodx plugins)--> scripts/hlstats.pl (Perl daemon, port 32578)
+    --> MySQL (hlstats_* tables) <-- web/ (PHP frontend)
+scripts/hlstats-awards.pl  -- daily cron: awards, ranks, cleanup
+```
+
+- **`scripts/`** — Perl daemon. `hlstats.pl` is the main loop (log parsing, skill calc, DB writes); it `require`s `HLstats_Server.pm`, `HLstats_Player.pm`, `HLstats_Game.pm`, RCON modules (`TRcon.pm`, `BASTARDrcon.pm`), and `do`s `HLstats_EventHandlers.plib` (per-event handlers). Config is `scripts/hlstats.conf` (DB credentials, bind IP/port); most runtime options are read from the `hlstats_Options` table. `run_hlstats` is the start/stop wrapper; `proxy-daemon.pl` forwards logs.
+- **`web/`** — PHP frontend (see below).
+- **`sourcemod/scripting/*.sp`**, **`amxmodx/scripting`** — game-server plugins (SourcePawn/Pawn) that emit extended log lines (`superlogs-*`) and handle in-game commands. Compiled `.smx`/`.amxx` are committed in `sourcemod/compiled` and `amxmodx/plugins`; recompile with the SourceMod/AMX Mod X compiler when editing sources.
+- **`sql/`** — `install.sql` is the full schema + seed data for fresh installs. `Upgrade x - y/` folders are legacy manual upgrades (pre-1.6.2). `migrations/` holds standalone SQL fixes.
+- **`heatmaps/`** — standalone PHP heatmap generator (`generate.php`, own `config.inc.php`).
+
+## Web frontend architecture
+
+- **Front controller**: `web/hlstats.php`. Defines `IN_HLSTATS`, loads `config.php`, legacy includes (`includes/class_db.php`, `class_table.php`, `functions.php`), then the DI container from `bootstrap.php`. Routes via `?mode=<name>` to `pages/<name>.php`; the mode **must be added to `$valid_modes`** in `hlstats.php` or it falls back to `contents`. Other entry points: `ingame.php` (pages in `pages/ingame/`), `status.php`, `sig.php`, `show_graph.php`, `trend_graph.php`, `autocomplete.php`. Admin tasks live in `pages/admintasks/`.
+- **Two DB layers coexist** — this is an in-progress refactor:
+  - Legacy: global `$db` (`DB_mysql` in `includes/class_db.php`, mysqli, string-built queries; use `$db->escape()` / `valid_request()` on input).
+  - New: PDO-based classes under `web/classes/` (PSR-4-ish autoload from `includes/autoload.php`, namespace = directory: `Repository\`, `Service\`, `Database\`, `Config\`, `Cache\`, `Utils\`). `bootstrap.php` returns a tiny service container; get services with `$container->get(\Repository\PlayerRepository::class)`. New/refactored DB code should go into a Repository with prepared statements and be registered in `bootstrap.php` (recent commits migrate pages one by one this way).
+- **Options**: `$g_options` (from `OptionService::getAllOptions()`, cached for the current request only) holds `hlstats_Options` rows, e.g. `scripturl`, `version`, `dbversion`.
+- **External calls**: never call remote services (e.g. steamcommunity.com) inline while rendering a page. Steam avatar and online state go through `Service\SteamProfileService`, which caches them in `hlstats_SteamProfiles`, uses short curl timeouts and backs off after HTTP 429 (Steam rate-limits aggressively).
+- **Config**: `web/config.php` defines constants (`DB_*`, `INCLUDE_PATH`, `PAGE_PATH`, `IMAGE_PATH`, `ROOT_PATH`, `TREND_CACHE_*`, `CHAT_DELAY_*`). It is in `.gitignore` but tracked with empty credentials — never commit real credentials. `web/hlstatsimg/progress/` must be writable (trend graph cache, cleaned probabilistically by `Cache\CacheCleaner`).
+- Note: `web/bootstrap.php‎` (with a trailing U+200E invisible char) is a stray duplicate of `web/bootstrap.php`; the real one is the plain name.
+
+## Database schema changes
+
+Schema changes must be applied in **both** places:
+1. `sql/install.sql` (fresh installs), and
+2. a new numbered updater script `web/updater/<N>.php` where `N` = current highest + 1. Each script checks `IN_UPDATER`, sets `$dbversion = N` / `$version`, updates `version` and `dbversion` in `hlstats_Options`, then runs its queries via `$db->query()`. `pages/updater.php` runs every script from `dbversion+1` upward. When the `web/updater` folder exists, `hlstats.php` blocks all pages with an update notice until it is deleted.
+
+Rules:
+- **Never edit an existing updater script.** Databases already past that version will never run it again; always add a new `<N>.php`.
+- Keep `SET @DBVERSION` at the top of `install.sql` equal to the highest updater number. A fresh install starts at that version and only runs newer updaters.
+- `install.sql` creates MyISAM tables, while real installs are often InnoDB. Write plain `ALTER TABLE` statements in updaters (no `ALGORITHM=`/`LOCK=` clauses, which MyISAM rejects).
+- Numbering history: in 2019, upstream bumped `install.sql` to 79/80 without adding updaters 79/80. The current `79.php`/`80.php` are unrelated later changes, so an old `dbversion` value does not reliably tell you which changes a database already has. Check the schema itself.
+
+Game-specific data (weapons, awards, ribbons, actions) is plain rows keyed by `game` code; images live in `web/hlstatsimg/games/<game>/`.
+
+## Query performance
+
+The `hlstats_Events_*` tables hold millions of rows, and pages are crawled heavily by bots, so one slow page can saturate the server.
+- Per-player/per-clan aggregates (`GROUP BY` over event tables) need a **covering index** that starts with the filter column (see updater `80.php`). Otherwise each query does thousands of random row lookups. When adding such a query, check it with `EXPLAIN` on a realistically sized database.
+- When joining `hlstats_Actions` by `code`, also filter on `hlstats_Actions.game`: the same action code exists once per game.
+- Qualify column names whenever `hlstats_Players` is joined. It shares `playerId` with most event tables, and an ambiguous column is a fatal error (HTTP 500).
+- To re-read a legacy result set, use `$db->data_seek(0, $result)` and always pass `$result`: without it, `data_seek()` silently does nothing. Never re-run the query.
+
+## Docker / deployment
+
+`scripts/Dockerfile` builds the daemon image (context `./scripts`); CI (`.github/workflows/docker-build-push.yml`) pushes `ghcr.io/nide-gg/hlstatsx-deamon:latest` on every push to `master`. The entrypoints (`docker-hlxce-daemon-entrypoint`, `docker-hlxce-awards`) inject `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` into `hlstats.conf` via sed. Kubernetes manifests are in `scripts/deploy/` (see `scripts/Readme.md`).
+
+```bash
+docker build -t hlstatsx-daemon ./scripts
+```
