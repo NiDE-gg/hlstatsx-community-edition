@@ -40,20 +40,40 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
+// Credentials and other server-specific values are read from a .env file one level
+// above this folder (the repository root), outside the web root so it is never served.
+// It is not tracked by git, so deployments never overwrite it. See .env.example.
+$hlxEnv = [];
+$hlxEnvFile = dirname(__DIR__) . '/.env';
+if (is_readable($hlxEnvFile)) {
+	foreach (file($hlxEnvFile, FILE_IGNORE_NEW_LINES) as $hlxEnvLine) {
+		$hlxEnvLine = trim($hlxEnvLine);
+		if ($hlxEnvLine === '' || $hlxEnvLine[0] === '#' || strpos($hlxEnvLine, '=') === false) {
+			continue;
+		}
+		list($hlxEnvKey, $hlxEnvValue) = array_map('trim', explode('=', $hlxEnvLine, 2));
+		if (strlen($hlxEnvValue) >= 2 && ($hlxEnvValue[0] === '"' || $hlxEnvValue[0] === "'")
+			&& substr($hlxEnvValue, -1) === $hlxEnvValue[0]) {
+			$hlxEnvValue = substr($hlxEnvValue, 1, -1);
+		}
+		$hlxEnv[$hlxEnvKey] = $hlxEnvValue;
+	}
+}
+
 // DB_ADDR - The address of the database server, in host:port format.
 //           (You might also try setting this to e.g. ":/tmp/mysql.sock" to
 //           use a Unix domain socket, if your mysqld is on the same box as
 //           your web server.)
-define("DB_ADDR", 'localhost');
+define("DB_ADDR", $hlxEnv['DB_HOST'] ?? 'localhost');
 
 // DB_USER - The username to connect to the database as
-define("DB_USER", '');
+define("DB_USER", $hlxEnv['DB_USERNAME'] ?? '');
 
 // DB_PASS - The password for DB_USER
-define("DB_PASS", '');
+define("DB_PASS", $hlxEnv['DB_PASSWORD'] ?? '');
 
 // DB_NAME - The name of the database
-define("DB_NAME", '');
+define("DB_NAME", $hlxEnv['DB_NAME'] ?? '');
 
 // DB_TYPE - The database server type. Only "mysql" is supported currently
 define("DB_TYPE", 'mysql');
@@ -98,7 +118,7 @@ define("IMAGE_PATH", './hlstatsimg');
 // How often dynamicly generated images are updated (in seconds)
 define("IMAGE_UPDATE_INTERVAL", 300);
 
-define('GOOGLE_MAPS_API_KEY', "");
+define('GOOGLE_MAPS_API_KEY', $hlxEnv['GOOGLE_MAPS_API_KEY'] ?? "");
 
 // Add a chat delay to prevent real-time tracking and provide information that can help in-game.
 // Only allowed from 1 minute to CHAT_DELAY_MAX_TIME, other values ​​disable this.
@@ -122,5 +142,7 @@ define('TREND_CACHE_PROBABILITY', 10); // 10 %
 define('TREND_CACHE_MAX_FILES_PER_PLAYER', 5);
 
 //define("DB_DEBUG", true);
+
+unset($hlxEnv, $hlxEnvFile, $hlxEnvLine, $hlxEnvKey, $hlxEnvValue);
 
 ?>

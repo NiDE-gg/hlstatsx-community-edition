@@ -55,5 +55,5 @@
 		}
 	}
 	
-	echo "<br /><br /><img src=\"".IMAGE_PATH."/warning.gif\" alt=\"Warning\"> <span class=\"warning-header\">You <strong>must delete</strong> the \"updater\" folder from your web site before your site will be operational.</span>\n</div>\n";
+	echo "<br /><br /><a href=\"" . $g_options['scripturl'] . "\">Back to the site</a>\n</div>\n";
 ?>

@@ -217,14 +217,17 @@ $valid_modes = array(
 	'profile'
 );
    
-if (file_exists('./updater') && $mode != 'updater')
+// The updater folder is deployed with the site, so only block pages while an update is pending
+$updatePending = version_compare($g_options['version'], '1.6.2', '<')
+	|| file_exists('./updater/' . ((int) $g_options['dbversion'] + 1) . '.php');
+
+if ($updatePending && file_exists('./updater') && $mode != 'updater')
 {
 	pageHeader(array('Update Notice'), array('Update Notice' => ''));
 	echo "<div class=\"warning\">\n" . 
 	"<span class=\"warning-heading\"><img src=\"".IMAGE_PATH."/warning.gif\" alt=\"Warning\"> Warning:</span><br />\n" .
 	"<span class=\"warning-text\">The updater folder was detected in your web directory.<br />
-	To perform a Database Update, please go to <strong><a href=\"{$g_options['scripturl']}?mode=updater\">HLX:CE Database Updater</a></strong> to perform the database update.<br /><br />
-	<strong>If you have already performed the database update, <strong>you must delete the \"updater\" folder from your web folder.</span>\n</div>";
+	To perform a Database Update, please go to <strong><a href=\"{$g_options['scripturl']}?mode=updater\">HLX:CE Database Updater</a></strong> to perform the database update.</span>\n</div>";
 	pageFooter();
 	die();
 }
