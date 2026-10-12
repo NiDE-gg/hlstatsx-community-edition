@@ -30,14 +30,14 @@ scripts/hlstats-awards.pl  -- daily cron: awards, ranks, cleanup
   - New: PDO-based classes under `web/classes/` (PSR-4-ish autoload from `includes/autoload.php`, namespace = directory: `Repository\`, `Service\`, `Database\`, `Config\`, `Cache\`, `Utils\`). `bootstrap.php` returns a tiny service container; get services with `$container->get(\Repository\PlayerRepository::class)`. New/refactored DB code should go into a Repository with prepared statements and be registered in `bootstrap.php` (recent commits migrate pages one by one this way).
 - **Options**: `$g_options` (from `OptionService::getAllOptions()`, cached for the current request only) holds `hlstats_Options` rows, e.g. `scripturl`, `version`, `dbversion`.
 - **External calls**: never call remote services (e.g. steamcommunity.com) inline while rendering a page. Steam avatar and online state go through `Service\SteamProfileService`, which caches them in `hlstats_SteamProfiles`, uses short curl timeouts and backs off after HTTP 429 (Steam rate-limits aggressively).
-- **Config**: `web/config.php` defines constants (`DB_*`, `INCLUDE_PATH`, `PAGE_PATH`, `IMAGE_PATH`, `ROOT_PATH`, `TREND_CACHE_*`, `CHAT_DELAY_*`). It is in `.gitignore` but tracked with empty credentials — never commit real credentials. `web/hlstatsimg/progress/` must be writable (trend graph cache, cleaned probabilistically by `Cache\CacheCleaner`).
+- **Config**: `web/config.php` defines constants (`DB_*`, `INCLUDE_PATH`, `PAGE_PATH`, `IMAGE_PATH`, `ROOT_PATH`, `TREND_CACHE_*`, `CHAT_DELAY_*`). It is tracked with empty credentials and is overwritten on every deploy: real credentials go in the untracked `web/config.local.php` (see `config.local.php.example`), loaded first; every constant in `config.php` is `defined() ||`-guarded so it can be overridden there. Never commit real credentials. `web/hlstatsimg/progress/` must be writable (trend graph cache, cleaned probabilistically by `Cache\CacheCleaner`).
 - Note: `web/bootstrap.php‎` (with a trailing U+200E invisible char) is a stray duplicate of `web/bootstrap.php`; the real one is the plain name.
 
 ## Database schema changes
 
 Schema changes must be applied in **both** places:
 1. `sql/install.sql` (fresh installs), and
-2. a new numbered updater script `web/updater/<N>.php` where `N` = current highest + 1. Each script checks `IN_UPDATER`, sets `$dbversion = N` / `$version`, updates `version` and `dbversion` in `hlstats_Options`, then runs its queries via `$db->query()`. `pages/updater.php` runs every script from `dbversion+1` upward. When the `web/updater` folder exists, `hlstats.php` blocks all pages with an update notice until it is deleted.
+2. a new numbered updater script `web/updater/<N>.php` where `N` = current highest + 1. Each script checks `IN_UPDATER`, sets `$dbversion = N` / `$version`, updates `version` and `dbversion` in `hlstats_Options`, then runs its queries via `$db->query()`. `pages/updater.php` runs every script from `dbversion+1` upward. The `web/updater` folder is deployed with the site; `hlstats.php` blocks all pages with an update notice only while `updater/<dbversion+1>.php` exists (an update is pending), until someone runs `?mode=updater`.
 
 Rules:
 - **Never edit an existing updater script.** Databases already past that version will never run it again; always add a new `<N>.php`.
