@@ -5,3 +5,19 @@
 .DS_Store
 web/hlstatsimg/progress/*
 web/config.php
+# OS files
+**/.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+*.swp
+*~
+*.bak
+*.orig
+
+# Logs
+*.log
+
+# Claude Code local settings
+/.claude/settings.local.json
