@@ -1,0 +1,65 @@
+name: SourcePawn
+
+on:
+  pull_request:
+    paths:
+      - "sourcemod/scripting/**"
+      - ".github/workflows/sourcepawn.yml"
+  push:
+    branches: ["master"]
+    paths:
+      - "sourcemod/scripting/**"
+      - ".github/workflows/sourcepawn.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile (SourceMod ${{ matrix.sm-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sm-version: ["1.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download SourceMod compiler
+        run: |
+          base="https://sm.alliedmods.net/smdrop/${{ matrix.sm-version }}"
+          archive=$(curl -fsSL "${base}/sourcemod-latest-linux")
+          echo "Using ${archive}"
+          mkdir -p "$RUNNER_TEMP/sourcemod"
+          curl -fsSL "${base}/${archive}" | tar -xz -C "$RUNNER_TEMP/sourcemod" addons/sourcemod/scripting
+          echo "SPCOMP_DIR=$RUNNER_TEMP/sourcemod/addons/sourcemod/scripting" >> "$GITHUB_ENV"
+
+      - name: Compile plugins
+        working-directory: sourcemod/scripting
+        run: |
+          mkdir -p "$RUNNER_TEMP/compiled"
+          status=0
+          for plugin in *.sp; do
+            echo "::group::${plugin}"
+            if ! "$SPCOMP_DIR/spcomp64" -i"$SPCOMP_DIR/include" -iinclude \
+                -o"$RUNNER_TEMP/compiled/${plugin%.sp}.smx" "$plugin"; then
+              echo "::error file=sourcemod/scripting/${plugin}::${plugin} failed to compile with SourceMod ${{ matrix.sm-version }}"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$status"
+
+      - name: Upload compiled plugins
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sourcemod-plugins-sm${{ matrix.sm-version }}
+          path: ${{ runner.temp }}/compiled/*.smx
+          if-no-files-found: ignore

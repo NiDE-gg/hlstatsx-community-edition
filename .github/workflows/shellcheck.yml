@@ -1,0 +1,47 @@
+name: ShellCheck
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "**/*.sh"
+      - ".github/workflows/shellcheck.yml"
+  push:
+    branches: ["master"]
+    paths:
+      - "scripts/**"
+      - "**/*.sh"
+      - ".github/workflows/shellcheck.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # Only errors fail the build; the legacy scripts still have many style warnings.
+      - name: Run ShellCheck on shell scripts
+        run: |
+          mapfile -t files < <(
+            git ls-files -- '*.sh' 'scripts/*' | sort -u | while IFS= read -r file; do
+              case "$file" in
+                *.sh) echo "$file" ;;
+                *) head -n1 "$file" | grep -qE '^#!.*\b(ba|da|k)?sh\b' && echo "$file" ;;
+              esac
+            done
+          )
+          printf 'Checking:\n'; printf '  %s\n' "${files[@]}"
+          shellcheck --version
+          shellcheck --severity=error --format=gcc "${files[@]}" \
+            | sed -E 's/^([^:]+):([0-9]+):([0-9]+): (error|warning|note): (.*)$/::\4 file=\1,line=\2,col=\3::\5/'
+          exit "${PIPESTATUS[0]}"

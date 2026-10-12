@@ -1,0 +1,50 @@
+name: Dockerfile
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - ".github/workflows/dockerfile-lint.yml"
+  push:
+    branches: ["master"]
+    paths:
+      - "scripts/Dockerfile"
+      - ".github/workflows/dockerfile-lint.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hadolint:
+    name: hadolint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: scripts/Dockerfile
+          failure-threshold: error
+
+  build:
+    name: Build daemon image (no push)
+    # master is built and pushed by docker-build-push.yml; on pull requests, only check that it builds.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./scripts
+          push: false
+          tags: hlstatsx-daemon:ci
