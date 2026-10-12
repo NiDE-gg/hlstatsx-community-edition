@@ -489,9 +489,10 @@ class Table
 
 		$onclick = '';
 		if ($this->ajax) {
-			$flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
-			$ajaxData = json_encode([$this->var_page => $number], $flags);
-			$onclick = ' onclick="Tabs.refreshTab(' . $ajaxData . '); return false;"';
+			// JSON_HEX_QUOT would turn the key quotes into ", which is a JS syntax error
+			// outside a string; escape for the HTML attribute instead.
+			$ajaxData = json_encode([$this->var_page => $number]);
+			$onclick = ' onclick="Tabs.refreshTab(' . eHtml($ajaxData) . '); return false;"';
 		}
 
 		echo "{$prefix}<a href=\"{$urlSafe}\"{$onclick}>{$label}</a>{$postfix} ";
