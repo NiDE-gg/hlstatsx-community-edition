@@ -5,7 +5,7 @@
 .DS_Store
 web/hlstatsimg/progress/*
 web/config.php
-web/config.local.php
+.env
 # OS files
 **/.DS_Store
 Thumbs.db

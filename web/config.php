@@ -40,49 +40,62 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
-// Server-specific settings (DB credentials, API keys...) go in config.local.php,
-// next to this file. It is not tracked by git, so deployments never overwrite it.
-// Any constant defined there takes precedence over the defaults below.
-if (file_exists(__DIR__ . '/config.local.php')) {
-	require __DIR__ . '/config.local.php';
+// Credentials and other server-specific values are read from a .env file one level
+// above this folder (the repository root), outside the web root so it is never served.
+// It is not tracked by git, so deployments never overwrite it. See .env.example.
+$hlxEnv = [];
+$hlxEnvFile = dirname(__DIR__) . '/.env';
+if (is_readable($hlxEnvFile)) {
+	foreach (file($hlxEnvFile, FILE_IGNORE_NEW_LINES) as $hlxEnvLine) {
+		$hlxEnvLine = trim($hlxEnvLine);
+		if ($hlxEnvLine === '' || $hlxEnvLine[0] === '#' || strpos($hlxEnvLine, '=') === false) {
+			continue;
+		}
+		list($hlxEnvKey, $hlxEnvValue) = array_map('trim', explode('=', $hlxEnvLine, 2));
+		if (strlen($hlxEnvValue) >= 2 && ($hlxEnvValue[0] === '"' || $hlxEnvValue[0] === "'")
+			&& substr($hlxEnvValue, -1) === $hlxEnvValue[0]) {
+			$hlxEnvValue = substr($hlxEnvValue, 1, -1);
+		}
+		$hlxEnv[$hlxEnvKey] = $hlxEnvValue;
+	}
 }
 
 // DB_ADDR - The address of the database server, in host:port format.
 //           (You might also try setting this to e.g. ":/tmp/mysql.sock" to
 //           use a Unix domain socket, if your mysqld is on the same box as
 //           your web server.)
-defined('DB_ADDR') || define('DB_ADDR', 'localhost');
+define("DB_ADDR", $hlxEnv['DB_HOST'] ?? 'localhost');
 
 // DB_USER - The username to connect to the database as
-defined('DB_USER') || define('DB_USER', '');
+define("DB_USER", $hlxEnv['DB_USERNAME'] ?? '');
 
 // DB_PASS - The password for DB_USER
-defined('DB_PASS') || define('DB_PASS', '');
+define("DB_PASS", $hlxEnv['DB_PASSWORD'] ?? '');
 
 // DB_NAME - The name of the database
-defined('DB_NAME') || define('DB_NAME', '');
+define("DB_NAME", $hlxEnv['DB_NAME'] ?? '');
 
 // DB_TYPE - The database server type. Only "mysql" is supported currently
-defined('DB_TYPE') || define('DB_TYPE', 'mysql');
+define("DB_TYPE", 'mysql');
 
 // default 'utf8mb4'
-defined('DB_CHARSET') || define('DB_CHARSET', 'utf8mb4');
+define("DB_CHARSET", 'utf8mb4');
 
 // default 'utf8mb4_unicode_ci'
-defined('DB_COLLATE') || define('DB_COLLATE', 'utf8mb4_unicode_ci');
+define("DB_COLLATE", 'utf8mb4_unicode_ci');
 
 // DB_PCONNECT - Set to 1 to use persistent database connections. Persistent
 //               connections can give better performance, but may overload
 //               the database server. Set to 0 to use non-persistent
 //               connections.
-defined('DB_PCONNECT') || define('DB_PCONNECT', 0);
+define("DB_PCONNECT", 0);
 
 // INCLUDE_PATH - Filesystem path to the includes directory, relative to hlstats.php. This must be specified
 //		as a relative path.
 //
 //                Under Windows, make sure you use forward slash (/) instead
 //                of back slash (\) and use absolute paths if you are having any issue.
-defined('INCLUDE_PATH') || define('INCLUDE_PATH', './includes');
+define("INCLUDE_PATH", './includes');
 
 
 // PAGE_PATH - Filesystem path to the pages directory, relative to hlstats.php. This must be specified
@@ -90,7 +103,7 @@ defined('INCLUDE_PATH') || define('INCLUDE_PATH', './includes');
 //
 //                Under Windows, make sure you use forward slash (/) instead
 //                of back slash (\) and use absolute paths if you are having any issue.
-defined('PAGE_PATH') || define('PAGE_PATH', './pages');
+define("PAGE_PATH", './pages');
 
 
 // PAGE_PATH - Filesystem path to the hlstatsimg directory, relative to hlstats.php. This must be specified
@@ -100,34 +113,36 @@ defined('PAGE_PATH') || define('PAGE_PATH', './pages');
 //                of back slash (\) and use absolute paths if you are having any issue.
 //
 // 		Note: the progress directory under hlstatsimg must be writable!!
-defined('IMAGE_PATH') || define('IMAGE_PATH', './hlstatsimg');
+define("IMAGE_PATH", './hlstatsimg');
 
 // How often dynamicly generated images are updated (in seconds)
-defined('IMAGE_UPDATE_INTERVAL') || define('IMAGE_UPDATE_INTERVAL', 300);
+define("IMAGE_UPDATE_INTERVAL", 300);
 
-defined('GOOGLE_MAPS_API_KEY') || define('GOOGLE_MAPS_API_KEY', "");
+define('GOOGLE_MAPS_API_KEY', $hlxEnv['GOOGLE_MAPS_API_KEY'] ?? "");
 
 // Add a chat delay to prevent real-time tracking and provide information that can help in-game.
 // Only allowed from 1 minute to CHAT_DELAY_MAX_TIME, other values ​​disable this.
 // Disabled by default.
-defined('CHAT_DELAY_TIME') || define('CHAT_DELAY_TIME', 0);
-defined('CHAT_DELAY_MAX_TIME') || define('CHAT_DELAY_MAX_TIME', 20);
+define('CHAT_DELAY_TIME', 0);
+define('CHAT_DELAY_MAX_TIME', 20);
 
-defined('ROOT_PATH') || define('ROOT_PATH', __DIR__);
+define('ROOT_PATH', __DIR__);
 
 // Maximum storage time for player trend image cache (in seconds).
 // Default value: 604800 seconds = 7 days.
-defined('TREND_CACHE_STORAGE_TIME') || define('TREND_CACHE_STORAGE_TIME', 604800);
+define('TREND_CACHE_STORAGE_TIME', 604800);
 
 // The probability of triggering the code to clear the cache of player trend images
 // so as not to overload the disk every time you visit the site
 // (specified as a percentage from 1 to 100).
-defined('TREND_CACHE_PROBABILITY') || define('TREND_CACHE_PROBABILITY', 10); // 10 %
+define('TREND_CACHE_PROBABILITY', 10); // 10 %
 
 // The largest number of images in the trend cache for 1 player,
 // any images above this number will be deleted.
-defined('TREND_CACHE_MAX_FILES_PER_PLAYER') || define('TREND_CACHE_MAX_FILES_PER_PLAYER', 5);
+define('TREND_CACHE_MAX_FILES_PER_PLAYER', 5);
 
 //define("DB_DEBUG", true);
+
+unset($hlxEnv, $hlxEnvFile, $hlxEnvLine, $hlxEnvKey, $hlxEnvValue);
 
 ?>
