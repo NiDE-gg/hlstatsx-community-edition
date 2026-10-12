@@ -250,6 +250,11 @@ function makeQueryString($key, $value, $notkeys = array())
 	$params = $_GET;
 	$params[$key] = $value;
 
+	// Links must point to the full page, never to the AJAX fragment
+	if (($params['type'] ?? '') === 'ajax') {
+		unset($params['type'], $params['tab']);
+	}
+
 	// We remove disabled keys (for example, "page" when changing sorting)
 	foreach ($notkeys as $remove) {
 		unset($params[$remove]);
