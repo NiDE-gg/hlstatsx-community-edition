@@ -678,13 +678,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 								switch(val)
 								{
 									case 0:
-										<?php echo "txtArea.value = '$jimglink'\n"; ?>
-										break;	
+										<?php echo "txtArea.value = " . jsEscape($jimglink) . ";\n"; ?>
+										break;
 									case 1:
-										<?php echo "txtArea.value = '[url=$script_path/hlstats.php?mode=playerinfo&player=$player"."][img]$jimglink"."[/img][/url]'\n"; ?>
+										<?php echo "txtArea.value = " . jsEscape("[url=$script_path/hlstats.php?mode=playerinfo&player=$player][img]$jimglink"."[/img][/url]") . ";\n"; ?>
 										break;
 									case 2:
-										<?php echo "txtArea.value = '[url=\"$script_path/hlstats.php?mode=playerinfo&player=$player\"][img]$jimglink"."[/img][/url]'\n"; ?>
+										<?php echo "txtArea.value = " . jsEscape("[url=\"$script_path/hlstats.php?mode=playerinfo&player=$player\"][img]$jimglink"."[/img][/url]") . ";\n"; ?>
 										break;
 								}
 							}
