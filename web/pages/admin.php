@@ -297,23 +297,24 @@ class EditList
 
 		if ($this->helpKey != '')
 		{
-			$returnstr .= "<script type='text/javascript'>\n";
-			$returnstr .= "var texts = new Array();\n";
+			$jsonTexts = array();
 			foreach (array_keys($this->helpTexts) as $key)
 			{
 				$value = $this->helpTexts[$key];
 				$value = preg_replace("/[\r\n]/", " ", $value);
-				$returnstr .= "texts[" . jsEscape($key) . "] = " . jsEscape($value) . ";\n";
+				$jsonTexts[$key] = $value;
 			}
 
-			$returnstr .= "\n\nfunction showHelp (keyname) {\n";
-			$returnstr .= "document.getElementById('" . $this->helpDIV . "').innerHTML=texts[keyname];\n";
-			$returnstr .= "document.getElementById('" . $this->helpDIV . "').style.visibility='visible';\n";
-			$returnstr .= "}\n";
-			$returnstr .= "\n\nfunction hideHelp () {\n";
-			$returnstr .= "document.getElementById('" . $this->helpDIV . "').style.visibility='hidden';\n";
-			$returnstr .= "}\n";
-			$returnstr .= "</script>\n";
+			$helpData = array(
+				'div'   => $this->helpDIV,
+				'texts' => $jsonTexts,
+			);
+
+			// The help-text data is bootstrapped as JSON; the JS logic that
+			// reads it and shows/hides the popup lives in admin-help.js
+			// (GitHub issue #45 - no PHP-generated JS logic inline).
+			$returnstr .= '<script type="application/json" id="admin-help-data">' . jsEscape($helpData) . "</script>\n";
+			$returnstr .= '<script src="' . INCLUDE_PATH . '/js/admin-help.js"></script>' . "\n";
 
 			$returnstr .= '<div class="helpwindow" ID="' . $this->helpDIV . '">No help text available</div>';
 
