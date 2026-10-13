@@ -262,3 +262,12 @@ nav{
     text-decoration:none !important;
     white-space:nowrap;
 }
+
+/* Chart.js sets display:block on its canvas, so the cell's text-align:center
+ * no longer centers it; use auto margins. */
+canvas.server-load-chart,
+canvas.game-trend-chart,
+#playerinfo-trend-chart {
+    margin-left: auto;
+    margin-right: auto;
+}
