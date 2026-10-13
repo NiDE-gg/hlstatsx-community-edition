@@ -166,7 +166,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 							'mmrank',
 							'Rank',
-							'width=4&type=elorank'
+							'width=4&type=elorank&mobile=hide'
 					),
 					new TableColumn
 					(
@@ -178,13 +178,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'activity',
 						'Activity',
-						'width=10&sort=no&type=bargraph'
+						'width=10&sort=no&type=bargraph&mobile=hide'
 					),
 					new TableColumn
 					(
 						'connection_time',
 						'Connection Time',
-						'width=10&align=right&type=timestamp'
+						'width=10&align=right&type=timestamp&mobile=hide'
 					),
 					new TableColumn
 					(
@@ -196,7 +196,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'deaths',
 						'Deaths',
-						'width=7&align=right'
+						'width=7&align=right&mobile=hide'
 					),
 					new TableColumn
 					(
@@ -208,19 +208,19 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'headshots',
 						'Headshots',
-						'width=6&align=right'
+						'width=6&align=right&mobile=hide'
 					),
 					new TableColumn
 					(
 						'hpk',
 						'HS:K',
-						'width=6&align=right'
+						'width=6&align=right&mobile=hide'
 					),
 					new TableColumn
 					(
 						'acc',
 						'Accuracy',
-						'width=6&align=right&append=' . urlencode('%')
+						'width=6&align=right&mobile=hide&append=' . urlencode('%')
 					)
 				),
 				'playerId',
@@ -245,7 +245,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'activity',
 						'Activity',
-						'width=10&sort=no&type=bargraph'
+						'width=10&sort=no&type=bargraph&mobile=hide'
 						),
 					new TableColumn
 					(
@@ -257,7 +257,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'deaths',
 						'Deaths',
-						'width=7&align=right'
+						'width=7&align=right&mobile=hide'
 					),
 					new TableColumn
 					(
@@ -269,19 +269,19 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'headshots',
 						'Headshots',
-						'width=6&align=right'
+						'width=6&align=right&mobile=hide'
 					),
 					new TableColumn
 					(
 						'hpk',
 						'HS:K',
-						'width=6&align=right'
+						'width=6&align=right&mobile=hide'
 					),
 					new TableColumn
 					(
 						'acc',
 						'Accuracy',
-						'width=6&align=right&append=' . urlencode('%')
+						'width=6&align=right&mobile=hide&append=' . urlencode('%')
 					),
 					new TableColumn
 					(
@@ -293,7 +293,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					(
 						'connection_time',
 						'Connection Time',
-						'width=10&align=right&type=timestamp'
+						'width=10&align=right&type=timestamp&mobile=hide'
 					)
 				),
 			'playerId',

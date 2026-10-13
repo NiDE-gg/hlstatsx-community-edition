@@ -106,6 +106,12 @@
 
 		canvas.parentNode.style.backgroundColor = bgColor;
 
+		// css/mobile.css caps the canvas at its container's width on small
+		// screens; draw at that width instead of scaling an 870px bitmap down.
+		if (canvas.clientWidth > 0 && canvas.clientWidth < canvas.width) {
+			canvas.width = canvas.clientWidth;
+		}
+
 		new Chart(canvas.getContext('2d'), {
 			type: 'line',
 			data: {

@@ -145,7 +145,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<td class="fSmall" style="width:6%;text-align:center;">&nbsp;Hpk</td>
 			</tr>
 			<tr class="game-table-row">
-				<td class="game-table-cell"><?php
+				<td class="game-table-cell" data-label="Server"><?php
 		$image = getImage("/games/$game/game");
 		echo '<img style="vertical-align:middle;" src="';
 		if ($image)
@@ -155,29 +155,29 @@ For support and installation notes visit http://www.hlxcommunity.com
 		echo "\" alt=\"$game\" />&nbsp;";
 		echo '<b>'.htmlspecialchars($rowdata['name']).'</b>';
                         ?></td>
-			<td class="game-table-cell"><?php
-		echo "$addr <a href=\"steam://connect/$addr\" style=\"color:black\">(Join)</a>";
+			<td class="game-table-cell" data-label="Address"><?php
+		echo "$addr (<a href=\"steam://connect/$addr\">Join</a>)";
                     ?></td>
-			<td class="game-table-cell" style="text-align:center;"><?php
+			<td class="game-table-cell" data-label="Map" style="text-align:center;"><?php
 		echo $rowdata['act_map'];
                     ?></td>
-			<td class="game-table-cell" style="text-align:center;"><?php
+			<td class="game-table-cell" data-label="Played" style="text-align:center;"><?php
 		$stamp = $rowdata['map_started']==0?0:time() - $rowdata['map_started'];
 		$hours = sprintf("%02d", floor($stamp / 3600));
 		$min   = sprintf("%02d", floor(($stamp % 3600) / 60));
 		$sec   = sprintf("%02d", floor($stamp % 60)); 
 		echo $hours.":".$min.":".$sec;
                     ?></td>
-			<td class="game-table-cell" style="text-align:center;"><?php
+			<td class="game-table-cell" data-label="Players" style="text-align:center;"><?php
 		echo $player_string;
                     ?></td>
-			<td class="game-table-cell" style="text-align:center;"><?php
+			<td class="game-table-cell" data-label="Kills" style="text-align:center;"><?php
 		echo number_format($kills);
 					?></td>
-			<td class="game-table-cell" style="text-align:center;"><?php
+			<td class="game-table-cell" data-label="Headshots" style="text-align:center;"><?php
 		echo number_format($headshots);
 					?></td>
-			<td class="game-table-cell" style="text-align:center;"><?php
+			<td class="game-table-cell" data-label="HS:K" style="text-align:center;"><?php
 		if ($kills>0)
 			echo sprintf("%.4f", ($headshots/$kills));
 		else  

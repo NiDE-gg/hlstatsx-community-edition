@@ -147,7 +147,7 @@ class Table
 		foreach ($this->columns as $col)
 		{
 			$totalwidth += $col->width;
-			echo "<td style=\"width:$col->width%;text-align:$col->align;\" class=\"fSmall\">";
+			echo "<td style=\"width:$col->width%;text-align:$col->align;\" class=\"fSmall" . $col->mobileClass() . "\">";
 			if ($col->sort != 'no')
 			{
 				echo getSortArrow($this->sort, $this->sortorder, $col->name,
@@ -196,7 +196,7 @@ class Table
 		foreach ($this->columns as $col)
 		{
 			$totalwidth += $col->width;
-			echo "<td style=\"width:$col->width%;text-align:$col->align;\" class=\"fSmall\">";
+			echo "<td style=\"width:$col->width%;text-align:$col->align;\" class=\"fSmall" . $col->mobileClass() . "\">";
 			if ($col->sort != 'no')
 			{
 				echo getSortArrow($this->sort, $this->sortorder, $col->name,
@@ -250,7 +250,7 @@ class Table
 					$colalign = "";
 				}
 
-				$class = "bg$c";
+				$class = "bg$c" . $col->mobileClass();
 
 				if (($col->icon) || ($col->flag))
 				{
@@ -523,6 +523,7 @@ class TableColumn
 	var $flag;
 	var $skill_change;
 	var $heatmap;
+	var $mobile = 'show';
 	public $fname;
 
 	function __construct($name, $title, $attrs="", $fname=null)
@@ -542,7 +543,8 @@ class TableColumn
 			'embedlink',
 			'flag',
 			'skill_change',
-			'heatmap'
+			'heatmap',
+			'mobile'
 		);
 
 		parse_str($attrs ?? 0, $attr_vars);
@@ -556,5 +558,11 @@ class TableColumn
 		}
 
 		$this->fname = $fname;
+	}
+
+	// mobile=hide drops the column on small screens (css/mobile.css)
+	function mobileClass()
+	{
+		return $this->mobile == 'hide' ? ' hide-mobile' : '';
 	}
 }

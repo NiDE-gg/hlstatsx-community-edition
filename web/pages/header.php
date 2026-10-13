@@ -102,6 +102,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="stylesheet" type="text/css" href="hlstats.css" />
 	<link rel="stylesheet" type="text/css" href="styles/<?php echo $selectedStyle; ?>" />
+	<link rel="stylesheet" type="text/css" href="css/mobile.css" media="screen and (max-width: 768px)" />
 	<!-- U R A SMACKHEAD -->
 
 	<link rel="SHORTCUT ICON" href="favicon.ico" />

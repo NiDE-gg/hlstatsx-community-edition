@@ -414,38 +414,6 @@ meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: #cc4600; }
     table { font-size: 12px; }
     input.submit { width: 100%; padding: 12px; }
     #footer { font-size: 10px; }
-
-    /* Mobile nav (issue #63 phase 2): .fancyNav/.header_gameslist above
-       float/position unconditionally, so override them again here, later
-       in this file's own cascade, to beat the shared hlstats.css rules. */
-    .fancyNav {
-        display: block;
-        width: 100%;
-    }
-
-    .fancyNav li {
-        float: none;
-        display: block;
-        border-right: none;
-        border-bottom: 1px solid rgba(9, 9, 9, 0.125);
-    }
-
-    .fancyNav li a {
-        display: block;
-        text-align: center;
-    }
-
-    .header_gameslist {
-        position: static;
-        float: none;
-        text-align: center;
-        margin: 10px auto;
-    }
-
-    ul#header_gameslist li {
-        float: none;
-        display: inline-block;
-    }
 }
 
 /* ================================================== */
