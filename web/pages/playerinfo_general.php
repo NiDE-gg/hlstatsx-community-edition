@@ -638,7 +638,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 				</tr>
 				<tr class="bg1">
 					<td style="text-align:center;">
-						<?php echo "<img src=\"trend_graph.php?bgcolor=".$g_options['graphbg_trend'].'&amp;color='.$g_options['graphtxt_trend']."&amp;player=$player\" alt=\"Player Trend Graph\" />"; ?>
+						<canvas id="playerinfo-trend-chart" width="380" height="200"></canvas>
+						<script type="application/json" id="playerinfo-trend-data"><?php echo json_encode([
+							'player'    => (int)$player,
+							'bgColor'   => '#' . $g_options['graphbg_trend'],
+							'textColor' => '#' . $g_options['graphtxt_trend'],
+						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+						<script src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
+						<script src="<?php echo INCLUDE_PATH; ?>/js/playerinfo-trend-chart.js"></script>
 					</td>
 				</tr>
 			</table>
