@@ -14,7 +14,6 @@
     use Repository\TrendRepository;
     use Service\OptionService;
     use Service\SteamProfileService;
-    use Cache\CacheCleaner;
 
     $container = new class
     {
@@ -96,15 +95,6 @@
 
     $container->set(SteamProfileService::class, function($c) {
         return new SteamProfileService($c->get(SteamProfileRepository::class), $c->get('logger'));
-    });
-
-    $container->set(CacheCleaner::class, function($c) {
-        return new CacheCleaner(
-            $c->get('logger'),
-            IMAGE_PATH . '/progress/',
-            TREND_CACHE_PROBABILITY,
-            true
-        );
     });
 
     return $container;
