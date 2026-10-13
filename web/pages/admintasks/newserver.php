@@ -79,10 +79,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 							SET `value` = '" . $db->escape($script_path) . "'
 							WHERE serverId = '" . $insert_id . "' AND `parameter` = 'HLStatsURL'");
 				$_POST = array();
-				
+
 				// psychonic - worst. redirect. ever.
 				//   but we can't just use header() since admin.php already started part of the page and hacking it in before would be even messier
-				echo "<script type=\"text/javascript\"> window.location.href=\"".$g_options['scripturl']."?mode=admin&game=$selGame&task=serversettings&key=$insert_id#startsettings\"; </script>";
+				$redirectUrl = $g_options['scripturl'] . "?mode=admin&game=$selGame&task=serversettings&key=$insert_id#startsettings";
+				echo '<script type="application/json" id="newserver-redirect-data">' . json_encode(array('redirectUrl' => $redirectUrl)) . '</script>';
+				echo '<script src="' . INCLUDE_PATH . '/js/admintasks.js"></script>';
 				exit;
 			}
 		}
@@ -106,19 +108,7 @@ The "Public Address" should be the address you want shown to users. If left blan
 
 <tr valign="top" class="table_border">
 	<td>
-		<script type="text/javascript">
-		function checkMod() {
-			if (!document.newserverform.server_address.value.match(/^\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b$/)) {
-				alert('Server address must be a valid IP address');
-				return false;
-			}
-			if (document.newserverform.game_mod.value == 'PLEASESELECT') {
-				alert('You must make a selection for Admin Mod');
-				return false;
-			}
-			document.newserverform.submit();
-		}
-		</script>
+		<script src="<?php echo INCLUDE_PATH; ?>/js/admintasks.js"></script>
 		<table width="100%" border=0 cellspacing=1 cellpadding=4>
 			<tr valign="bottom" class="head">
 				<td class='fSmall'>Server IP Address</td>
