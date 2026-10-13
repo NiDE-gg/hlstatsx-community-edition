@@ -2,7 +2,7 @@
 
 ### 📌 Requirements
 
-- **PHP:** version 7.4 or higher required (recommended 8.0 – 8.4).
+- **PHP:** version 8.3 or higher required.
 - **MySQL / MariaDB:** version 5.7 or higher required (recommended 8.0).
 ---
 HLstatsX Community Edition is an open-source project licensed
