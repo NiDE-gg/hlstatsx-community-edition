@@ -161,7 +161,7 @@
 	</ul><br />
 	<div id="main_content"></div>
 	<script type="text/javascript">
-	var Tabs = new Tabs($('main_content'), $$('#main ul.subsection_tabs a'), {
+	var Tabs = new Tabs(document.getElementById('main_content'), document.querySelectorAll('#main ul.subsection_tabs a'), {
 		'mode': 'claninfo',
 		'game': '<?=$game;?>',
 		'loadingImage': '<?=IMAGE_PATH;?>/ajax.gif',
