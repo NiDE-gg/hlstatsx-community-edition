@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 HLstatsX Community Edition (NiDE-gg fork of NomisCZ/hlstatsx-community-edition): real-time stats and rankings for Source/GoldSrc game servers. Requirements: PHP 7.4+ (8.0–8.4 recommended), MySQL/MariaDB 5.7+ (8.0 recommended). Licensed GPLv2.
 
-There is no build system, test suite, linter or package manager (no composer/npm). Verify PHP changes with `php -l <file>` and Perl changes with `perl -c scripts/hlstats.pl` (run from `scripts/`, needs DBI/DBD::mysql installed).
+There is no build system, test suite or package manager (no composer/npm). Verify PHP changes with `php -l <file>` and Perl changes with `perl -c scripts/hlstats.pl` (run from `scripts/`, needs DBI/DBD::mysql installed).
+
+CI (`.github/workflows/`) runs one workflow per tool, each triggered only by changes under its own paths: PHP syntax on PHP 7.4–8.5 (`php-lint.yml`), `perl -c` (`perl-lint.yml`), ShellCheck at error severity (`shellcheck.yml`), SourcePawn compile with SourceMod 1.12 (`sourcepawn.yml`, compiled `.smx` uploaded as an artifact), updater/`install.sql` consistency (`db-updaters.yml` → `.github/scripts/check-updaters.sh`), hadolint + image build on PRs (`dockerfile-lint.yml`) and actionlint (`actionlint.yml`).
 
 ## Components and data flow
 

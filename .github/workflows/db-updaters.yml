@@ -1,0 +1,39 @@
+name: Database updaters
+
+on:
+  pull_request:
+    paths:
+      - "web/updater/**"
+      - "sql/install.sql"
+      - ".github/scripts/check-updaters.sh"
+      - ".github/workflows/db-updaters.yml"
+  push:
+    branches: ["master"]
+    paths:
+      - "web/updater/**"
+      - "sql/install.sql"
+      - ".github/scripts/check-updaters.sh"
+      - ".github/workflows/db-updaters.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Updater scripts / install.sql
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check updater scripts and install.sql version
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: bash .github/scripts/check-updaters.sh "$BASE_REF"

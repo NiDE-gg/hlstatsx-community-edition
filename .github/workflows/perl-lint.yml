@@ -1,0 +1,52 @@
+name: Perl lint
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - ".github/workflows/perl-lint.yml"
+  push:
+    branches: ["master"]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/perl-lint.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  perl:
+    name: Perl syntax
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # Same Perl modules as scripts/Dockerfile.
+      - name: Install Perl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libdbi-perl \
+            libdbd-mysql-perl \
+            libgeo-ip-perl \
+            libsyntax-keyword-try-perl \
+            libgeoip2-perl \
+            libmaxmind-db-reader-perl
+
+      - name: Check Perl scripts and modules
+        working-directory: scripts
+        run: |
+          status=0
+          while IFS= read -r -d '' file; do
+            if ! perl -c "$file"; then
+              echo "::error file=scripts/${file}::perl -c failed for scripts/${file}"
+              status=1
+            fi
+          done < <(git ls-files -z -- '*.pl' '*.pm')
+          exit "$status"
