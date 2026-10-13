@@ -217,7 +217,6 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$optiongroups[0]->options[] = new Option('nav_cheaters', 'Show Banned Players nav-link', 'select');
 	$optiongroups[0]->options[] = new Option('sourcebans_address', 'SourceBans URL<br />Enter the relative or full path to your SourceBans web site, if you have one. Ex: http://www.yoursite.com/sourcebans/ or /sourcebans/', 'text');
 	$optiongroups[0]->options[] = new Option('forum_address', 'Forum URL<br />Enter the relative or full path to your forum/message board, if you have one. Ex: http://www.yoursite.com/forum/ or /forum/', 'text');
-	$optiongroups[0]->options[] = new Option('show_weapon_target_flash', 'Show hitbox flash animation instead of plain html table for games with accuracy tracking (on supported games)', 'select');
 	$optiongroups[0]->options[] = new Option('show_server_load_image', 'Show load summaries from all monitored servers', 'select');
 	$optiongroups[0]->options[] = new Option('showqueries', 'Show "Executed X queries, generated this page in Y Seconds." message in footer?', 'select');
 	$optiongroups[0]->options[] = new Option('sigbackground', 'Default background for forum signature(Numbers 1-11 or random)<br />Look in sig folder to see background choices', 'text');
