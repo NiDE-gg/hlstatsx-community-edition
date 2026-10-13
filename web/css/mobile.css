@@ -1,0 +1,374 @@
+/*
+ * Mobile layout. Linked from pages/header.php *after* the theme stylesheet,
+ * with media="screen and (max-width: 768px)", so these rules win the cascade
+ * over every theme in styles/ at equal specificity. Colors are left to the
+ * theme: only layout, spacing and sizing are set here.
+ */
+
+/* ---- Page frame -------------------------------------------------------- */
+
+body {
+    margin: 0;
+    padding: 10px;
+}
+
+.content {
+    margin: 0;
+}
+
+/* the spacer <br /> between the header block and the page content */
+body > .block + br {
+    display: none;
+}
+
+.block,
+.subblock {
+    width: auto;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* section titles (printSectionTitle()) */
+.block > span.fHeading {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 15px;
+}
+
+/* side-by-side halves (player/clan pages) are laid out with inline floats */
+div[style*="float:left"][style*="width:"],
+div[style*="float:right"][style*="width:"] {
+    float: none !important;
+    width: auto !important;
+    padding-top: 0 !important;
+    margin-bottom: 14px;
+}
+
+/* ---- Header ------------------------------------------------------------ */
+
+.headerblock {
+    height: auto;
+    padding-bottom: 6px;
+}
+
+.headerblock .title {
+    margin: 0;
+    padding: 6px 0 0;
+    text-align: center;
+}
+
+.headerblock .title img {
+    width: auto;
+    max-width: 220px;
+}
+
+.headertabs {
+    margin: 0;
+    padding: 6px 0 0;
+}
+
+.headertabs ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+}
+
+.headertabs li {
+    margin: 0;
+}
+
+.header_gameslist,
+#header_gameslist {
+    position: static;
+    float: none;
+    margin: 6px 0 0;
+    padding: 0;
+    text-align: center;
+}
+
+ul#header_gameslist li {
+    float: none;
+    display: inline-block;
+    padding: 0 4px;
+}
+
+/* breadcrumb + style selector */
+.location {
+    box-sizing: border-box;
+    height: auto;
+    overflow: hidden;
+    padding: 6px 8px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.location ul {
+    float: none !important;
+    margin: 0;
+    padding: 0;
+}
+
+.location li {
+    margin-left: 4px;
+}
+
+.location li:first-child {
+    margin-left: 0;
+}
+
+.location .arrow {
+    font-size: 13px;
+}
+
+.location > div {
+    float: none !important;
+    margin-top: 4px;
+}
+
+.location_under {
+    display: none;
+}
+
+/* ---- Per-game navigation: 3-column grid of buttons -------------------- */
+
+nav {
+    margin: 12px 0;
+}
+
+.fancyNav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border-radius: 0;
+}
+
+.fancyNav li,
+.fancyNav li:first-child,
+.fancyNav li:last-child {
+    float: none;
+    display: block;
+    margin: 0;
+    border: 0;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.fancyNav li:after {
+    display: none;
+}
+
+.fancyNav li a {
+    display: block;
+    padding: 9px 4px;
+    font-size: 14px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---- Tables ------------------------------------------------------------ */
+
+/* wide tables scroll inside their block instead of widening the page */
+.subblock,
+.opener {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* stacked tables in a block are separated by <br /><br />; use a margin */
+.subblock > br {
+    display: none;
+}
+
+.subblock > table + table {
+    margin-top: 14px;
+}
+
+table {
+    font-size: 13px;
+}
+
+.data-table td,
+.livestats-table td {
+    padding: 6px 5px;
+}
+
+/* columns flagged mobile=hide in includes/class_table.php */
+.data-table td.hide-mobile {
+    display: none;
+}
+
+/* player/clan names next to a flag or icon: truncate long names */
+.data-table td:has(> img + a) > a,
+.data-table td > a:has(> img.tableicon) {
+    display: inline-block;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+/*
+ * Server summary rows (pages/servers.php, pages/game.php): one card per
+ * server instead of an 8-column row. Name and address span the full width,
+ * the six values sit in a 2-column grid labelled from each cell's
+ * data-label (2 columns, not 3, so long map names fit).
+ */
+table.data-table:has(td.game-table-cell),
+table.data-table:has(td.game-table-cell) > tbody {
+    display: block;
+    width: 100%;
+}
+
+table.data-table tr.data-table-head:has(+ tr > td.game-table-cell) {
+    display: none;
+}
+
+tr:has(> td.game-table-cell) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+td.game-table-cell {
+    display: block;
+    width: auto !important;
+    border: 0;
+    padding: 6px 8px;
+    text-align: left !important;
+    overflow-wrap: anywhere;
+}
+
+td.game-table-cell:nth-child(1),
+td.game-table-cell:nth-child(2) {
+    grid-column: 1 / -1;
+}
+
+td.game-table-cell:nth-child(1) {
+    font-size: 15px;
+}
+
+td.game-table-cell[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+}
+
+td.game-table-cell:nth-child(-n+2)[data-label]::before {
+    display: none;
+}
+
+/*
+ * Live players (pages/livestats.php): hide HS:K, Acc, Lat and Time. Body
+ * rows have 12 cells (kills/":"/deaths are 3 cells), the header has 10
+ * because "Kills" spans those three.
+ */
+.livestats-table tr.data-table-head > td:nth-child(n+5):nth-child(-n+8),
+.livestats-table tr:not(.data-table-head) > td:nth-child(n+7):nth-child(-n+10) {
+    display: none;
+}
+
+.livestats-table td {
+    padding: 5px 4px;
+    white-space: nowrap;
+}
+
+.livestats-table td:nth-child(2) {
+    width: auto !important;
+    max-width: 32vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---- Charts and maps --------------------------------------------------- */
+
+canvas.server-load-chart,
+canvas.game-trend-chart,
+canvas.playerinfo-trend-chart {
+    max-width: 100%;
+}
+
+#map {
+    width: 100% !important;
+    height: 260px !important;
+}
+
+/* ---- Player page tabs -------------------------------------------------- */
+
+#main ul.subsection_tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    height: auto;
+    margin-bottom: 10px;
+    border-bottom: 0;
+}
+
+#main ul.subsection_tabs li {
+    float: none;
+    margin: 0;
+}
+
+#main ul.subsection_tabs li a {
+    width: auto;
+    height: auto;
+    padding: 8px 6px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* ---- Forms ------------------------------------------------------------- */
+
+/* small filter forms floated left/right of each other (e.g. players.php) */
+.subblock > div[style*="float:left"],
+.subblock > div[style*="float:right"] {
+    float: none !important;
+    margin-bottom: 8px;
+}
+
+.subblock form:not(:has(table)) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.subblock form:not(:has(table)) input[type="text"],
+.subblock form:not(:has(table)) select {
+    flex: 1 1 110px;
+    width: 110px;
+    min-width: 0;
+}
+
+input.submit,
+input.smallsubmit {
+    min-height: 36px;
+    padding: 6px 14px;
+    font-size: 14px;
+}
+
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+    max-width: 100%;
+    font-size: 16px; /* below 16px iOS Safari zooms in on focus */
+}

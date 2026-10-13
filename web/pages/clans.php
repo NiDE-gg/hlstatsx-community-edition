@@ -85,7 +85,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			(
 				'tag',
 				'Tag',
-				'width=15&align=center'
+				'width=15&align=center&mobile=hide'
 			),
 			new TableColumn
 			(
@@ -103,13 +103,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 			(
 				'activity',
 				'Activity',
-				'width=8&type=bargraph'
+				'width=8&type=bargraph&mobile=hide'
 			),
 			new TableColumn
 			(
 				'connection_time',
 				'Connection Time',
-				'width=13&align=right&type=timestamp'
+				'width=13&align=right&type=timestamp&mobile=hide'
 			),
 			new TableColumn
 			(
@@ -121,7 +121,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			(
 				'deaths',
 				'Deaths',
-				'width=7&align=right'
+				'width=7&align=right&mobile=hide'
 			),
 			new TableColumn
 			(
