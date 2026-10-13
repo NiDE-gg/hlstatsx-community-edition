@@ -26,19 +26,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sm-version: ["1.12"]
+        sm-version: ["1.12.x"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Download SourceMod compiler
-        run: |
-          base="https://sm.alliedmods.net/smdrop/${{ matrix.sm-version }}"
-          archive=$(curl -fsSL "${base}/sourcemod-latest-linux")
-          echo "Using ${archive}"
-          mkdir -p "$RUNNER_TEMP/sourcemod"
-          curl -fsSL "${base}/${archive}" | tar -xz -C "$RUNNER_TEMP/sourcemod" addons/sourcemod/scripting
-          echo "SPCOMP_DIR=$RUNNER_TEMP/sourcemod/addons/sourcemod/scripting" >> "$GITHUB_ENV"
+      - name: Setup SourcePawn compiler
+        uses: rumblefrog/setup-sp@v1.3.1
+        with:
+          version: ${{ matrix.sm-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compile plugins
         working-directory: sourcemod/scripting
@@ -47,8 +44,7 @@ jobs:
           status=0
           for plugin in *.sp; do
             echo "::group::${plugin}"
-            if ! "$SPCOMP_DIR/spcomp64" -i"$SPCOMP_DIR/include" -iinclude \
-                -o"$RUNNER_TEMP/compiled/${plugin%.sp}.smx" "$plugin"; then
+            if ! spcomp -iinclude -o"$RUNNER_TEMP/compiled/${plugin%.sp}.smx" "$plugin"; then
               echo "::error file=sourcemod/scripting/${plugin}::${plugin} failed to compile with SourceMod ${{ matrix.sm-version }}"
               status=1
             fi
