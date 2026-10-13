@@ -670,26 +670,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 							$script_path = preg_replace('/\/$/','',$script_path);
 						?>
 						<br /><br />
-						<script type="text/javascript">
-							/* <![CDATA[ */
-							function setForumText(val)
-							{
-								var txtArea = document.getElementById('siglink');
-								switch(val)
-								{
-									case 0:
-										<?php echo "txtArea.value = " . jsEscape($jimglink) . ";\n"; ?>
-										break;
-									case 1:
-										<?php echo "txtArea.value = " . jsEscape("[url=$script_path/hlstats.php?mode=playerinfo&player=$player][img]$jimglink"."[/img][/url]") . ";\n"; ?>
-										break;
-									case 2:
-										<?php echo "txtArea.value = " . jsEscape("[url=\"$script_path/hlstats.php?mode=playerinfo&player=$player\"][img]$jimglink"."[/img][/url]") . ";\n"; ?>
-										break;
-								}
-							}
-							/* ]]> */
-						</script>
+						<?php
+							$forumTextData = array(
+								0 => $jimglink,
+								1 => "[url=$script_path/hlstats.php?mode=playerinfo&player=$player][img]$jimglink" . "[/img][/url]",
+								2 => "[url=\"$script_path/hlstats.php?mode=playerinfo&player=$player\"][img]$jimglink" . "[/img][/url]",
+							);
+						?>
+						<script type="application/json" id="playerinfo-forum-text-data"><?php echo jsEscape($forumTextData); ?></script>
+						<script src="<?php echo INCLUDE_PATH; ?>/js/playerinfo.js"></script>
 						<a href="" onclick="setForumText(1);return false">
 							bbCode 1 (phpBB, SMF)</a>&nbsp;|&nbsp;<a href="" onclick="setForumText(2);return false">bbCode 2 (IPB)</a>&nbsp;|&nbsp;<a href="" onclick="setForumText(0);return false">Direct Image
 						</a>
