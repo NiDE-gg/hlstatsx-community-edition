@@ -284,20 +284,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 					print('<table class="data-table"><tr class="data-table-head">');
 					print('<td class="fSmall">&nbsp;'.$range_name.'</td></tr>');
 					print('<tr class="data-table-row"><td style="text-align:center; height: 200px; vertical-align:middle;">');
-					print('<img ');
-					if(!$_SESSION['nojs']) {
-						/* Javascript is on, so delay loading the image, 
-							until the accordion code is called below.  We do this
-							by setting src to a static image, and storing the 'real' image
-							URL in delaysrc. */
-						print('src="' . IMAGE_PATH .'/title-small.png" delay');
-					}
-					
-					print('src="show_graph.php?type=0&amp;width=870&amp;height=200&amp;'.
-						'game='.$game.'&amp;server_id='.$server_id.'&amp;'.
-						'bgcolor='.$g_options['graphbg_load'].'&amp;color='.$g_options['graphtxt_load'].
-						'&amp;range='.$range_code.'" alt="'.$range_name.'" title="'.$range_name.'" />');
-					print('</td></tr>	</table><br /><br />');					
+					print('<canvas class="server-load-chart" width="870" height="200" '.
+						'data-server-id="'.(int)$server_id.'" data-range="'.(int)$range_code.'" '.
+						'data-bg-color="'.htmlspecialchars($g_options['graphbg_load']).'" '.
+						'data-text-color="'.htmlspecialchars($g_options['graphtxt_load']).'" '.
+						'aria-label="'.htmlspecialchars($range_name).'"></canvas>');
+					print('</td></tr>	</table><br /><br />');
 				}
 ?>
 
@@ -316,7 +308,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 		}
 	}
-	
+?>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/server-load-chart.js"></script>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/game-trend-chart.js"></script>
+<?php
 	if (($g_options['show_google_map'] == 1) || ($g_options['show_server_load_image'] == 1)) {
  
 		echo '<table class="data-table" style="margin-bottom:40px;">';
@@ -334,7 +330,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 		<tr class="data-table-row">
 			<td style="text-align:center;padding:0px;">
-				<img src="show_graph.php?type=1&amp;game=<?php echo $game ?>&amp;width=870&amp;height=200&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>" alt="Server Load Graph" title="serverLoadGraph" />
+				<canvas class="game-trend-chart" width="870" height="200" data-game="<?php echo htmlspecialchars($game); ?>" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Server Load Graph"></canvas>
 			</td>
 		</tr>
 <?php
@@ -419,7 +415,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<table class="data-table">
 			<tr class="data-table-row">
 			  <td style="padding:0px;text-align:center;">
-				<a href="<?php $g_options['scripturl'] ?>?mode=servers&amp;server_id=<?php echo $server_id ?>&amp;game=<?php echo $game ?>" style="text-decoration:none;"><img src="show_graph.php?type=0&amp;game=<?php echo $game; ?>&amp;width=870&amp;height=200&amp;server_id=<?php echo $server_id ?>&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>" style="border:0px;" alt="Server Load Graph" title="Server Load Graph" /></a>
+				<a href="<?php $g_options['scripturl'] ?>?mode=servers&amp;server_id=<?php echo $server_id ?>&amp;game=<?php echo $game ?>" style="text-decoration:none;"><canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Server Load Graph"></canvas></a>
 			  </td>
 			</tr>
 			</table>
