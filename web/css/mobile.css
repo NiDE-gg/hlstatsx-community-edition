@@ -94,6 +94,11 @@ div[style*="float:right"][style*="width:"] {
     text-align: center;
 }
 
+ul#header_gameslist {
+    margin: 6px 0 0;
+    text-align: center;
+}
+
 ul#header_gameslist li {
     float: none;
     display: inline-block;
@@ -261,6 +266,61 @@ td.game-table-cell:nth-child(2) {
 
 td.game-table-cell:nth-child(1) {
     font-size: 15px;
+}
+
+/*
+ * Games list on the home page (pages/contents.php): the name cell shows the
+ * game with its Players/Clans links on a second line, then Players, Top
+ * Player and Top Clan sit in three labelled columns.
+ */
+table.games-table tr:has(> td.game-table-cell) {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+table.games-table tr.discord-row:has(> td.game-table-cell) {
+    grid-template-columns: 1fr;
+}
+
+table.games-table td.game-table-cell:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 18px;
+    height: auto !important;
+}
+
+table.games-table .game-name {
+    float: none !important;
+    order: 0;
+    flex: 1 1 100%;
+    line-height: 1.4 !important;
+}
+
+table.games-table .game-link {
+    float: none !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+table.games-table .game-link > div {
+    margin: 0 !important;
+}
+
+table.games-table .game-link:last-child {
+    order: 1;
+}
+
+table.games-table .game-link:not(:last-child) {
+    order: 2;
+}
+
+table.games-table td.game-table-cell:nth-child(n+2) {
+    grid-column: auto;
+}
+
+table.games-table td.game-table-cell:nth-child(n+2)[data-label]::before {
+    display: block;
 }
 
 td.game-table-cell[data-label]::before {

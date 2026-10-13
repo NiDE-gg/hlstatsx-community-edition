@@ -83,7 +83,7 @@
 			position: 'top',
 			align: 'end',
 			color: textColor,
-			font: { size: 11, weight: 'normal' },
+			font: { size: 13, weight: 'normal' },
 			text: 'New Players Last 24h: ' + newPlayers.last_day + '  Last 1h: ' + newPlayers.last_hour,
 		};
 	}
@@ -109,6 +109,14 @@
 		if (canvas.clientWidth > 0 && canvas.clientWidth < canvas.width) {
 			canvas.width = canvas.clientWidth;
 		}
+
+		// Narrow screens: taller plot, fewer ticks, no axis titles (the legend
+		// already names every series) and a larger font so the text stays legible.
+		const compact = canvas.width < 600;
+		if (compact) {
+			canvas.height = 280;
+		}
+		Chart.defaults.font.size = 13;
 
 		new Chart(canvas.getContext('2d'), {
 			type: 'line',
@@ -173,28 +181,28 @@
 				maintainAspectRatio: false,
 				interaction: { mode: 'index', intersect: false },
 				plugins: {
-					legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12 } },
+					legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, padding: 14 } },
 					title: newPlayersTitle(data.new_players, textColor),
 				},
 				scales: {
 					x: {
-						ticks: { color: textColor, autoSkip: true, maxTicksLimit: 10, maxRotation: 0 },
+						ticks: { color: textColor, autoSkip: true, maxTicksLimit: compact ? 5 : 10, maxRotation: 0 },
 						grid: { color: 'rgba(255, 255, 255, 0.1)' },
 					},
 					y: {
 						type: 'linear',
 						position: 'left',
 						beginAtZero: true,
-						title: { display: true, text: 'Kills / Headshots / Players', color: textColor },
-						ticks: { color: textColor },
+						title: { display: !compact, text: 'Kills / Headshots / Players', color: textColor },
+						ticks: { color: textColor, maxTicksLimit: compact ? 5 : undefined },
 						grid: { color: 'rgba(255, 255, 255, 0.1)' },
 					},
 					y1: {
 						type: 'linear',
 						position: 'right',
 						beginAtZero: true,
-						title: { display: true, text: 'Slots', color: textColor },
-						ticks: { color: textColor },
+						title: { display: !compact, text: 'Slots', color: textColor },
+						ticks: { color: textColor, maxTicksLimit: compact ? 5 : undefined },
 						grid: { display: false },
 					},
 				},

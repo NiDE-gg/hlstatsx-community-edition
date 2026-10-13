@@ -112,6 +112,14 @@
 			canvas.width = canvas.clientWidth;
 		}
 
+		// Narrow screens: taller plot, fewer ticks, no axis titles (the legend
+		// already names every series) and a larger font so the text stays legible.
+		const compact = canvas.width < 600;
+		if (compact) {
+			canvas.height = 280;
+		}
+		Chart.defaults.font.size = 13;
+
 		new Chart(canvas.getContext('2d'), {
 			type: 'line',
 			data: {
@@ -156,21 +164,21 @@
 				},
 				scales: {
 					x: {
-						ticks: { color: textColor },
+						ticks: { color: textColor, maxTicksLimit: compact ? 5 : undefined },
 						grid: { color: 'rgba(255, 255, 255, 0.1)' },
 					},
 					y: {
 						type: 'linear',
 						position: 'left',
-						title: { display: true, text: 'Skill (K)', color: textColor },
-						ticks: { color: textColor },
+						title: { display: !compact, text: 'Skill (K)', color: textColor },
+						ticks: { color: textColor, maxTicksLimit: compact ? 5 : undefined },
 						grid: { color: 'rgba(255, 255, 255, 0.1)' },
 					},
 					y1: {
 						type: 'linear',
 						position: 'right',
-						title: { display: true, text: 'Session', color: textColor },
-						ticks: { color: textColor },
+						title: { display: !compact, text: 'Session', color: textColor },
+						ticks: { color: textColor, maxTicksLimit: compact ? 5 : undefined },
 						grid: { display: false },
 					},
 				},
