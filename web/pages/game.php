@@ -312,26 +312,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 		if ($g_options['slider'] == 1) {
 ?>
-	<script type="text/javascript">
-		var myAccordion = new Accordion($('accordion'), 'tr.toggler', 'div.opener', {
-			opacity: false,
-			display: '-1',
-			alwaysHide: true,
-			onActive: function(toggler, element){
-				toggler.setStyle('color', '#ff3300');
-				/* here we set the 'src' attribute properly, 
-					so that the images load once the accordion is opened */
-					
-				element.getElements('img').each(function(el) { 
-					if(el.get('delaysrc')!=null)
-					el.set('src', el.get('delaysrc'));
-				});					
-			},
-			onBackground: function(toggler, element){
-				toggler.setStyle('color', '#222');
-			}
-		});
-	</script>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/accordion.js"></script>
 <?php
 		}
 	}
