@@ -351,3 +351,27 @@ img.mapinfo_thumb {
     max-width: fit-content;
     max-height: 300px;
 }
+
+/*
+ * Mobile nav (issue #63 phase 2). .fancyNav li above floats unconditionally,
+ * so it keeps beating the equivalent rule in the shared hlstats.css media
+ * query - override it again here, later in this file's own cascade.
+ */
+@media (max-width: 768px) {
+  .fancyNav {
+    display: block;
+    width: 100%;
+  }
+
+  .fancyNav li {
+    float: none;
+    display: block;
+    border-right: none;
+    border-bottom: 1px solid rgba(9, 9, 9, 0.125);
+  }
+
+  .fancyNav li a {
+    display: block;
+    text-align: center;
+  }
+}
