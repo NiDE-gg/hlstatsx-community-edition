@@ -1,0 +1,425 @@
+/* ================================================== */
+/* 1. VARIABLES & DESIGN SYSTEM                       */
+/* ================================================== */
+:root {
+    --sp-0: 0; --sp-1: 4px; --sp-2: 8px; --sp-3: 12px;
+    --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+    --radius-1: 4px; --radius-2: 8px;
+
+    --bg-primary: #0f1015;
+    --bg-secondary: #13141b;
+    --surface-color: #2c2c2c;
+    --body-bg-color: #020308;
+    --footer-bg: #121d2f;
+
+    --bg-gradient-main: linear-gradient(90deg, #020308 0%, #020308 8%, #05091a 20%, #060a1d 50%, #05091a 80%, #020308 92%, #020308 100%);
+    --bg-gradient-top: linear-gradient(180deg, #050816 0%, rgba(5, 8, 22, 0.95) 16%, rgba(5, 8, 22, 0.85) 24%, transparent 42%);
+    --bg-gradient-radial: radial-gradient(ellipse 80% 45% at 50% 120%, rgba(37, 99, 235, 0.16) 0%, transparent 60%);
+
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --on-surface-color: #e0e0e0;
+    --footer-text: #e5e7eb;
+
+    --accent-color: #1a7abf;
+    --accent-hover: #9965f4;
+    --link-primary: #60a5fa;
+    --link-hover: #93c5fd;
+    --error-color: #cf6679;
+    --success-color: #03dac6;
+}
+
+/* ================================================== */
+/* 2. GLOBAL & BODY                                   */
+/* ================================================== */
+body {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+    background-color: var(--body-bg-color);
+    background-image: var(--bg-gradient-main), var(--bg-gradient-top), var(--bg-gradient-radial);
+    background-repeat: no-repeat;
+    background-size: 100% 100%, 100% 420px, 100% 100%;
+    background-position: center top;
+    background-attachment: fixed;
+}
+
+nav {
+    display: block;
+    margin: auto;
+    text-align: center;
+}
+
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+}
+
+a:hover { opacity: 0.8; }
+
+a:focus, input.submit:focus {
+    outline: 2px solid var(--accent-color);
+}
+
+h1, h2, h3 {
+    color: var(--text-primary);
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+h1 { font-size: 24px; }
+h2 { font-size: 20px; }
+h3 { font-size: 18px; }
+
+/* ================================================== */
+/* 3. TABLES                                          */
+/* ================================================== */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+}
+
+th, td {
+    border: 1px solid var(--surface-color);
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: var(--surface-color);
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+td { background-color: var(--bg-secondary); }
+
+tr:nth-child(even) td { background-color: var(--bg-primary); }
+
+table#accordion { border-collapse: collapse; }
+
+table#accordion tr.toggler td { border-width: 0 0 0 1px; }
+
+/* LiveStats */
+.livestats-table {
+    border-style: solid;
+    border-width: 0;
+    border-color: #99AAAA;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.livestats-table td {
+    border: 0;
+    padding-top: 4px;
+    padding-left: 5px;
+    color: var(--text-primary);
+}
+
+/* Note: !important nécessaires ici pour contrer les styles inline du moteur HLStats */
+.livestats-table a { color: var(--link-primary) !important; }
+.livestats-table a:hover { color: var(--link-hover) !important; }
+
+.livestats-table tr:nth-child(odd)[style*="background:#EFEFEF"] td[style*="background:#EFEFEF"] {
+    background: var(--bg-secondary) !important;
+    color: var(--footer-text) !important;
+}
+
+.livestats-table tr:nth-child(even)[style*="background:#EFEFEF"] td[style*="background:#EFEFEF"] {
+    background: var(--bg-primary) !important;
+    color: var(--footer-text) !important;
+}
+
+/* ================================================== */
+/* 4. HEADER & NAVIGATION                             */
+/* ================================================== */
+.headerblock .title img {
+    width: 250px;
+    height: auto;
+}
+
+#ingame .headerblock a:link,
+#ingame .headerblock a:visited { color: #fff; }
+
+ul#header_gameslist {
+    margin: 15px;
+    text-align: right;
+}
+
+.header_gameslist {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0 auto;
+    float: right;
+}
+
+ul#header_gameslist li {
+    list-style: none;
+    float: left;
+    padding: 0 10px;
+}
+
+.header_tabs {
+    color: var(--text-primary);
+    background: #22242f;
+    vertical-align: middle;
+    padding-left: 12px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin: 0 2px;
+    display: inline-block;
+    border-radius: 4px;
+}
+
+.headertabs {
+    position: relative;
+}
+
+.headertabs ul {
+    list-style-type: none;
+    list-style-image: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.headertabs li {
+    margin: 4px;
+    display: table;
+    padding: 4px 10px;
+}
+
+/* FancyNav */
+.fancyNav {
+    display: inline-block;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.fancyNav li {
+    position: relative;
+    float: left;
+    list-style: none;
+    background-color: #f0f0f0;
+    background-image: linear-gradient(to bottom, #fefefe 0%, #f0f0f0 50%, #e6e6e6 51%);
+    border-right: 1px solid rgba(9, 9, 9, 0.125);
+    box-shadow: inset 1px -1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.fancyNav li:first-child { border-radius: 4px 0 0 4px; }
+.fancyNav li:last-child { border-radius: 0 4px 4px 0; }
+
+.fancyNav li:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    opacity: 0;
+    background-image: linear-gradient(to right, rgba(168, 168, 168, 0.5), rgba(168, 168, 168, 0) 50%, rgba(168, 168, 168, 0.5));
+    box-shadow: -1px 0 0 #a3a3a3, -2px 0 0 #fff, 1px 0 0 #a3a3a3, 2px 0 0 #fff;
+    transition: opacity 0.25s;
+}
+
+.fancyNav li:hover:after,
+.fancyNav li.selected:after,
+.fancyNav li:target:after { opacity: 1; }
+
+.fancyNav:hover li.selected:after,
+.fancyNav:hover li:target:after { opacity: 0; }
+
+.fancyNav li.selected:hover:after,
+.fancyNav li:target:hover:after { opacity: 1 !important; }
+
+.fancyNav li a {
+    position: relative;
+    z-index: 2;
+    display: inline-block;
+    padding: 6px 34px 8px;
+    color: #5d5d5d;
+    font: 16px Arial, sans-serif;
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.6);
+    text-decoration: none !important;
+    white-space: nowrap;
+}
+
+/* ================================================== */
+/* 5. SUBSECTION TABS                                 */
+/* ================================================== */
+#main ul.subsection_tabs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    clear: both;
+    border-bottom: 1px solid #ccc;
+    height: 18px;
+}
+
+#main ul.subsection_tabs li {
+    float: left;
+    margin-right: 7px;
+    text-align: center;
+}
+
+#main ul.subsection_tabs li a {
+    display: block;
+    height: 18px;
+    padding: 0 6px;
+    background-color: #fff;
+    color: #666;
+    width: 100px;
+    font-weight: bold;
+    font-size: 10pt;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+#main ul.subsection_tabs li a:hover { color: #666; }
+#main ul.subsection_tabs li a.active { background-color: #ddd; }
+#main ul.register_tabs { border-bottom: none; }
+#main ul.register_tabs li a.active { background-color: #6d7a81; color: #fff; }
+
+/* ================================================== */
+/* 6. FORMULAIRES & BOUTONS                           */
+/* ================================================== */
+input.submit {
+    background-color: var(--accent-color);
+    color: var(--bg-primary);
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    border-radius: 4px;
+    height: auto;
+    width: auto;
+}
+
+input.submit:hover { background-color: var(--accent-hover); }
+
+input[type="text"], input[type="password"], textarea, select {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-color);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+/* ================================================== */
+/* 7. COMPOSANTS                                      */
+/* ================================================== */
+
+.location {
+    font-size: 16px;
+    line-height: 1;
+    font-weight: bold;
+    padding: var(--sp-1) var(--sp-2);
+}
+
+.location li { margin-left: 5px; display: inline; }
+
+.location ul {
+    list-style-type: none;
+    list-style-image: none;
+    padding-top: 15px;
+    padding-left: 0;
+    margin: 0;
+}
+
+.location .arrow { font-size: 14px; }
+
+.error {
+    color: var(--error-color);
+    background-color: rgba(207, 102, 121, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.success {
+    color: var(--success-color);
+    background-color: rgba(3, 218, 198, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+img.mapinfo_thumb {
+    max-width: 100%;
+    max-height: 300px;
+}
+
+meter {
+    width: 100%;
+    height: 12px;
+    background: #eee;
+    border-radius: 3px;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+meter::-webkit-meter-bar {
+    background: #eee;
+    border-radius: 3px;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+meter::-webkit-meter-optimum-value { background: #86cc00; border-radius: 3px; }
+meter::-webkit-meter-suboptimum-value { background: #ffdb1a; border-radius: 3px; }
+meter::-webkit-meter-even-less-good-value { background: #cc4600; border-radius: 3px; }
+meter::-moz-meter-bar { border-radius: 3px; }
+meter:-moz-meter-optimum::-moz-meter-bar { background: #86cc00; }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: #ffdb1a; }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: #cc4600; }
+
+.helpwindow {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 95%;
+    visibility: hidden;
+    padding: 1em;
+    border: thin solid red;
+    background-color: #aaa;
+    color: #fff;
+    font-family: "Courier New", Courier, Arial, monospace;
+    font-size: 10pt;
+}
+
+.warning { padding: 1em; border: thin solid red; }
+.warning .warning-heading { font-size: 2em; }
+.warning .warning-text { font-size: 1em; }
+
+/* ================================================== */
+/* 8. FOOTER                                          */
+/* ================================================== */
+#footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 1.5em 0;
+    font-size: 12px;
+    color: var(--footer-text);
+    background: var(--footer-bg) !important;
+    border-top: 1px solid var(--surface-color);
+}
+
+/* ================================================== */
+/* 9. RESPONSIVE                                      */
+/* ================================================== */
+@media (max-width: 768px) {
+    body { font-size: 14px; padding: 10px; }
+    table { font-size: 12px; }
+    input.submit { width: 100%; padding: 12px; }
+    #footer { font-size: 10px; }
+}
+
+/* ================================================== */
+/* 10. SCROLLBAR                                      */
+/* ================================================== */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
