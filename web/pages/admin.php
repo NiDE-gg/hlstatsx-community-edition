@@ -302,11 +302,8 @@ class EditList
 			foreach (array_keys($this->helpTexts) as $key)
 			{
 				$value = $this->helpTexts[$key];
-				// $value = nl2br(htmlspecialchars($this->helpTexts[$key]));
-				$value = str_replace('"', "'", $value);
-				//$value = preg_replace("/\"/", "'", $value);
 				$value = preg_replace("/[\r\n]/", " ", $value);
-				$returnstr .= "texts[\"" . $key . "\"] = \"" . $value . "\";\n";
+				$returnstr .= "texts[" . jsEscape($key) . "] = " . jsEscape($value) . ";\n";
 			}
 
 			$returnstr .= "\n\nfunction showHelp (keyname) {\n";

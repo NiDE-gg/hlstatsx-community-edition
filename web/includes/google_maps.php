@@ -153,12 +153,12 @@ function printMap($type = 'main')
 						$replace_pattern = array("");
 						$server['name'] = preg_replace($search_pattern, $replace_pattern, $server['name']);
 						$temp = "[" . $server['serverId'] . ',';
-						$temp .= "'" . htmlspecialchars(urldecode(preg_replace($search_pattern, $replace_pattern, $server['addr'])), ENT_QUOTES) . '\',';
-						$temp .= "'" . htmlspecialchars(urldecode(preg_replace($search_pattern, $replace_pattern, $server['name'])), ENT_QUOTES) . '\']';
+						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $server['addr']))) . ',';
+						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $server['name']))) . ']';
 						$servers_js[] = $temp;
 						$kills += $server['kills'];
 					}
-					echo 'createMarkerS(new google.maps.LatLng(' . $map_location['lat'] . ', ' . $map_location['lng'] . '), [' . implode(',', $servers_js) . '], "' . htmlspecialchars(urldecode($map_location['city']), ENT_QUOTES) . '", "' . htmlspecialchars(urldecode($map_location['country']), ENT_QUOTES) . '", ' . $kills . ");\n";
+					echo 'createMarkerS(new google.maps.LatLng(' . $map_location['lat'] . ', ' . $map_location['lng'] . '), [' . implode(',', $servers_js) . '], ' . jsEscape(urldecode($map_location['city'])) . ', ' . jsEscape(urldecode($map_location['country'])) . ', ' . $kills . ");\n";
 				}
 
 				$data = array();
@@ -202,14 +202,14 @@ function printMap($type = 'main')
 						$time_str = $hours . ":" . $min . ":" . $sec;
 
 						$temp = "[" . $player['playerId'] . ',';
-						$temp .= "'" . htmlspecialchars(urldecode(preg_replace($search_pattern, $replace_pattern, $player['name'])), ENT_QUOTES) . "',";
+						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $player['name']))) . ',';
 						$temp .= $player['kills'] . ',';
 						$temp .= $player['deaths'] . ',';
-						$temp .= "'" . $time_str . "']";
+						$temp .= jsEscape($time_str) . ']';
 						$players_js[] = $temp;
 					}
 
-					echo "createMarker(new google.maps.LatLng(" . $map_location['cli_lat'] . ", " . $map_location['cli_lng'] . "), \"" . htmlspecialchars(urldecode($map_location['cli_city']), ENT_QUOTES) . "\", \"" . htmlspecialchars(urldecode($map_location['cli_country']), ENT_QUOTES) . '", [' . implode(',', $players_js) . "]);\n";
+					echo "createMarker(new google.maps.LatLng(" . $map_location['cli_lat'] . ", " . $map_location['cli_lng'] . "), " . jsEscape(urldecode($map_location['cli_city'])) . ", " . jsEscape(urldecode($map_location['cli_country'])) . ', [' . implode(',', $players_js) . "]);\n";
 				}
 			} else if ($type == 'clan') {
 				$db->query("
@@ -266,13 +266,13 @@ function printMap($type = 'main')
 					foreach ( $location['players'] as $player )
 					{
 						$temp = "[" .  $player['playerId'] . ',';
-						$temp .= "'" . htmlspecialchars(urldecode(preg_replace($search_pattern, $replace_pattern, $player['name'])), ENT_QUOTES) . "',";
+						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $player['name']))) . ',';
 						$temp .= $player['kills'] . ',';
 						$temp .= $player['deaths'] . ']';
 						$players_js[] = $temp;
 					}
-					
-					echo "createMarker(new google.maps.LatLng(" . $location['lat'] . ", " . $location['lng'] . "), \"" . htmlspecialchars(urldecode($location['city']), ENT_QUOTES) . "\", \"" . htmlspecialchars(urldecode($location['country']), ENT_QUOTES) . "\", [" . implode(",", $players_js) . "]);\n";
+
+					echo "createMarker(new google.maps.LatLng(" . $location['lat'] . ", " . $location['lng'] . "), " . jsEscape(urldecode($location['city'])) . ", " . jsEscape(urldecode($location['country'])) . ", [" . implode(",", $players_js) . "]);\n";
 				}
 			}
 ?>

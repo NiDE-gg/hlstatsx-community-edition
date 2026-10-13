@@ -359,12 +359,12 @@ class teamspeakDisplayClass
 			echo("	enterSubChannel_" . $jsTeamspeakId . "(channelName, channelPassworded, null);\n");
 			echo("}\n");
 			echo("function enterSubChannel_" . $jsTeamspeakId . "(channelName, channelPassworded, subChannelName) {\n");
-			echo("	var serveraddress = 'teamspeak://" . $settings["serveraddress"] . ":" . $settings["serverudpport"] . "';\n");
+			echo("	var serveraddress = 'teamspeak://' + " . jsEscape($settings["serveraddress"]) . " + ':' + " . jsEscape($settings["serverudpport"]) . ";\n");
 			echo("	var nickname=window.prompt('Enter your nickname', '');\n");
 			echo("	if (nickname == null) {\n");
 			echo("		return;\n");
-			echo("	} else if (! stringOk_" . $jsTeamspeakId . "(nickname, '" . str_replace("'", "\\'", $settings["forbiddennicknamechars"]) . "')) {\n");
-			echo("		window.alert('Could not enter the teamspeak server because the nickname you entered contains one or more of these forbidden characters: " . str_replace("'", "\\'", $settings["forbiddennicknamechars"]) . "');\n");
+			echo("	} else if (! stringOk_" . $jsTeamspeakId . "(nickname, " . jsEscape($settings["forbiddennicknamechars"]) . ")) {\n");
+			echo("		window.alert('Could not enter the teamspeak server because the nickname you entered contains one or more of these forbidden characters: ' + " . jsEscape($settings["forbiddennicknamechars"]) . ");\n");
 			echo("		return;\n");
 			echo("	} else if (nickname == \"\") {\n");
 			echo("		window.alert('Could not enter the teamspeak server because you did not enter your nickname');\n");
@@ -444,7 +444,7 @@ class teamspeakDisplayClass
 				echo("<img src=\"teamspeakdisplay/treeimage" . ((($counter + 1) == $currentchannels) ? "3" : "2") . ".png\" alt=\"\">");
 				echo("<img src=\"teamspeakdisplay/channel.png\" alt=\"\" title=\"" . $popupInfo . "\">");
 				echo("</td><td class=\"teamspeakchannel\" title=\"" . $popupInfo . "\">");
-				echo("<a class=\"teamspeakchannel\" href=\"javascript:enterChannel_" . $jsTeamspeakId . "('" . str_replace("'", "\'", $channelInfo["channelname"]) . "', " . (($channelInfo["password"]) == "1" ? "true" : "false") . ");\">");
+				echo("<a class=\"teamspeakchannel\" href=\"javascript:enterChannel_" . $jsTeamspeakId . "(" . htmlspecialchars(jsEscape($channelInfo["channelname"]), ENT_QUOTES) . ", " . (($channelInfo["password"]) == "1" ? "true" : "false") . ");\">");
 				echo(str_replace(" ", "&nbsp;", htmlspecialchars($channelInfo["displayname"])));
 				echo("</a>");
 				echo("</td></tr></table>\n");
@@ -491,7 +491,7 @@ class teamspeakDisplayClass
 					echo("<img src=\"teamspeakdisplay/treeimage" . ((($counter_playerandsubchannels + 1) == $currentplayersandsubchannels) ? "3" : "2") . ".png\" alt=\"\">");
 					echo("<img src=\"teamspeakdisplay/channel.png\" alt=\"\" title=\"" . $popupInfo . "\">");
 					echo("</td><td class=\"teamspeaksubchannel\" title=\"" . $popupInfo . "\">");
-					echo("<a class=\"teamspeaksubchannel\" href=\"javascript:enterSubChannel_" . $jsTeamspeakId . "('" . str_replace("'", "\'", $channelInfo["channelname"]) . "', " . (($channelInfo["password"]) == "1" ? "true" : "false") . ", '" . str_replace("'", "\'", $subchannelInfo["channelname"]) . "');\">");
+					echo("<a class=\"teamspeaksubchannel\" href=\"javascript:enterSubChannel_" . $jsTeamspeakId . "(" . htmlspecialchars(jsEscape($channelInfo["channelname"]), ENT_QUOTES) . ", " . (($channelInfo["password"]) == "1" ? "true" : "false") . ", " . htmlspecialchars(jsEscape($subchannelInfo["channelname"]), ENT_QUOTES) . ");\">");
 					echo(str_replace(" ", "&nbsp;", htmlspecialchars($subchannelInfo["displayname"])));
 					echo("</a>");
 					echo("</td></tr></table>\n");

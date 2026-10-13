@@ -125,6 +125,22 @@ function eHtml($str)
     return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
+/**
+ * jsEscape()
+ *
+ * Safely embeds a PHP value as a JS string literal inside an inline <script>
+ * block. Returns a JSON-encoded string (quotes included), so the result can
+ * be echoed directly in place of a hand-rolled quoted/escaped literal -
+ * do not wrap the return value in additional quotes.
+ *
+ * @param mixed $value
+ * @return string A JSON/JS string literal, e.g. "foo's bar"
+ */
+function jsEscape($value)
+{
+    return json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+}
+
 // Test if flags exists
 /**
  * getFlag()
