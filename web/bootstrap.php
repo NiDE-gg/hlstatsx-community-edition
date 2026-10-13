@@ -9,7 +9,9 @@
     use Repository\OptionsRepository;
     use Repository\GameRepository;
     use Repository\PlayerRepository;
+    use Repository\ServerLoadRepository;
     use Repository\SteamProfileRepository;
+    use Repository\TrendRepository;
     use Service\OptionService;
     use Service\SteamProfileService;
     use Cache\CacheCleaner;
@@ -82,6 +84,14 @@
 
     $container->set(SteamProfileRepository::class, function($c) {
         return new SteamProfileRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(ServerLoadRepository::class, function($c) {
+        return new ServerLoadRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(TrendRepository::class, function($c) {
+        return new TrendRepository($c->get('pdo'), $c->get('logger'));
     });
 
     $container->set(SteamProfileService::class, function($c) {

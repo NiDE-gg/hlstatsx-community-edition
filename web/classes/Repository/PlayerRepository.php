@@ -55,6 +55,35 @@
             }
         }
 
+        /**
+         * Total registered player count for a game. Mirrors the
+         * COUNT(playerId) query used by show_graph.php's type=1 renderer to
+         * derive "new players since X" deltas.
+         */
+        public function getPlayerCountByGame(string $game) : ?int
+        {
+            $sql = "
+                SELECT
+                    COUNT(playerId)
+                FROM
+                    hlstats_Players
+                WHERE
+                    game = :game
+            ";
+
+            try {
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->bindValue(':game', $game, PDO::PARAM_STR);
+                $stmt->execute();
+
+                $count = $stmt->fetchColumn();
+                return ($count === false) ? null : (int)$count;
+            } catch (PDOException $e) {
+                $this->logger->error('Failed to get player count by game: ' . $e->getMessage());
+                return null;
+            }
+        }
+
 		public function getPlayerSuggestions(string $game, string $search, int $limit = 30) : ?array
 		{
 			$limit = max(1, $limit);
