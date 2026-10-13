@@ -113,8 +113,6 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	$bar_type = 0; // 0 == serverinfo last 100 entries
 	// 1 == ?!
-	// 2 == player trend history
-	// 3 == masterserver load
 
 	if (isset($_GET['type']) && is_numeric($_GET['type'])) {
 		$bar_type = valid_request($_GET['type'], true);
@@ -382,88 +380,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 			imagestring($image, 1, $width - $indent_x[1] - $str_width, $indent_y[0] - 11, $str, $font_color);
 		}
 
-	} elseif ($bar_type == 2)
-	{
-		// PLAYER HISTORY GRAPH
-		$indent_x = array(35, 35);
-		$indent_y = array(15, 15);
-		
-		if (file_exists($iconpath . "/trendgraph.png")) {
-			$trendgraph_bg = $iconpath . "/trendgraph.png";
-		} else {
-			$trendgraph_bg = IMAGE_PATH . "/graph/trendgraph.png";
-		}
-
-		$background_img = imagecreatefrompng($trendgraph_bg);
-		if ($background_img)
-			{
-				imagecopy($image, $background_img, 0, 0, 0, 0, 400, 152);
-				imagedestroy($background_img);
-				$drawbg = false;
-			}
-
-		// background
-		if ($drawbg)
-		{
-			imagefilledrectangle($image, 0, 0, $width, $height, $main_color); // background color
-			imagerectangle($image, $indent_x[0], $indent_y[0], $width - $indent_x[1], $height - $indent_y[1], $dark_color);
-			imagefilledrectangle($image, $indent_x[0] + 1, $indent_y[0] + 1, $width - $indent_x[1] - 1, $height - $indent_y[1] - 1, $light_color);
-		}
-
-		// entries
-		$deletedays = $g_options['DeleteDays'];
-		if ($deletedays == 0)
-			$deletedays = 14;
-
-		// define first day's timestamp range
-		$ts = strtotime(date('Y-m-d'));
-		$data_array = array();
-		$arcount = 0;
-		$result = $db->query("SELECT eventTime, skill, kills, deaths, headshots, connection_time, UNIX_TIMESTAMP(eventTime) AS ts FROM hlstats_Players_History WHERE playerId=" . $player . " ORDER BY eventTime DESC LIMIT 0, " . $deletedays);
-		while (($rowdata = $db->fetch_array($result)) && ($arcount < $deletedays))
-		{
-			//echo $rowdata['eventTime']." - ".date("Y-m-d", $ts)."\n";
-			while (($rowdata['eventTime'] != date("Y-m-d", $ts)) && ($arcount < $deletedays))
-			{
-				// insert null value
-				$data_array[] = array('timestamp' => $ts, 'skill' => $rowdata['skill'], 'kills' => 0, 'headshots' => 0, 'deaths' => 0, 'time' => 0);
-				$ts -= 86400;
-				$arcount++;
-			}
-
-			$data_array[] = array('timestamp' => $rowdata['ts'], 'skill' => $rowdata['skill'], 'kills' => $rowdata['kills'], 'headshots' => $rowdata['headshots'], 'deaths' => $rowdata['deaths'], 'time' => $rowdata['connection_time']);
-			$arcount++;
-			$ts -= 86400;
-		}
-
-		while (($arcount < $deletedays))
-		{
-			// insert null value
-			$data_array[] = array('timestamp' => $ts, 'skill' => $rowdata['skill'], 'kills' => 0, 'headshots' => 0, 'deaths' => 0, 'time' => 0);
-			$ts -= 86400;
-			$arcount++;
-		}
-
-		$deletedays = count($data_array);
-
-		$first_entry = 10; // disable tsgk map function
-
-		if (count($data_array) > 1)
-		{
-			drawItems($image, array('width' => $width, 'height' => $height, 'indent_x' => $indent_x, 'indent_y' => $indent_y), $data_array, 0, 'kills', 0, 1, 0, 1, array($red, $red, $font_color, $dark_color, $light_gray));
-			drawItems($image, array('width' => $width, 'height' => $height, 'indent_x' => $indent_x, 'indent_y' => $indent_y), $data_array, 0, 'headshots', 0, 0, 0, 1, array($dark_color, $red, $font_color, $dark_color, $light_gray));
-			drawItems($image, array('width' => $width, 'height' => $height, 'indent_x' => $indent_x, 'indent_y' => $indent_y), $data_array, 0, 'skill', 0, 0, 0, 1, array($orange, $red, $font_color, $dark_color, $light_gray));
-			drawItems($image, array('width' => $width, 'height' => $height, 'indent_x' => $indent_x, 'indent_y' => $indent_y), $data_array, 2, 'deaths', 0, 0, 0, 1, array($gray, $red, $font_color, $dark_color, $light_gray));
-		}
-
-		$str = $deletedays . ' days Trend';
-		$str_width = (imagefontwidth(1) * strlen($str)) + 2;
-		imagestring($image, 1, $width - $indent_x[1] - $str_width, $indent_y[0] - 11, $str, $font_color);
 	}
 
 	imageTrueColorToPalette($image, 0, 65535);
-
-	// $bar_type=2;
 
 	// achtung, hier ist noch ein pfad hardcoded!!!
 	header('Content-Type: image/png');
