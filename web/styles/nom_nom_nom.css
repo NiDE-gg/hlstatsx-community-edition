@@ -329,3 +329,23 @@ ul#header_gameslist li{
 	float: left;
 	padding: 0 10px;
 }
+
+/*
+ * Mobile nav (issue #63 phase 2). #header_gameslist above is an id selector
+ * set unconditionally, so it keeps beating the equivalent rule in the
+ * shared hlstats.css media query - override it again here, later in this
+ * file's own cascade.
+ */
+@media (max-width: 768px) {
+	#header_gameslist {
+		float: none;
+		position: static;
+		text-align: center;
+		margin: 10px auto;
+	}
+
+	ul#header_gameslist li {
+		float: none;
+		display: inline-block;
+	}
+}
