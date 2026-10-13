@@ -4,7 +4,7 @@ HLstatsX Community Edition - Real-time player and clan rankings and statistics
 Copyleft (L) 2008-20XX Nicholas Hastings (nshastings@gmail.com)
 http://www.hlxcommunity.com
 
-HLstatsX Community Edition is a continuation of 
+HLstatsX Community Edition is a continuation of
 ELstatsNEO - Real-time player and clan rankings and statistics
 Copyleft (L) 2008-20XX Malte Bayer (steam@neo-soft.org)
 http://ovrsized.neo-soft.org/
@@ -18,7 +18,7 @@ HLstatsX is an enhanced version of HLstats made by Simon Garner
 HLstats - Real-time player and clan rankings and statistics for Half-Life
 http://sourceforge.net/projects/hlstats/
 Copyright (C) 2001  Simon Garner
-            
+
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -36,383 +36,313 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
+// Builds the marker data for the "Player Locations" Google Map and hands it
+// off to includes/js/maps.js as a single JSON payload (read by that script
+// via a `<script type="application/json" id="hlstats-map-data-<type>">`
+// block, e.g. "hlstats-map-data-main" or "hlstats-map-data-clan").
+// Previously this function echoed one `createMarker(...)`/`createMarkerS(...)`
+// JS function-call string per marker, with city/country/player/server names
+// interpolated into JS source (through jsEscape(), but still PHP-built JS).
+// No PHP-generated JS logic remains here now; only the external script tag(s)
+// and the JSON bootstrap data.
 function printMap($type = 'main')
 {
 	global $db, $game, $g_options, $clandata, $clan;
-	
+
 	if ($type == 'main') {
-		echo ('<script src="http://maps.google.com/maps/api/js?callback=Function.prototype&key=' . GOOGLE_MAPS_API_KEY . '" type="text/javascript"></script>');
+		echo ('<script src="http://maps.google.com/maps/api/js?callback=Function.prototype&key=' . GOOGLE_MAPS_API_KEY . '" type="text/javascript"></script>' . "\n");
 	}
-?> 
-		<script type="text/javascript">
-		/* <![CDATA[ */
-		//Add the preloads here...so that they don't get load
-		//after the graphs load
-		function preloadImages() {
-			var d=document; if(d.images){ if(!d.p) d.p=new Array();
-			var i,j=d.p.length,a=preloadImages.arguments; for(i=0; i<a.length; i++)
-			if (a[i].indexOf("#")!=0){ d.p[j]=new Image; d.p[j++].src=a[i];}}
+
+	$mapCenter = getMapCenter(($type == 'clan' && $clandata['mapregion'] != '') ? $clandata['mapregion'] : $g_options['google_map_region']);
+	$mapTypeId = getMapTypeId($g_options['google_map_type']);
+
+	$preloadImages = array(IMAGE_PATH . '/mm_20_blue.png');
+	if ($type == 'main') {
+		$preloadImages[] = IMAGE_PATH . '/mm_20_red.png';
+	}
+	$preloadImages[] = IMAGE_PATH . '/mm_20_shadow.png';
+
+	$bootstrap = array(
+		'type' => $type,
+		'game' => $game,
+		'imagePath' => IMAGE_PATH,
+		'mapCenter' => $mapCenter,
+		'mapTypeId' => $mapTypeId,
+		'servers' => array(),
+		'players' => array(),
+	);
+
+	if ($type == 'main') {
+		$db->query("SELECT serverId, IF(publicaddress != '', publicaddress, CONCAT(address, ':', port)) AS addr, name, kills, lat, lng, city, country FROM hlstats_Servers WHERE game='$game' AND lat IS NOT NULL AND lng IS NOT NULL");
+
+		$servers = array();
+		while ($row = $db->fetch_array())
+		{
+			//Skip this part, if we already have the location info (should be the same)
+			if (!isset($servers[$row['lat'] . ',' . $row['lng']]))
+			{
+				$servers[$row['lat'] . ',' . $row['lng']] = array('lat' => $row['lat'], 'lng' => $row['lng'], 'addr' => $row['addr'], 'city' => $row['city'], 'country' => $row['country']);
+			}
+
+			$servers[$row['lat'] . ',' . $row['lng']]['servers'][] = array('serverId' => $row['serverId'], 'addr' => $row['addr'], 'name' => $row['name'], 'kills' => $row['kills']);
+		}
+		foreach ($servers as $map_location)
+		{
+			$kills = 0;
+			$serverMarkers = array();
+			foreach ($map_location['servers'] as $server)
+			{
+				$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
+				$replace_pattern = array("");
+				$server['name'] = preg_replace($search_pattern, $replace_pattern, $server['name']);
+
+				$serverMarkers[] = array(
+					'id' => (int) $server['serverId'],
+					'addr' => urldecode(preg_replace($search_pattern, $replace_pattern, $server['addr'])),
+					'name' => urldecode(preg_replace($search_pattern, $replace_pattern, $server['name'])),
+				);
+				$kills += $server['kills'];
+			}
+
+			$bootstrap['servers'][] = array(
+				'lat' => (float) $map_location['lat'],
+				'lng' => (float) $map_location['lng'],
+				'city' => urldecode($map_location['city']),
+				'country' => urldecode($map_location['country']),
+				'kills' => $kills,
+				'items' => $serverMarkers,
+			);
 		}
 
-		<?php echo "preloadImages('".IMAGE_PATH."/mm_20_blue.png', ".(($type == 'main')?"'".IMAGE_PATH."/mm_20_red.png', ":'')."'".IMAGE_PATH."/mm_20_shadow.png');"; ?>
+		$db->query("SELECT
+					hlstats_Livestats.*
+				FROM
+					hlstats_Livestats
+				INNER JOIN
+					hlstats_Servers
+					ON (hlstats_Servers.serverId=hlstats_Livestats.server_id)
+				WHERE
+					hlstats_Livestats.cli_lat IS NOT NULL
+					AND hlstats_Livestats.cli_lng IS NOT NULL
+					AND hlstats_Servers.game='$game'
+					");
+		$players = array();
+		while ($row = $db->fetch_array())
+		{
+			//Skip this part, if we already have the location info (should be the same)
+			if (!isset($players[$row['cli_lat'] . ',' . $row['cli_lng']]))
+			{
+				$players[$row['cli_lat'] . ',' . $row['cli_lng']] = array('cli_lat' => $row['cli_lat'], 'cli_lng' => $row['cli_lng'], 'cli_city' => $row['cli_city'], 'cli_country' => $row['cli_country']);
+			}
+			$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
+			$replace_pattern = array("");
+			$row['name'] = preg_replace($search_pattern, $replace_pattern, $row['name']);
 
-
-			var point_icon = "<?php echo IMAGE_PATH; ?>/mm_20_blue.png";
-			var point_icon_red = "<?php echo IMAGE_PATH; ?>/mm_20_red.png";
-
-<?php
-		if ($type == 'main') {
+			$players[$row['cli_lat'] . ',' . $row['cli_lng']]['players'][] = array('playerId' => $row['player_id'], 'name' => $row['name'], 'kills' => $row['kills'], 'deaths' => $row['deaths'], 'connected' => $row['connected']);
 		}
-			// this create mapLatLng
-			printMapCenter(($type == 'clan' && $clandata['mapregion'] != '') ? $clandata['mapregion'] : $g_options['google_map_region']);
-			// this creates mapType
-			printMapType($g_options['google_map_type']);
-?>
-			var myOptions = {
-				center: mapLatLng,
-				mapTypeId: mapType,
-				zoom: mapZoom, 
-				scrollwheel: false,
-				mapTypeControl: true,
-				mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
-				navigationControl: true,
-				navigationControlOptions: {style: google.maps.NavigationControlStyle.ZOOM_PAN}
-			};
 
-			var map = new google.maps.Map(document.getElementById("map"), myOptions);
+		foreach ($players as $map_location)
+		{
+			$playerMarkers = array();
+			foreach ($map_location['players'] as $player)
+			{
+				$stamp = time() - $player['connected'];
+				$hours = sprintf("%02d", floor($stamp / 3600));
+				$min = sprintf("%02d", floor(($stamp % 3600) / 60));
+				$sec = sprintf("%02d", floor($stamp % 60));
+				$time_str = $hours . ":" . $min . ":" . $sec;
 
-
-
-			function createMarker(point, city, country, player_info) {
-				var html_text = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">'+city+', '+country+'</td></tr>';
-				for ( i=0; i<player_info.length; i++) {
-					html_text += '<tr><td><a href="hlstats.php?mode=playerinfo&amp;player='+player_info[i][0]+'">'+player_info[i][1]+'</a></td></tr>';
-					html_text += '<tr><td>Kills/Deaths</td><td>'+player_info[i][2]+':'+player_info[i][3]+'</td></tr>';
-<?php
-					if ($type == 'main') {
-						echo "html_text += '<tr><td>Time</td><td>'+player_info[i][4]+'</td></tr>';";
-					} 
-?>
-				}
-				html_text += '</table>';
-				var infowindow = new google.maps.InfoWindow({
-					content: html_text
-				})
-				var marker = new google.maps.Marker({
-					position: point, 
-					map: map,
-					icon: point_icon
-				});
-
-				google.maps.event.addListener(marker, "click", function() {infowindow.open(map, marker);});
+				$playerMarkers[] = array(
+					'id' => (int) $player['playerId'],
+					'name' => urldecode(preg_replace($search_pattern, $replace_pattern, $player['name'])),
+					'kills' => (int) $player['kills'],
+					'deaths' => (int) $player['deaths'],
+					'time' => $time_str,
+				);
 			}
 
-<?php
-			if ($type == 'main') {
-?>
-			function createMarkerS(point, servers, city, country, kills) {
-				var html_text =   '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">'+city+', '+country+'</td></tr>';
-				for ( i=0; i<servers.length; i++) {
-					html_text += '<tr><td><a href=\"hlstats.php?mode=servers&server_id=' + servers[i][0] + '&amp;game=<?php echo $game; ?>\">' + servers[i][2] + '</a></td></tr>';
-					html_text += '<tr><td>' + servers[i][1] + ' (<a href=\"steam://connect/' + servers[i][1] + '\">connect</a>)</td></tr>';
-				}
-				html_text += '<tr><td>'+kills+' kills</td></tr></table>';
-				var infowindow = new google.maps.InfoWindow({
-					content: html_text
-				})
-				var marker = new google.maps.Marker({
-					position: point, 
-					map: map,
-					icon: point_icon_red
-				});
-
-				google.maps.event.addListener(marker, "click", function() {infowindow.open(map, marker);});
+			$bootstrap['players'][] = array(
+				'lat' => (float) $map_location['cli_lat'],
+				'lng' => (float) $map_location['cli_lng'],
+				'city' => urldecode($map_location['cli_city']),
+				'country' => urldecode($map_location['cli_country']),
+				'items' => $playerMarkers,
+			);
+		}
+	} else if ($type == 'clan') {
+		$db->query("
+			SELECT
+				playerId,
+				lastName,
+				country,
+				skill,
+				kills,
+				deaths,
+				lat,
+				lng,
+				city,
+				country
+			FROM
+				hlstats_Players
+			WHERE
+				clan=$clan
+				AND hlstats_Players.hideranking = 0
+			GROUP BY
+				hlstats_Players.playerId
+		");
+		$players = array();
+		while ( $row = $db->fetch_array() )
+		{
+			//Skip this part, if we already have the location info (should be the same)
+			if ( !isset($players[ $row['lat'] . ',' . $row['lng'] ]) )
+			{
+				$players[ $row['lat'] . ',' . $row['lng'] ] = array(
+					'lat' => $row['lat'],
+					'lng' => $row['lng'],
+					'city' => $row['city'],
+					'country' => $row['country']
+				);
 			}
-	<?php
+			$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
+			$replace_pattern = array("");
+			$row['lastName'] = preg_replace($search_pattern, $replace_pattern, $row['lastName']);
 
-				$db->query("SELECT serverId, IF(publicaddress != '', publicaddress, CONCAT(address, ':', port)) AS addr, name, kills, lat, lng, city, country FROM hlstats_Servers WHERE game='$game' AND lat IS NOT NULL AND lng IS NOT NULL");
+			$players[ $row['lat'] . ',' . $row['lng'] ]['players'][] = array(
+				'playerId' => $row['playerId'],
+				'name' => $row['lastName'],
+				'kills' => $row['kills'],
+				'deaths' => $row['deaths'],
+                // Where should this information come from??
+				//'connected' => $row['connected']
+			);
+		}
 
-				$servers = array();
-				while ($row = $db->fetch_array())
-				{
-					//Skip this part, if we already have the location info (should be the same)
-					if (!isset($servers[$row['lat'] . ',' . $row['lng']]))
-					{
-						$servers[$row['lat'] . ',' . $row['lng']] = array('lat' => $row['lat'], 'lng' => $row['lng'], 'addr' => $row['addr'], 'city' => $row['city'], 'country' => $row['country']);
-					}
-
-					$servers[$row['lat'] . ',' . $row['lng']]['servers'][] = array('serverId' => $row['serverId'], 'addr' => $row['addr'], 'name' => $row['name'], 'kills' => $row['kills']);
-				}
-				foreach ($servers as $map_location)
-				{
-					$kills = 0;
-					$servers_js = array();
-					foreach ($map_location['servers'] as $server)
-					{
-						$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
-						$replace_pattern = array("");
-						$server['name'] = preg_replace($search_pattern, $replace_pattern, $server['name']);
-						$temp = "[" . $server['serverId'] . ',';
-						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $server['addr']))) . ',';
-						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $server['name']))) . ']';
-						$servers_js[] = $temp;
-						$kills += $server['kills'];
-					}
-					echo 'createMarkerS(new google.maps.LatLng(' . $map_location['lat'] . ', ' . $map_location['lng'] . '), [' . implode(',', $servers_js) . '], ' . jsEscape(urldecode($map_location['city'])) . ', ' . jsEscape(urldecode($map_location['country'])) . ', ' . $kills . ");\n";
-				}
-
-				$data = array();
-				$db->query("SELECT 
-							hlstats_Livestats.* 
-						FROM 
-							hlstats_Livestats
-						INNER JOIN    
-							hlstats_Servers 
-							ON (hlstats_Servers.serverId=hlstats_Livestats.server_id)
-						WHERE 
-							hlstats_Livestats.cli_lat IS NOT NULL 
-							AND hlstats_Livestats.cli_lng IS NOT NULL
-							AND hlstats_Servers.game='$game'
-							");
-				$players = array();
-				while ($row = $db->fetch_array())
-				{
-					//Skip this part, if we already have the location info (should be the same)
-					if (!isset($players[$row['cli_lat'] . ',' . $row['cli_lng']]))
-					{
-						$players[$row['cli_lat'] . ',' . $row['cli_lng']] = array('cli_lat' => $row['cli_lat'], 'cli_lng' => $row['cli_lng'], 'cli_city' => $row['cli_city'], 'cli_country' => $row['cli_country']);
-					}
-					$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
-					$replace_pattern = array("");
-					$row['name'] = preg_replace($search_pattern, $replace_pattern, $row['name']);
-
-					$players[$row['cli_lat'] . ',' . $row['cli_lng']]['players'][] = array('playerId' => $row['player_id'], 'name' => $row['name'], 'kills' => $row['kills'], 'deaths' => $row['deaths'], 'connected' => $row['connected']);
-				}
-
-				foreach ($players as $map_location)
-				{
-					$kills = 0;
-					$players_js = array();
-					foreach ($map_location['players'] as $player)
-					{
-						$stamp = time() - $player['connected'];
-						$hours = sprintf("%02d", floor($stamp / 3600));
-						$min = sprintf("%02d", floor(($stamp % 3600) / 60));
-						$sec = sprintf("%02d", floor($stamp % 60));
-						$time_str = $hours . ":" . $min . ":" . $sec;
-
-						$temp = "[" . $player['playerId'] . ',';
-						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $player['name']))) . ',';
-						$temp .= $player['kills'] . ',';
-						$temp .= $player['deaths'] . ',';
-						$temp .= jsEscape($time_str) . ']';
-						$players_js[] = $temp;
-					}
-
-					echo "createMarker(new google.maps.LatLng(" . $map_location['cli_lat'] . ", " . $map_location['cli_lng'] . "), " . jsEscape(urldecode($map_location['cli_city'])) . ", " . jsEscape(urldecode($map_location['cli_country'])) . ', [' . implode(',', $players_js) . "]);\n";
-				}
-			} else if ($type == 'clan') {
-				$db->query("
-					SELECT
-						playerId,
-						lastName,
-						country,
-						skill,
-						kills,
-						deaths,
-						lat,
-						lng,
-						city,
-						country
-					FROM
-						hlstats_Players
-					WHERE
-						clan=$clan
-						AND hlstats_Players.hideranking = 0
-					GROUP BY
-						hlstats_Players.playerId
-				");
-				$players = array();
-				while ( $row = $db->fetch_array() )
-				{
-					//Skip this part, if we already have the location info (should be the same)
-					if ( !isset($players[ $row['lat'] . ',' . $row['lng'] ]) )
-					{
-						$players[ $row['lat'] . ',' . $row['lng'] ] = array(
-							'lat' => $row['lat'],
-							'lng' => $row['lng'],
-							'city' => $row['city'],
-							'country' => $row['country']
-						);
-					}
-					$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
-					$replace_pattern = array("");
-					$row['lastName'] = preg_replace($search_pattern, $replace_pattern, $row['lastName']);
-					
-					$players[ $row['lat'] . ',' . $row['lng'] ]['players'][] = array(
-						'playerId' => $row['playerId'],
-						'name' => $row['lastName'],
-						'kills' => $row['kills'],
-						'deaths' => $row['deaths'],
-                        // Where should this information come from??
-						//'connected' => $row['connected']
-					);
-				}
-				
-				foreach ( $players as $location )
-				{
-					$kills = 0;
-					$players_js = array();
-					foreach ( $location['players'] as $player )
-					{
-						$temp = "[" .  $player['playerId'] . ',';
-						$temp .= jsEscape(urldecode(preg_replace($search_pattern, $replace_pattern, $player['name']))) . ',';
-						$temp .= $player['kills'] . ',';
-						$temp .= $player['deaths'] . ']';
-						$players_js[] = $temp;
-					}
-
-					echo "createMarker(new google.maps.LatLng(" . $location['lat'] . ", " . $location['lng'] . "), " . jsEscape(urldecode($location['city'])) . ", " . jsEscape(urldecode($location['country'])) . ", [" . implode(",", $players_js) . "]);\n";
-				}
+		foreach ( $players as $location )
+		{
+			$playerMarkers = array();
+			foreach ( $location['players'] as $player )
+			{
+				$playerMarkers[] = array(
+					'id' => (int) $player['playerId'],
+					'name' => urldecode(preg_replace($search_pattern, $replace_pattern, $player['name'])),
+					'kills' => (int) $player['kills'],
+					'deaths' => (int) $player['deaths'],
+				);
 			}
-?>
-		/* ]]> */
-	</script>
-<?php
+
+			$bootstrap['players'][] = array(
+				'lat' => (float) $location['lat'],
+				'lng' => (float) $location['lng'],
+				'city' => urldecode($location['city']),
+				'country' => urldecode($location['country']),
+				'items' => $playerMarkers,
+			);
+		}
+	}
+
+	$bootstrap['preload'] = $preloadImages;
+
+	echo '<script type="application/json" id="hlstats-map-data-' . htmlspecialchars($type, ENT_QUOTES) . '">' . jsEscape($bootstrap) . "</script>\n";
+	echo '<script type="text/javascript" src="' . INCLUDE_PATH . '/js/maps.js"></script>' . "\n";
 }
 
-function printMapCenter($country)
+// Returns the {lat, lng, zoom} to center the map on for a given region name
+// (used to come from printMapCenter(), which echoed the equivalent
+// `var mapLatLng = ...; var mapZoom = ...;` JS statements).
+function getMapCenter($country)
 {
 	switch (strtoupper($country))
 	{
 		case 'EUROPE':
-			echo "var mapLatLng = new google.maps.LatLng(48.8, 8.5);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => 48.8, 'lng' => 8.5, 'zoom' => 3);
 		case 'NORTH AMERICA':
-			echo "var mapLatLng = new google.maps.LatLng(45.0, -97.0);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => 45.0, 'lng' => -97.0, 'zoom' => 3);
 		case 'SOUTH AMERICA':
-			echo "var mapLatLng = new google.maps.LatLng(-14.8, -61.2);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => -14.8, 'lng' => -61.2, 'zoom' => 3);
 		case 'NORTH AFRICA':
-			echo "var mapLatLng = new google.maps.LatLng(25.4, 8.4);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 25.4, 'lng' => 8.4, 'zoom' => 4);
 		case 'SOUTH AFRICA':
-			echo "var mapLatLng = new google.maps.LatLng(-29.0, 23.7);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => -29.0, 'lng' => 23.7, 'zoom' => 5);
 		case 'NORTH EUROPE':
-			echo "var mapLatLng = new google.maps.LatLng(62.6, 15.4);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 62.6, 'lng' => 15.4, 'zoom' => 4);
 		case 'EAST EUROPE':
-			echo "var mapLatLng = new google.maps.LatLng(51.9, 31.8);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 51.9, 'lng' => 31.8, 'zoom' => 4);
 		case 'GERMANY':
-			echo "var mapLatLng = new google.maps.LatLng(51.1, 10.1);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => 51.1, 'lng' => 10.1, 'zoom' => 5);
 		case 'FRANCE':
-			echo "var mapLatLng = new google.maps.LatLng(47.2, 2.4);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => 47.2, 'lng' => 2.4, 'zoom' => 5);
 		case 'SPAIN':
-			echo "var mapLatLng = new google.maps.LatLng(40.3, -4.0);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => 40.3, 'lng' => -4.0, 'zoom' => 5);
 		case 'UNITED KINGDOM':
-			echo "var mapLatLng = new google.maps.LatLng(54.0, -4.3);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => 54.0, 'lng' => -4.3, 'zoom' => 5);
 		case 'DENMARK':
-			echo "var mapLatLng = new google.maps.LatLng(56.1, 9.2);\nvar mapZoom = 6;";
-			break;
+			return array('lat' => 56.1, 'lng' => 9.2, 'zoom' => 6);
 		case 'SWEDEN':
-			echo "var mapLatLng = new google.maps.LatLng(63.2, 16.3);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 63.2, 'lng' => 16.3, 'zoom' => 4);
 		case 'NORWAY':
-			echo "var mapLatLng = new google.maps.LatLng(65.6, 13.1);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 65.6, 'lng' => 13.1, 'zoom' => 4);
 		case 'FINLAND':
-			echo "var mapLatLng = new google.maps.LatLng(65.1, 26.6);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 65.1, 'lng' => 26.6, 'zoom' => 4);
 		case 'NETHERLANDS':
-			echo "var mapLatLng = new google.maps.LatLng(52.3, 5.4);\nvar mapZoom = 7;";
-			break;
+			return array('lat' => 52.3, 'lng' => 5.4, 'zoom' => 7);
 		case 'BELGIUM':
-			echo "var mapLatLng = new google.maps.LatLng(50.7, 4.5);\nvar mapZoom = 7;";
-			break;
+			return array('lat' => 50.7, 'lng' => 4.5, 'zoom' => 7);
 		case 'SUISSE':
-			echo "var mapLatLng = new google.maps.LatLng(46.8, 8.2);\nvar mapZoom = 7;";
-			break;
+			return array('lat' => 46.8, 'lng' => 8.2, 'zoom' => 7);
 		case 'AUSTRIA':
-			echo "var mapLatLng = new google.maps.LatLng(47.7, 14.1);\nvar mapZoom = 7;";
-			break;
+			return array('lat' => 47.7, 'lng' => 14.1, 'zoom' => 7);
 		case 'POLAND':
-			echo "var mapLatLng = new google.maps.LatLng(52.1, 19.3);\nvar mapZoom = 6;";
-			break;
+			return array('lat' => 52.1, 'lng' => 19.3, 'zoom' => 6);
 		case 'ITALY':
-			echo "var mapLatLng = new google.maps.LatLng(42.6, 12.7);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => 42.6, 'lng' => 12.7, 'zoom' => 5);
 		case 'TURKEY':
-			echo "var mapLatLng = new google.maps.LatLng(39.0, 34.9);\nvar mapZoom = 6;";
-			break;
+			return array('lat' => 39.0, 'lng' => 34.9, 'zoom' => 6);
 		case 'ROMANIA':
-			echo "var mapLatLng = new google.maps.LatLng(45.94, 24.96);\nvar mapZoom = 6;";
-			break;
+			return array('lat' => 45.94, 'lng' => 24.96, 'zoom' => 6);
 		case 'BRAZIL':
-			echo "var mapLatLng = new google.maps.LatLng(-12.0, -53.1);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => -12.0, 'lng' => -53.1, 'zoom' => 4);
 		case 'ARGENTINA':
-			echo "var mapLatLng = new google.maps.LatLng(-34.3, -65.7);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => -34.3, 'lng' => -65.7, 'zoom' => 3);
 		case 'RUSSIA':
-			echo "var mapLatLng = new google.maps.LatLng(65.7, 98.8);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => 65.7, 'lng' => 98.8, 'zoom' => 3);
 		case 'ASIA':
-			echo "var mapLatLng = new google.maps.LatLng(20.4, 95.6);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => 20.4, 'lng' => 95.6, 'zoom' => 3);
 		case 'CHINA':
-			echo "var mapLatLng = new google.maps.LatLng(36.2, 104.0);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => 36.2, 'lng' => 104.0, 'zoom' => 4);
 		case 'JAPAN':
-			echo "var mapLatLng = new google.maps.LatLng(36.2, 136.8);\nvar mapZoom = 5;";
-			break;
+			return array('lat' => 36.2, 'lng' => 136.8, 'zoom' => 5);
 		case 'SOUTH KOREA':
-			echo "var mapLatLng = new google.maps.LatLng(36.6, 127.8);\nvar mapZoom = 6;";
-			break;
+			return array('lat' => 36.6, 'lng' => 127.8, 'zoom' => 6);
 		case 'TAIWAN':
-			echo "var mapLatLng = new google.maps.LatLng(23.6, 121);\nvar mapZoom = 7;";
-			break;	
+			return array('lat' => 23.6, 'lng' => 121, 'zoom' => 7);
 		case 'AUSTRALIA':
-			echo "var mapLatLng = new google.maps.LatLng(-26.1, 134.8);\nvar mapZoom = 4;";
-			break;
+			return array('lat' => -26.1, 'lng' => 134.8, 'zoom' => 4);
 		case 'CANADA':
-			echo "var mapLatLng = new google.maps.LatLng(60.0, -97.0);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => 60.0, 'lng' => -97.0, 'zoom' => 3);
 		case 'WORLD':
-			echo "var mapLatLng = new google.maps.LatLng(25.0, 8.5);\nvar mapZoom = 2;";
-			break;
+			return array('lat' => 25.0, 'lng' => 8.5, 'zoom' => 2);
 		default:
-			echo "var mapLatLng = new google.maps.LatLng(48.8, 8.5);\nvar mapZoom = 3;";
-			break;
+			return array('lat' => 48.8, 'lng' => 8.5, 'zoom' => 3);
 	}
-	echo "\n";
 }
 
-function printMapType($maptype)
+// Returns the google.maps.MapTypeId key for the configured map style, or
+// null when none should be set explicitly (the map then falls back to the
+// Maps API's own default), matching the previous printMapType() behavior.
+function getMapTypeId($maptype)
 {
 	switch (strtoupper($maptype))
 	{
 		case 'SATELLITE':
-			echo 'var mapType = google.maps.MapTypeId.SATELLITE;';
-			break;
+			return 'SATELLITE';
 		case 'MAP':
-			echo 'var mapType = google.maps.MapTypeId.ROADMAP;';
-			break;
+			return 'ROADMAP';
 		case 'HYBRID':
-			echo 'var mapType = google.maps.MapTypeId.HYBRID;';
-			break;
+			return 'HYBRID';
 		case 'PHYSICAL':
-			echo 'var mapType = google.maps.MapTypeId.TERRAIN;';
-			break;
+			return 'TERRAIN';
 		default:
-			break;
+			return null;
 	}
-	echo "\n";
 }
 ?>
