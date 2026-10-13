@@ -20,11 +20,6 @@
  *     leaving every section closed (MooTools' `alwaysHide: true`).
  *   - The active toggler's text is colored `#ff3300`; inactive togglers are
  *     `#222` (mirrors the old `onActive`/`onBackground` callbacks).
- *   - `<img>` elements inside an opener may carry a `delaysrc` attribute
- *     (see pages/game.php: the real `show_graph.php` URL is only wired up
- *     once JS is confirmed to run, to avoid firing off graph requests for
- *     collapsed/never-opened sections). The first time a section opens,
- *     any such image gets its real `src` swapped in from `delaysrc`.
  */
 (function () {
 	'use strict';
@@ -56,13 +51,6 @@
 
 			toggler.style.color = '#ff3300';
 			opener.style.maxHeight = opener.scrollHeight + 'px';
-
-			opener.querySelectorAll('img[delaysrc]').forEach((img) => {
-				const delaysrc = img.getAttribute('delaysrc');
-				if (delaysrc) {
-					img.src = delaysrc;
-				}
-			});
 		};
 
 		togglers.forEach((toggler, index) => {

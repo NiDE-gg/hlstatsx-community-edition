@@ -86,7 +86,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<table class="data-table" >
         <tr class="data-table-head">
 			<td style="text-align:center;padding:0px;">
-				<img src="show_graph.php?type=0&amp;width=870&amp;height=200&amp;server_id=<?php echo $server_id ?>&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>" style="border:0px;">
+				<canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" style="border:0px;" aria-label="Server Load Graph"></canvas>
 			</td>
 		</tr>
 	</table>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/server-load-chart.js"></script>

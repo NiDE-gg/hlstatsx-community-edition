@@ -199,7 +199,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			</tr>
 			<tr class="data-table-row">
 				<td style="text-align:center; height: 200px; vertical-align:middle;">
-					<img src="show_graph.php?type=0&amp;game=<?php echo $game; ?>&amp;width=870&amp;height=200&amp;server_id=<?php echo $server_id ?>&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>&amp;range=1" alt="24h View" />
+					<canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="24h View"></canvas>
 				</td>
 			</tr>
 		</table>
@@ -210,7 +210,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			</tr>
 			<tr class="data-table-row">
 				<td style="text-align:center; height: 200px; vertical-align:middle;">
-					<img src="show_graph.php?type=0&amp;game=<?php echo $game; ?>&amp;width=870&amp;height=200&amp;server_id=<?php echo $server_id ?>&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>&amp;range=2" alt="Last Week" />
+					<canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="2" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Last Week"></canvas>
 				</td>
 			</tr>
 		</table>
@@ -221,7 +221,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			</tr>
 			<tr class="data-table-row">
 				<td style="text-align:center; height: 200px; vertical-align:middle;">
-					<img src="show_graph.php?type=0&amp;game=<?php echo $game; ?>&amp;width=870&amp;height=200&amp;server_id=<?php echo $server_id ?>&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>&amp;range=3" alt="Last Month" />
+					<canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="3" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Last Month"></canvas>
 				</td>
 			</tr>
 		</table>
@@ -232,9 +232,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 			</tr>
 			<tr class="data-table-row">
 				<td style="text-align:center; height: 200px; vertical-align:middle;">
-					<img src="show_graph.php?type=0&amp;game=<?php echo $game; ?>&amp;width=870&amp;height=200&amp;server_id=<?php echo $server_id ?>&amp;bgcolor=<?php echo $g_options['graphbg_load']; ?>&amp;color=<?php echo $g_options['graphtxt_load']; ?>&amp;range=4" alt="Last Year" />
+					<canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="4" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Last Year"></canvas>
 				</td>
 			</tr>
 		</table>
 	</div>
 </div>
+<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
+<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/server-load-chart.js"></script>
