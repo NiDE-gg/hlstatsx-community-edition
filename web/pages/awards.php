@@ -106,7 +106,7 @@
             <div id="main_content"></div>
 
             <script type="text/javascript">
-                new Tabs($('main_content'), $$('#main ul.subsection_tabs a'), {
+                new Tabs(document.getElementById('main_content'), document.querySelectorAll('#main ul.subsection_tabs a'), {
                     'mode': 'awards',
                     'game': '<?=eHtml($game);?>',
                     'loadingImage': '<?=IMAGE_PATH;?>/ajax.gif',

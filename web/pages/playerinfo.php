@@ -262,7 +262,7 @@ $db->query("
 	<script type="text/javascript">
 		var Tabs = new Tabs
 		(
-			$('main_content'), $$('#main ul.subsection_tabs a'),
+			document.getElementById('main_content'), document.querySelectorAll('#main ul.subsection_tabs a'),
 			{
 				'mode': 'playerinfo',
 				'game': '<?php echo $game; ?>',
