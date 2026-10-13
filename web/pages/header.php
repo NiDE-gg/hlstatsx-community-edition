@@ -99,6 +99,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 <!DOCTYPE html>
 <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="stylesheet" type="text/css" href="hlstats.css" />
 	<link rel="stylesheet" type="text/css" href="styles/<?php echo $selectedStyle; ?>" />
 	<!-- U R A SMACKHEAD -->

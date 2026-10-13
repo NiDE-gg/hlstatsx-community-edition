@@ -262,3 +262,65 @@ nav{
     text-decoration:none !important;
     white-space:nowrap;
 }
+
+/*
+ * Baseline mobile layout. Loaded on every page regardless of the selected
+ * theme (web/pages/header.php), so this is where theme-independent fixes
+ * belong. Themes that redeclare these same selectors unconditionally
+ * (hlstats_final.css, hlstats_ipb5_final.css, nom_nom_nom.css) still win
+ * the cascade and are not affected either way - see the per-theme
+ * follow-up tracked in the mobile-support issue.
+ */
+@media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden;
+    }
+
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Per-game nav: floated pills overflow narrow viewports, so stack them */
+    .fancyNav {
+        display: block;
+        width: 100%;
+    }
+
+    .fancyNav li {
+        float: none;
+        display: block;
+        border-right: none;
+        border-bottom: 1px solid rgba(9, 9, 9, 0.125);
+    }
+
+    .fancyNav li a {
+        display: block;
+        text-align: center;
+        padding: 10px;
+    }
+
+    /* Active-games icon list: it's absolutely positioned over the logo by default */
+    .header_gameslist,
+    #header_gameslist {
+        position: static;
+        float: none;
+        text-align: center;
+        margin: 10px auto;
+    }
+
+    ul#header_gameslist li {
+        float: none;
+        display: inline-block;
+    }
+
+    /* Data tables: scroll horizontally instead of crushing every column unreadable */
+    .subblock {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .subblock table.data-table {
+        min-width: 640px;
+    }
+}
