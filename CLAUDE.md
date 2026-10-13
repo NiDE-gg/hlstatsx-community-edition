@@ -10,6 +10,16 @@ There is no build system, test suite or package manager (no composer/npm). Verif
 
 CI (`.github/workflows/`) runs one workflow per tool, each triggered only by changes under its own paths: PHP syntax on PHP 8.3–8.5 (`php-lint.yml`), `perl -c` (`perl-lint.yml`), ShellCheck at error severity (`shellcheck.yml`), SourcePawn compile with SourceMod 1.12 (`sourcepawn.yml`, compiled `.smx` uploaded as an artifact), updater/`install.sql` consistency (`db-updaters.yml` → `.github/scripts/check-updaters.sh`), hadolint + image build on PRs (`dockerfile-lint.yml`) and actionlint (`actionlint.yml`).
 
+## Contribution workflow
+
+- **Never commit or push directly to `master`.** Always branch off the latest `master` (name it `fix/…`, `feature/…`, `chore/…`, `docs/…`, matching existing branch names) and open a PR; CI must be green before merging. This applies to Claude Code sessions too — including this file itself.
+- **Bump the version on every functional change**, not only schema changes. `$VERSION` (e.g. `1.7.1`) and `$dbversion` (e.g. `82`) are rows in `hlstats_Options`, seeded by `SET @VERSION` / `SET @DBVERSION` in `sql/install.sql`, and only ever move forward through a `web/updater/<N>.php` script — there is no other place that bumps them. So any PR that changes behavior under `web/`, `scripts/`, `sourcemod/`, `amxmodx/` or `sql/` needs one:
+  - **Schema change**: the new `web/updater/<N>.php` runs the `ALTER`/`INSERT` queries *and* sets `$version`/`$dbversion` (see `81.php`), per [Database schema changes](#database-schema-changes) below.
+  - **No schema change** (bug fix, behavior change, dependency/requirement bump, etc.): add a version-only updater that just updates the `version`/`dbversion` rows in `hlstats_Options`, following `web/updater/82.php`. `dbversion` still increments by one — CI (`check-updaters.sh`) checks numbering/contiguity, not whether a schema actually changed.
+  - Update `SET @VERSION` / `SET @DBVERSION` at the top of `sql/install.sql` to match the new updater (existing rule, repeated below).
+  - Version numbers are `MAJOR.MINOR.PATCH`: bump `PATCH` for fixes/small changes, `MINOR` for new features, reserve `MAJOR` for breaking changes.
+  - Skip the bump for changes that can't affect a running install: CI/workflow-only (`.github/`), documentation-only (`*.md`), or formatting-only changes.
+
 ## Components and data flow
 
 ```
