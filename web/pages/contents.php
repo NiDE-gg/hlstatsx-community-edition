@@ -75,7 +75,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 		<div class="subblock">
 		
-			<table class="data-table">
+			<table class="data-table games-table">
 			
 				<tr class="data-table-head">
 					<td class="fSmall" width="60%" align="left">&nbsp;Game</td>
@@ -168,7 +168,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>				
 				<tr class="game-table-row">
 					<td class="game-table-cell" style="height:30px">
-						<div style="float:left;line-height:30px;" class="fHeading">&nbsp;<a href="<?php echo $g_options['scripturl'] . "?game=$gamedata[0]"; ?>"><img src="<?php
+						<div style="float:left;line-height:30px;" class="fHeading game-name">&nbsp;<a href="<?php echo $g_options['scripturl'] . "?game=$gamedata[0]"; ?>"><img src="<?php
 			$image = getImage("/games/$gamedata[0]/game");
 			if ($image)
 				echo $image['url'];
@@ -176,17 +176,17 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo IMAGE_PATH . '/game.gif';
                ?>"  style="margin-left: 3px; margin-right: 4px;" alt="Game" /></a><a href="<?php echo $g_options['scripturl'] . "?game=$gamedata[0]"; ?>"><?php echo $gamedata[1]; ?></a>
 						</div>
-						<div style="float:right;">
+						<div style="float:right;" class="game-link">
 							<div style="margin-left: 3px; margin-right: 4px; vertical-align:top; text-align:center;"><a href="<?php echo $g_options['scripturl'] . "?mode=clans&amp;game=$gamedata[0]"; ?>"><img src="<?php echo IMAGE_PATH; ?>/clan.gif" alt="Clan Rankings" /></a></div>
 							<div style="vertical-align:bottom; text-align:left;">&nbsp;<a href="<?php echo $g_options['scripturl'] . "?mode=clans&amp;game=$gamedata[0]"; ?>" class="fSmall">Clans</a>&nbsp;&nbsp;</div>
 						</div>
 							
-						<div style="float:right;">
+						<div style="float:right;" class="game-link">
 							<div style="margin-left: 3px; margin-right: 4px; vertical-align:top; text-align:center;"><a href="<?php echo $g_options['scripturl'] . "?mode=players&amp;game=$gamedata[0]"; ?>"><img src="<?php echo IMAGE_PATH; ?>/player.gif" alt="Player Rankings" /></a></div>
 							<div style="vertical-align:bottom; text-align:left;">&nbsp;<a href="<?php echo $g_options['scripturl'] . "?mode=players&amp;game=$gamedata[0]"; ?>" class="fSmall">Players</a>&nbsp;&nbsp;</div>
 						</div>
 					</td>
-					<td class="game-table-cell" style="text-align:center;"><?php 
+					<td class="game-table-cell" data-label="Players" style="text-align:center;"><?php 
 			if ($numplayers)
 			{
 				echo $player_string;
@@ -197,7 +197,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			}
 					?>
 					</td>
-					<td class="game-table-cell" style="text-align:center;"><?php
+					<td class="game-table-cell" data-label="Top Player" style="text-align:center;"><?php
 			if ($topplayer)
 			{
 				echo '<a href="' . $g_options['scripturl'] . '?mode=playerinfo&amp;player='
@@ -208,7 +208,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo '-';
 			}
 					?></td>
-					<td class="game-table-cell" style="text-align:center;"><?php
+					<td class="game-table-cell" data-label="Top Clan" style="text-align:center;"><?php
 			if ($topclan)
 			{
 				echo '<a href="' . $g_options['scripturl'] . '?mode=claninfo&amp;clan='
@@ -230,7 +230,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 						NiDE.GG Discord
 					</a>
 				</td>
-				<td class="game-table-cell" style="text-align:center;">
+				<td class="game-table-cell" data-label="Members" style="text-align:center;">
 <?php
 $server_code = "d7mQP8K7";
 $url = "https://discord.com/api/v9/invites/".$server_code."?with_counts=true&with_expiration=true";      
@@ -246,8 +246,8 @@ $membersOnline = isset($data['presence_count']) ? $data['presence_count'] : 0;
 			echo "$membersOnline / $total";
 ?>
 </td>
-				<td class="game-table-cell" style="text-align:center;">-</td>
-				<td class="game-table-cell" style="text-align:center;">-</td>
+				<td class="game-table-cell hide-mobile" style="text-align:center;">-</td>
+				<td class="game-table-cell hide-mobile" style="text-align:center;">-</td>
 			</tr>
 				</table>
 		
