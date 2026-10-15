@@ -570,6 +570,28 @@ function getImage($filename)
     return false;
 }
 
+/**
+ * asset_url()
+ *
+ * Append the HLstatsX version to a local JS/CSS URL. Proxies such as
+ * Cloudflare and browsers cache these files by URL, so without it a deploy
+ * keeps serving the previous JS for days; every functional change bumps the
+ * version, which changes the URL.
+ *
+ * @param string $url Relative URL of the asset, e.g. INCLUDE_PATH . '/js/chart.js'
+ * @return string HTML-escaped URL, ready to print in a src/href attribute
+ */
+function asset_url(string $url) : string
+{
+	global $g_options;
+
+	if (!empty($g_options['version'])) {
+		$url .= '?v=' . rawurlencode($g_options['version']);
+	}
+
+	return htmlspecialchars($url, ENT_QUOTES);
+}
+
 function printSectionTitle($title, $echo = true)
 {
 	$html = '<span class="fHeading">';

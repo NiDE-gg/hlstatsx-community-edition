@@ -314,7 +314,7 @@ class EditList
 			// reads it and shows/hides the popup lives in admin-help.js
 			// (GitHub issue #45 - no PHP-generated JS logic inline).
 			$returnstr .= '<script type="application/json" id="admin-help-data">' . jsEscape($helpData) . "</script>\n";
-			$returnstr .= '<script src="' . INCLUDE_PATH . '/js/admin-help.js"></script>' . "\n";
+			$returnstr .= '<script src="' . asset_url(INCLUDE_PATH . '/js/admin-help.js') . '"></script>' . "\n";
 
 			$returnstr .= '<div class="helpwindow" ID="' . $this->helpDIV . '">No help text available</div>';
 

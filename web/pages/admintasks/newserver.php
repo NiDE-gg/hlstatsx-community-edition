@@ -84,7 +84,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				//   but we can't just use header() since admin.php already started part of the page and hacking it in before would be even messier
 				$redirectUrl = $g_options['scripturl'] . "?mode=admin&game=$selGame&task=serversettings&key=$insert_id#startsettings";
 				echo '<script type="application/json" id="newserver-redirect-data">' . json_encode(array('redirectUrl' => $redirectUrl)) . '</script>';
-				echo '<script src="' . INCLUDE_PATH . '/js/admintasks.js"></script>';
+				echo '<script src="' . asset_url(INCLUDE_PATH . '/js/admintasks.js') . '"></script>';
 				exit;
 			}
 		}
@@ -108,7 +108,7 @@ The "Public Address" should be the address you want shown to users. If left blan
 
 <tr valign="top" class="table_border">
 	<td>
-		<script src="<?php echo INCLUDE_PATH; ?>/js/admintasks.js"></script>
+		<script src="<?php echo asset_url(INCLUDE_PATH . '/js/admintasks.js'); ?>"></script>
 		<table width="100%" border=0 cellspacing=1 cellpadding=4>
 			<tr valign="bottom" class="head">
 				<td class='fSmall'>Server IP Address</td>

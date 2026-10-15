@@ -257,7 +257,7 @@
 		// already names every series) and a larger font so the text stays legible.
 		const compact = canvas.width < 600;
 		if (compact) {
-			canvas.height = 280;
+			canvas.height = Math.max(canvas.height, 280);
 		}
 		Chart.defaults.font.size = 13;
 

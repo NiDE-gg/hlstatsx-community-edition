@@ -90,6 +90,6 @@ For support and installation notes visit http://www.hlxcommunity.com
 			</td>
 		</tr>
 	</table>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart-zoom.js"></script>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/server-load-chart.js"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/server-load-chart.js'); ?>"></script>
