@@ -9,7 +9,8 @@
  *
  * Follows the same querySelectorAll+forEach idiom as server-load-chart.js
  * so that it keeps working correctly if more than one
- * `canvas.game-trend-chart` ever ends up on the same page.
+ * `canvas.game-trend-chart` ever ends up on the same page. Zoom and pan
+ * come from includes/js/chart-zoom.js.
  */
 (function() {
 	if (document.readyState === 'loading') {
@@ -38,10 +39,17 @@
 		return value.charAt(0) === '#' ? value : '#' + value;
 	}
 
-	function formatLabel(ts) {
+	function pad(n) {
+		return n < 10 ? '0' + n : '' + n;
+	}
+
+	// Several samples share a day, so once zoomed in (and in the tooltip)
+	// the time is added to tell them apart.
+	function formatLabel(ts, withTime) {
 		const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 		const d = new Date(ts * 1000);
-		return months[d.getMonth()] + '-' + d.getDate();
+		const day = months[d.getMonth()] + '-' + d.getDate();
+		return withTime ? day + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : day;
 	}
 
 	function initChart(canvas) {
@@ -66,7 +74,7 @@
 				return response.json();
 			})
 			.then(function(data) {
-				renderChart(canvas, data, textColor);
+				renderChart(canvas, data, bgColor, textColor);
 			})
 			.catch(function(e) {
 				console.warn('game-trend-chart: failed to load game trend data.', e);
@@ -88,7 +96,7 @@
 		};
 	}
 
-	function renderChart(canvas, data, textColor) {
+	function renderChart(canvas, data, bgColor, textColor) {
 		// API rows are newest-first; reverse to chronological order so the
 		// chart reads left-to-right with "now" on the right, like the old
 		// PNG did.
@@ -176,6 +184,7 @@
 					},
 				],
 			},
+			plugins: [HLStatsChartZoom.plugin],
 			options: {
 				responsive: false,
 				maintainAspectRatio: false,
@@ -183,10 +192,26 @@
 				plugins: {
 					legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, padding: 14 } },
 					title: newPlayersTitle(data.new_players, textColor),
+					tooltip: {
+						callbacks: {
+							title: function(items) {
+								return items.length ? formatLabel(rows[items[0].dataIndex].timestamp, true) : '';
+							},
+						},
+					},
+					hlstatsZoom: { textColor: textColor, bgColor: bgColor },
 				},
 				scales: {
 					x: {
-						ticks: { color: textColor, autoSkip: true, maxTicksLimit: compact ? 5 : 10, maxRotation: 0 },
+						ticks: {
+							color: textColor,
+							autoSkip: true,
+							maxTicksLimit: compact ? 5 : 10,
+							maxRotation: 0,
+							callback: function(value) {
+								return formatLabel(rows[value].timestamp, HLStatsChartZoom.isZoomed(this.chart));
+							},
+						},
 						grid: { color: 'rgba(255, 255, 255, 0.1)' },
 					},
 					y: {

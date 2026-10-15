@@ -15,6 +15,7 @@
  * old PNG's label spacing. Chart.js is loaded as a page-local
  * <script src> (web/includes/js/chart.js, vendored UMD build), so it
  * exposes a global `Chart` constructor - no module bundler involved.
+ * Zoom and pan come from includes/js/chart-zoom.js.
  */
 (function() {
 	if (document.readyState === 'loading') {
@@ -149,6 +150,7 @@
 					}
 				]
 			},
+			plugins: [HLStatsChartZoom.plugin],
 			options: {
 				responsive: false,
 				maintainAspectRatio: false,
@@ -161,10 +163,26 @@
 						position: 'bottom',
 						labels: { color: textColor },
 					},
+					tooltip: {
+						callbacks: {
+							title: function(items) {
+								return items.length ? formatDate(history[items[0].dataIndex].ts) : '';
+							},
+						},
+					},
+					hlstatsZoom: { textColor: textColor, bgColor: bgColor },
 				},
 				scales: {
 					x: {
-						ticks: { color: textColor, maxTicksLimit: compact ? 5 : undefined },
+						ticks: {
+							color: textColor,
+							maxTicksLimit: compact ? 5 : undefined,
+							// Zoomed in, the first/middle/last labels would
+							// mostly fall outside the window: date every tick.
+							callback: function(value) {
+								return HLStatsChartZoom.isZoomed(this.chart) ? formatDate(history[value].ts) : labels[value];
+							},
+						},
 						grid: { color: 'rgba(255, 255, 255, 0.1)' },
 					},
 					y: {

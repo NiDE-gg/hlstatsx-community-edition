@@ -366,6 +366,17 @@ canvas.playerinfo-trend-chart {
     max-width: 100%;
 }
 
+/* Zoom toolbar (includes/js/chart-zoom.js, styled inline): no mouse, so no
+   drag/wheel hint, and finger-sized buttons. */
+.chart-zoom-hint {
+    display: none !important;
+}
+
+.chart-zoom-toolbar button {
+    min-width: 40px !important;
+    min-height: 32px;
+}
+
 #map {
     width: 100% !important;
     height: 260px !important;

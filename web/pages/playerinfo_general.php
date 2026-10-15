@@ -645,6 +645,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 							'textColor' => '#' . $g_options['graphtxt_trend'],
 						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 						<script src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
+						<script src="<?php echo INCLUDE_PATH; ?>/js/chart-zoom.js"></script>
 						<script src="<?php echo INCLUDE_PATH; ?>/js/playerinfo-trend-chart.js"></script>
 					</td>
 				</tr>

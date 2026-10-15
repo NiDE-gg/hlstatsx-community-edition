@@ -310,6 +310,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 ?>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
+	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart-zoom.js"></script>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/server-load-chart.js"></script>
 	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/game-trend-chart.js"></script>
 <?php
