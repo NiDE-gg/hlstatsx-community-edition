@@ -243,7 +243,7 @@ function printMap($type = 'main')
 	$bootstrap['preload'] = $preloadImages;
 
 	echo '<script type="application/json" id="hlstats-map-data-' . htmlspecialchars($type, ENT_QUOTES) . '">' . jsEscape($bootstrap) . "</script>\n";
-	echo '<script type="text/javascript" src="' . INCLUDE_PATH . '/js/maps.js"></script>' . "\n";
+	echo '<script type="text/javascript" src="' . asset_url(INCLUDE_PATH . '/js/maps.js') . '"></script>' . "\n";
 }
 
 // Returns the {lat, lng, zoom} to center the map on for a given region name

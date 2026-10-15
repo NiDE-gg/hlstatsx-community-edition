@@ -644,9 +644,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 							'bgColor'   => '#' . $g_options['graphbg_trend'],
 							'textColor' => '#' . $g_options['graphtxt_trend'],
 						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-						<script src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
-						<script src="<?php echo INCLUDE_PATH; ?>/js/chart-zoom.js"></script>
-						<script src="<?php echo INCLUDE_PATH; ?>/js/playerinfo-trend-chart.js"></script>
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>"></script>
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>"></script>
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo-trend-chart.js'); ?>"></script>
 					</td>
 				</tr>
 			</table>
@@ -686,7 +686,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 							);
 						?>
 						<script type="application/json" id="playerinfo-forum-text-data"><?php echo jsEscape($forumTextData); ?></script>
-						<script src="<?php echo INCLUDE_PATH; ?>/js/playerinfo.js"></script>
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo.js'); ?>"></script>
 						<a href="" onclick="setForumText(1);return false">
 							bbCode 1 (phpBB, SMF)</a>&nbsp;|&nbsp;<a href="" onclick="setForumText(2);return false">bbCode 2 (IPB)</a>&nbsp;|&nbsp;<a href="" onclick="setForumText(0);return false">Direct Image
 						</a>

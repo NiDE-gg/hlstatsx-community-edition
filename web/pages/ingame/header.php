@@ -54,8 +54,8 @@ $lastpage = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:"";
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<link rel="stylesheet" type="text/css" href="hlstats.css">
-	<link rel="stylesheet" type="text/css" href="styles/<?php echo $g_options['style']; ?>">
+	<link rel="stylesheet" type="text/css" href="<?php echo asset_url('hlstats.css'); ?>">
+	<link rel="stylesheet" type="text/css" href="<?php echo asset_url('styles/' . $g_options['style']); ?>">
 	<title>HLstatsX</title>
 </head>
 <body style="margin:0px;padding:0px;" id="ingame"> 

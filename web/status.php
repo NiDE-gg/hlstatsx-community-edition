@@ -266,8 +266,8 @@ if ($server_data['addr'] != '')  {
 	echo '<head>';
 	echo '<title>'.$g_options["sitename"].'</title>';
 	echo '<style type="text/css">{margin:0px;padding:0px;}</style>';
-	echo '<link rel="stylesheet" type="text/css" href="hlstats.css">';
-	echo '<link rel="stylesheet" type="text/css" href="styles/'.$g_options['style'].'">';
+	echo '<link rel="stylesheet" type="text/css" href="'.asset_url('hlstats.css').'">';
+	echo '<link rel="stylesheet" type="text/css" href="'.asset_url('styles/'.$g_options['style']).'">';
 	echo '</head>';
 	echo '<body style="background:#'.$body_color.';color:#'.$color.';"  class="'.$fsize.'">';
 	echo '<table border="0" cellpadding="0" cellspacing="0" style="border:'.$border_width.'px solid #'.$border_color.';background:#'.$background_color.';color:#'.$color.';width:'.$width.'px;">';

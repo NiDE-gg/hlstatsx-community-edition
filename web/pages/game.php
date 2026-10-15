@@ -283,8 +283,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 				foreach($range_arr as $range_code => $range_name) {
 					print('<table class="data-table"><tr class="data-table-head">');
 					print('<td class="fSmall">&nbsp;'.$range_name.'</td></tr>');
-					print('<tr class="data-table-row"><td style="text-align:center; height: 200px; vertical-align:middle;">');
-					print('<canvas class="server-load-chart" width="870" height="200" '.
+					print('<tr class="data-table-row"><td style="text-align:center; height: 300px; vertical-align:middle;">');
+					print('<canvas class="server-load-chart" width="870" height="300" '.
 						'data-server-id="'.(int)$server_id.'" data-range="'.(int)$range_code.'" '.
 						'data-bg-color="'.htmlspecialchars($g_options['graphbg_load']).'" '.
 						'data-text-color="'.htmlspecialchars($g_options['graphtxt_load']).'" '.
@@ -304,15 +304,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 		if ($g_options['slider'] == 1) {
 ?>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/accordion.js"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/accordion.js'); ?>"></script>
 <?php
 		}
 	}
 ?>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart.js"></script>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/chart-zoom.js"></script>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/server-load-chart.js"></script>
-	<script type="text/javascript" src="<?php echo INCLUDE_PATH; ?>/js/game-trend-chart.js"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/server-load-chart.js'); ?>"></script>
+	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/game-trend-chart.js'); ?>"></script>
 <?php
 	if (($g_options['show_google_map'] == 1) || ($g_options['show_server_load_image'] == 1)) {
  
@@ -416,7 +416,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<table class="data-table">
 			<tr class="data-table-row">
 			  <td style="padding:0px;text-align:center;">
-				<a href="<?php $g_options['scripturl'] ?>?mode=servers&amp;server_id=<?php echo $server_id ?>&amp;game=<?php echo $game ?>" style="text-decoration:none;"><canvas class="server-load-chart" width="870" height="200" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Server Load Graph"></canvas></a>
+				<a href="<?php $g_options['scripturl'] ?>?mode=servers&amp;server_id=<?php echo $server_id ?>&amp;game=<?php echo $game ?>" style="text-decoration:none;"><canvas class="server-load-chart" width="870" height="300" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Server Load Graph"></canvas></a>
 			  </td>
 			</tr>
 			</table>

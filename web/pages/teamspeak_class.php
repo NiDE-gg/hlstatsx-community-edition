@@ -358,7 +358,7 @@ class teamspeakDisplayClass
 			);
 			echo("<script type=\"application/json\" id=\"teamspeak-settings-" . $jsTeamspeakId . "\">" . jsEscape($teamspeakSettings) . "</script>\n");
 			if (!self::$jsIncluded) {
-				echo("<script type=\"text/javascript\" src=\"" . INCLUDE_PATH . "/js/teamspeak.js\"></script>\n");
+				echo("<script type=\"text/javascript\" src=\"" . asset_url(INCLUDE_PATH . "/js/teamspeak.js") . "\"></script>\n");
 				self::$jsIncluded = true;
 			}
 
