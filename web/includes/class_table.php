@@ -373,7 +373,16 @@ class Table
 
 						if ($col->embedlink == 'yes')
 							{
-								$colval = preg_replace(array('/%A%([^ %]+)%/','/%\/A%/'), array("<a href=\"$1\">", '</a>'), $colval);
+								// %A%url%text%/A% markers come from queries that build links to
+								// this site (playerhistory, admin events), but the same columns hold
+								// raw player text such as chat messages: only link to scripturl.
+								$linkPrefix = htmlspecialchars($g_options['scripturl'] . '?', ENT_COMPAT);
+								$colval = preg_replace_callback('/%A%([^ %]+)%(.*?)%\/A%/s', function ($m) use ($linkPrefix) {
+									if (strpos($m[1], $linkPrefix) === 0) {
+										return '<a href="' . $m[1] . '">' . $m[2] . '</a>';
+									}
+									return $m[2];
+								}, $colval);
 							}
 
 						$cellbody .= $colval;

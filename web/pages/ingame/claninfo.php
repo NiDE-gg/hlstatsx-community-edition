@@ -93,7 +93,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		<tr class="bg1">
 			<td class="fSmall"><?php echo 'Clan Name' ?>:</td>
             <td colspan="2" class="fSmall"><?php
-				echo '<strong>'.$clandata['name'].'</strong>';
+				echo '<strong>'.eHtml($clandata['name']).'</strong>';
 			?></td>
 		</tr>
 		<tr class="bg2">

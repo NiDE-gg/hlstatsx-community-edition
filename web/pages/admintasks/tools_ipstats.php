@@ -61,7 +61,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	{
 ?><br>
 <img src="<?php echo IMAGE_PATH; ?>/spacer.gif" width=1 height=8 border=0><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width=9 height=6 class="imageformat"><b>&nbsp;<?php echo $hostgroup; ?></b><p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width=9 height=6 class="imageformat"><b>&nbsp;<?php echo eHtml($hostgroup); ?></b><p>
 <?php
 	}
 	else

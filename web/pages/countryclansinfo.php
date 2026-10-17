@@ -119,7 +119,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td>Country:</td>
 					<td colspan="2"><?php
 						echo '<img src="'.getFlag($clandata['flag']).'" alt="'.strtolower($playerdata['country']).'" title="'.strtolower($playerdata['country']).'" />&nbsp;'; 
-						echo '<strong>' . $clandata['name'] . '</strong>';
+						echo '<strong>' . eHtml($clandata['name']) . '</strong>';
 					?></td>
 				</tr>
 				<tr class="bg2">

@@ -52,7 +52,7 @@ printSectionTitle('Clan Information');
 			
 			<tr class="bg1">
 				<td>Clan:</td>
-				<td colspan="2"><strong><?php echo $clandata['name']; ?></strong></td>
+				<td colspan="2"><strong><?php echo eHtml($clandata['name']); ?></strong></td>
 			</tr>
 
 			<tr class="bg2">
