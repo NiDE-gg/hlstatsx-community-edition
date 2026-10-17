@@ -190,7 +190,7 @@ class Table
 		if ($this->showranking)
 		{
 			$totalwidth += 5;
-			echo "<td style=\"width:5%;text-align=:right;\" class=\"fSmall\">Rank</td>\n";
+			echo "<td style=\"width:5%;text-align:right;\" class=\"fSmall\">Rank</td>\n";
 		}
 
 		foreach ($this->columns as $col)
@@ -336,7 +336,7 @@ class Table
 					  
 					case 'weaponimg':
 						// Check if game has the image -- if not, failback to real game.  If not, no image.
-						$image = getImage("/games/$realgame/weapons/" . $colval_lower);
+						$image = getImage("/games/$game/weapons/" . $colval_lower);
 						if ($image)
 						{
 							$cellbody .= '<img src="' . $image['url'] . '" ' . $image['size'] . ' alt="' . $col->fname[$colval_lower] . '" title="' . $col->fname[$colval_lower] . '" />';
@@ -347,7 +347,7 @@ class Table
 						}
 						else
 						{
-							$cellbody .= '<b>' . (!empty($col->fname[$colval_lower])) ? $col->fname[$colval_lower] : ucwords(preg_replace('/_/', ' ', $colval)) . '</b>';
+							$cellbody .= '<b>' . (!empty($col->fname[$colval_lower]) ? $col->fname[$colval_lower] : ucwords(preg_replace('/_/', ' ', $colval))) . '</b>';
 						}
 						break;
 

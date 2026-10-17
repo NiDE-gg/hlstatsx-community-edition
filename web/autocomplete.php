@@ -25,6 +25,7 @@
 
     // Filter game input
     $game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW);
+    $game = is_string($game) ? $game : ''; // checkValidGame() takes a string (strict_types)
 
     $gameRepo = $container->get(\Repository\GameRepository::class);
     $allowedGames = $gameRepo->getGameCodes();

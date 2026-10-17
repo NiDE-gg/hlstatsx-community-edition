@@ -267,7 +267,7 @@ class EditList
 					}
 					*/
 
-					if ($col->type == 'checkbox' && $value == ('' || null))
+					if ($col->type == 'checkbox' && ($value === null || $value === ''))
 					{
 						$value = '0';
 					}

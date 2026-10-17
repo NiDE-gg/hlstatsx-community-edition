@@ -87,7 +87,8 @@ class DB_mysql
 
 		if ( $use_pconnect )
 		{
-			$this->link = @mysqli_pconnect($db_addr, $db_user, $db_pass);
+			// mysqli has no pconnect(); persistent connections use the "p:" host prefix
+			$this->link = @mysqli_connect('p:' . $db_addr, $db_user, $db_pass);
 		}
 		else
 		{
@@ -122,7 +123,7 @@ class DB_mysql
 	{
 		if ( !$query_id )
 		{
-			$result = $this->last_result;
+			$query_id = $this->last_result;
 		}
 		if ( $query_id )
 		{
@@ -232,7 +233,7 @@ class DB_mysql
 		if($calcrows == true)
 		{
 			$calc_result = @mysqli_query($this->link, "select found_rows() as rowcount");
-			if($row = mysqli_fetch_assoc($calc_result))
+			if($calc_result && $row = mysqli_fetch_assoc($calc_result))
 			{
 				$this->last_calc_rows = $row['rowcount'];
 			}
@@ -277,9 +278,11 @@ class DB_mysql
 			$query_id = $this->last_result;
 		}
 
-		if ( $query_id )
+		// mysqli has no mysqli_result(): seek to the row and read the field
+		if ( $query_id && @mysqli_data_seek($query_id, $row) )
 		{
-			return @mysqli_result($query_id, $row, $field);
+			$data = mysqli_fetch_array($query_id);
+			return ($data && isset($data[$field])) ? $data[$field] : false;
 		}
 		return false;
 	}

@@ -73,8 +73,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$clandata = $db->fetch_array();
 	$db->free_result();
 	
-	$cl_name = preg_replace(' ', '&nbsp;', htmlspecialchars($clandata['name']));
-	$cl_tag  = preg_replace(' ', '&nbsp;', htmlspecialchars($clandata['tag']));
+	$cl_name = str_replace(' ', '&nbsp;', htmlspecialchars($clandata['name']));
+	$cl_tag  = str_replace(' ', '&nbsp;', htmlspecialchars($clandata['tag']));
 	$cl_full = "$cl_tag $cl_name";
 	
 	$game = $clandata['game'];

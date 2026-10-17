@@ -654,7 +654,7 @@ function tryHexToRgb($hexVal = '') : ?array
 // Deprecated function
 function hex2rgb($hexVal = '')
 {
-	$hexVal = preg_replace('[^a-fA-F0-9]', '', $hexVal);
+	$hexVal = preg_replace('/[^a-fA-F0-9]/', '', $hexVal);
 	if (strlen($hexVal) != 6)
 	{
 		return 'ERR: Incorrect colorcode, expecting 6 chars (a-f, 0-9)';

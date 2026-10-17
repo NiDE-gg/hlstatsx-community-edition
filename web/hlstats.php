@@ -41,30 +41,6 @@ require('config.php');
 
 define('TITLE_IMAGE', IMAGE_PATH . "/downarrow.gif");
 
-$historical_cache=0;
-if(defined('HISTORICAL_CACHE'))
-{
-	$historical_cache=constant('HISTORICAL_CACHE');
-}
-
-if($historical_cache==1)
-{
-	$rawmd5=md5(http_build_query($_REQUEST));
-	$dir1=substr($rawmd5,0,1);
-	$dir2=substr($rawmd5,1,1);
-	$cachetarget=sprintf("cache/%s/%s/%s", $dir1, $dir2, $rawmd5);
-
-	@mkdir("cache/$dir1");
-	@mkdir("cache/$dir1/$dir2");
-
-	if(file_exists($cachetarget))
-	{
-		file_put_contents("cache/cachehit",$cachetarget . "\n", FILE_APPEND);
-		echo file_get_contents($cachetarget);
-		die;
-	}
-}
-
 session_set_cookie_params([
 	'httponly' => true,
 	'samesite' => 'Lax',
@@ -83,7 +59,7 @@ if (!empty($_GET['logout']) && $_GET['logout'] == '1') {
 // Several stuff added by Malte Bayer
 global $scripttime, $siteurlneo;
 $scripttime = microtime(true);
-$siteurlneo='http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strpos($_SERVER['PHP_SELF'],strrchr($_SERVER['PHP_SELF'],'/'))+1);
+$siteurlneo=((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strpos($_SERVER['PHP_SELF'],strrchr($_SERVER['PHP_SELF'],'/'))+1);
 $siteurlneo=str_replace('\\','/',$siteurlneo);
 
 // Several Stuff end
@@ -105,7 +81,7 @@ foreach ($_SERVER as $key => $entry) {
 				(strrchr($entry, '/') !== '/config.php') &&
 				(strrchr($entry, '/') !== '/') &&
 				($entry !== '')) {
-				header("Location: http://$siteurlneo/hlstats.php");    
+				header('Location: ' . $siteurlneo . 'hlstats.php');    
 				exit;
 			}    
 		}
