@@ -824,7 +824,7 @@ if ($auth->ok === false) {
 pageHeader(array('Admin'), array('Admin' => ''));
 
 $selTask = isset($_GET['task']) ? valid_request($_GET['task'], false) : '';
-$selGame = isset($_GET['game']) ? valid_request($_GET['game'], false) : '';
+$selGame = valid_game_code($_GET['game'] ?? '');
 ?>
 
 <table width="100%" align="center" border="0" cellspacing="0" cellpadding="0">

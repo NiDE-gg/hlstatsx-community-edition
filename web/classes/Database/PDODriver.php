@@ -37,7 +37,8 @@
                 $this->pdo = new PDO($dsn, $options->getUser(), $options->getPass(), $driverOptions);
             } catch (PDOException $e) {
                 $this->logger->error('Database connection failed: ' . $e->getMessage());
-                die('Database connection failed: ' . $e->getMessage());
+                // The PDOException message names the DB user and host; it only goes to the log
+                die('Database connection failed. The details have been written to the web server error log.');
             }
         }
 

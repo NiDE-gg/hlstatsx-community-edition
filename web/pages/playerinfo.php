@@ -43,15 +43,17 @@ For support and installation notes visit http://www.hlxcommunity.com
 	// Player Details
 	$player = valid_request(intval($_GET['player'] ?? ''), true);
 	$uniqueid = valid_request(strval($_GET['uniqueid'] ?? ''), false);
-	$game = valid_request(strval($_GET['game'] ?? ''), false);
+	$game = valid_game_code($_GET['game'] ?? '');
 
 	if (!$player && $uniqueid) {
 		if (!$game) {
-			header("Location: " . $g_options['scripturl'] . "&mode=search&st=uniqueid&q=$uniqueid");
+			header('Location: ' . $g_options['scripturl'] . '?' . http_build_query(['mode' => 'search', 'st' => 'uniqueid', 'q' => $uniqueid]));
 			exit;
 		}
 
 		$uniqueid = preg_replace('/^STEAM_\d+?\:/i','',$uniqueid);
+		$uniqueid_sql = $db->escape($uniqueid);
+		$game_sql = $db->escape($game);
 
         $db->query("
 			SELECT
@@ -59,11 +61,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 			FROM
 				hlstats_PlayerUniqueIds
 			WHERE
-				hlstats_PlayerUniqueIds.uniqueId = '$uniqueid'
+				hlstats_PlayerUniqueIds.uniqueId = '$uniqueid_sql'
+				AND hlstats_PlayerUniqueIds.game = '$game_sql'
 		");
 
 		if ($db->num_rows() > 1) {
-			header("Location: " . $g_options['scripturl'] . "&mode=search&st=uniqueid&q=$uniqueid&game=$game");
+			header('Location: ' . $g_options['scripturl'] . '?' . http_build_query(['mode' => 'search', 'st' => 'uniqueid', 'q' => $uniqueid, 'game' => $game]));
 			exit;
 		} elseif ($db->num_rows() < 1) {
 			error("No players found matching uniqueId '$uniqueid'");
@@ -213,7 +216,7 @@ $db->query("
 	}
 
 	if (isset($_GET['type']) && $_GET['type'] == 'ajax') {
-		$tabs = explode('_', preg_replace('[^a-z]', '', $_GET['tab']));
+		$tabs = explode('_', preg_replace('/[^a-z_]/', '', $_GET['tab'] ?? ''));
 
 		foreach ($tabs as $tab) {
 			if (file_exists(PAGE_PATH . "/playerinfo_$tab.php")) {
