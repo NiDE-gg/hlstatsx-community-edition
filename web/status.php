@@ -283,7 +283,7 @@ if ($server_data['addr'] != '')  {
 			}
 			else
 			{
-				echo '<a target="_blank" href="'.$g_options["siteurl"].'"><img src="'.IMAGE_PATH.'/icons/shorttitle-'.$game.'.png" style="width:'.$width.'px;border:0px;" alt="'.$server_data['name'].'" title="'.$server_data['name'].'" /></a>';
+				echo '<a target="_blank" href="'.$g_options["siteurl"].'"><img src="'.IMAGE_PATH.'/icons/shorttitle-'.$game.'.png" style="width:'.$width.'px;border:0px;" alt="'.eHtml($server_data['name']).'" title="'.eHtml($server_data['name']).'" /></a>';
 			}
 		}
 		else
@@ -296,7 +296,7 @@ if ($server_data['addr'] != '')  {
 	if ($server_name == 1)
 	{
 		echo '<tr><td align="center" colspan="2" class="'.$fsize.'">';
-		echo '<a target="_blank" href="'.$g_options['scriptbase'].'" title="View statistics"><b>'.$server_data['name'].'</b></a>';
+		echo '<a target="_blank" href="'.$g_options['scriptbase'].'" title="View statistics"><b>'.eHtml($server_data['name']).'</b></a>';
 		echo '</td></tr>';
 	}
 
@@ -325,7 +325,7 @@ if ($server_data['addr'] != '')  {
 		}
 		
 		echo '<tr><td align="center" colspan="2">';
-		echo '<a target="_blank" href="'.$g_options['scriptbase'].'/hlstats.php?mode=mapinfo&amp;map='.$server_data['act_map'].'&amp;game='.$game.'"><img src="'.$mapimg['url'].'" style="width:'.$width.'px;border:0px" alt="'.$server_data['act_map'].'" title="'.$server_data['act_map'].'" /></a>'; 
+		echo '<a target="_blank" href="'.$g_options['scriptbase'].'/hlstats.php?mode=mapinfo&amp;map='.urlencode($server_data['act_map']).'&amp;game='.$game.'"><img src="'.$mapimg['url'].'" style="width:'.$width.'px;border:0px" alt="'.eHtml($server_data['act_map']).'" title="'.eHtml($server_data['act_map']).'" /></a>';
 		echo '</td></tr>';
 	}
 
@@ -357,7 +357,7 @@ if ($server_data['addr'] != '')  {
 		echo '<tr><td align="left" style="padding-left:2px" class="'.$fsize.'">';
 		echo 'Map:'; 
 		echo '</td><td align="right" style="padding-right:2px;" class="'.$fsize.'">';
-		echo $server_data['act_map']; 
+		echo eHtml($server_data['act_map']);
 		echo '</td></tr>';
 	}
 	$stamp = $server_data['map_started']==0?0:time() - $server_data['map_started'];

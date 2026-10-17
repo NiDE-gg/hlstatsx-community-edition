@@ -239,13 +239,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 			else
 				echo IMAGE_PATH . '/game.gif';
 			echo "\" alt=\"$game\" />&nbsp;";
-			echo '<b>' . $rowdata['name'] . '</b>';
+			echo '<b>' . eHtml($rowdata['name']) . '</b>';
 ?></td>
             <td class="game-table-cell" data-label="Address"><?php
 			echo "$addr (<a href=\"steam://connect/$addr\">Join</a>)";
 ?></td>
             <td class="game-table-cell" data-label="Map" style="text-align:center;"><?php
-			echo $rowdata['act_map'];
+			echo eHtml($rowdata['act_map']);
 ?></td>
             <td class="game-table-cell" data-label="Played" style="text-align:center;"><?php
 			$stamp = $rowdata['map_started']==0?0:time() - $rowdata['map_started'];
@@ -386,7 +386,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			echo "$addr (<a href=\"steam://connect/$addr\">Join</a>)";
 	?></td>
 						<td class="game-table-cell" data-label="Map" style="text-align:center;"><?php
-			echo $rowdata['act_map'];
+			echo eHtml($rowdata['act_map']);
 	?></td>
 						<td class="game-table-cell" data-label="Played" style="text-align:center;"><?php
 			$stamp = $rowdata['map_started']==0?0:time() - $rowdata['map_started'];

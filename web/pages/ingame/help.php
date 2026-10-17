@@ -225,13 +225,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 		<tr class="bg<?php echo $c; ?>">
 			<td class="fSmall"><?php
-				echo '<strong>'.$rowdata['name'].'</strong>';
+				echo '<strong>'.eHtml($rowdata['name']).'</strong>';
 			?></td>
 			<td class="fSmall"><?php
 				echo $addr;
 			?></td>
 			<td style="text-align:center;" class="fSmall"><?php 
-				echo $rowdata['act_map'];
+				echo eHtml($rowdata['act_map']);
 			?></td>
 			<td style="text-align:center;" class="fSmall"><?php
 				$stamp = time()-$rowdata['map_started'];
