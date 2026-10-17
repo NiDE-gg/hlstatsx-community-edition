@@ -1616,9 +1616,14 @@ sub readDatabaseConfig()
 		if ($g_debug > 1) {
 			print "Config parameter '$p' = '$v'\n";
 		}
-		$tmp = "\$".$directives_mysql{$p}." = '$v'";
-		#print " -> setting ".$tmp."\n";
-		eval $tmp;
+		# Assign the value to the global named in %directives_mysql. Values are
+		# data: never build Perl source from them.
+		my $var = $directives_mysql{$p};
+		next unless (defined($var) && $var =~ /^\w+$/);
+		{
+			no strict 'refs';
+			${"main::$var"} = $v;
+		}
 	}
 	$gsettings->finish;
 	# setting defaults

@@ -808,7 +808,7 @@ sub DoAwards
 					$table.eventTime < $date_base
 					AND $table.eventTime > DATE_SUB($date_base, INTERVAL $opt_numdays DAY)
 					AND hlstats_Players.game='".&quoteSQL($game)."'
-					AND $matchfield='$code'
+					AND $matchfield='" . &quoteSQL($code) . "'
 				GROUP BY
 					$playerfield
 				ORDER BY
@@ -828,7 +828,7 @@ sub DoAwards
 				$join
 				WHERE
 					hlstats_Players.game='".&quoteSQL($game)."'
-					AND $matchfield='$code'
+					AND $matchfield='" . &quoteSQL($code) . "'
 				GROUP BY
 					$playerfield
 				ORDER BY
