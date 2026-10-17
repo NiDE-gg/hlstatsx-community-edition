@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="109";
-SET @VERSION="1.10.3";
+SET @DBVERSION="110";
+SET @VERSION="1.10.4";
 
 -- --------------------------------------------------------
 
@@ -6659,7 +6659,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Trend` (
 
 CREATE TABLE IF NOT EXISTS `hlstats_Users` (
   `username` varchar(16) NOT NULL default '',
-  `password` varchar(32) NOT NULL default '',
+  `password` varchar(255) NOT NULL default '',
   `acclevel` int(11) NOT NULL default '0',
   `playerId` int(11) NOT NULL default '0',
   PRIMARY KEY  (`username`)

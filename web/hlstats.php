@@ -65,11 +65,18 @@ if($historical_cache==1)
 	}
 }
 
+session_set_cookie_params([
+	'httponly' => true,
+	'samesite' => 'Lax',
+	'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+]);
 session_start();
 
 if (!empty($_GET['logout']) && $_GET['logout'] == '1') {
-	unset($_SESSION['loggedin']);
-	header("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['SCRIPT_NAME']);
+	require_once(INCLUDE_PATH . '/class_auth.php');
+	Auth::logout();
+	session_regenerate_id(true);
+	header('Location: ' . basename($_SERVER['SCRIPT_NAME']));
 	die;
 }
 
