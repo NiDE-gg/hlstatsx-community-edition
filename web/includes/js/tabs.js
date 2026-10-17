@@ -175,14 +175,22 @@ var Tabs = (function () {
 			const controller = new AbortController();
 			this.currentRequest = controller;
 
-			const url = 'hlstats.php?mode=' + this.options.mode + '&type=ajax&game=' + this.options.game + '&tab=' + tab + '&' + toQueryString(this.options.extra);
+			const url = 'hlstats.php?mode=' + encodeURIComponent(this.options.mode) + '&type=ajax&game=' + encodeURIComponent(this.options.game) + '&tab=' + encodeURIComponent(tab) + '&' + toQueryString(this.options.extra);
 
 			fetch(url, { signal: controller.signal })
-				.then((response) => response.text())
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error('HTTP ' + response.status);
+					}
+					return response.text();
+				})
 				.then((txt) => this.updateTab(txt, idx))
 				.catch((err) => {
 					if (err.name !== 'AbortError') {
 						console.error('Tabs: failed to load tab "' + tab + '"', err);
+						// Don't inject the server's error page; show a short message instead.
+						this.updateTab('<p style="text-align:center;">This section could not be loaded. Please try again later.</p>', idx);
+						this.elements[idx] = null;
 					}
 				});
 		}

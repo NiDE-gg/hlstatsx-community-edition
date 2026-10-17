@@ -56,7 +56,7 @@
 			return;
 		}
 
-		serveraddress = serveraddress + '/nickname=' + escape(nickname);
+		serveraddress = serveraddress + '/nickname=' + encodeURIComponent(nickname);
 
 		if (settings.serverPasswordRequired) {
 			var password = window.prompt('Enter the teamspeak server password for ' + settings.serverName, '');
@@ -66,11 +66,11 @@
 				window.alert('Could not enter the teamspeak server because you did not enter a server password');
 				return;
 			}
-			serveraddress = serveraddress + '?password=' + escape(password);
+			serveraddress = serveraddress + '?password=' + encodeURIComponent(password);
 		}
 
 		if (channelName !== null && channelName !== undefined) {
-			serveraddress = serveraddress + '?channel=' + escape(channelName);
+			serveraddress = serveraddress + '?channel=' + encodeURIComponent(channelName);
 		}
 
 		if (channelPassworded) {
@@ -81,11 +81,11 @@
 				window.alert('Could not enter the teamspeak server because you did not enter a channel password');
 				return;
 			}
-			serveraddress = serveraddress + '?channelpassword=' + escape(channelpassword);
+			serveraddress = serveraddress + '?channelpassword=' + encodeURIComponent(channelpassword);
 		}
 
 		if (subChannelName !== null && subChannelName !== undefined) {
-			serveraddress = serveraddress + '?subchannel=' + escape(subChannelName);
+			serveraddress = serveraddress + '?subchannel=' + encodeURIComponent(subChannelName);
 		}
 
 		window.location = serveraddress;

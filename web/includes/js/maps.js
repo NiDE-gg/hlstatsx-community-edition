@@ -111,8 +111,9 @@
 			scrollwheel: false,
 			mapTypeControl: true,
 			mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.DROPDOWN_MENU },
-			navigationControl: true,
-			navigationControlOptions: { style: google.maps.NavigationControlStyle.ZOOM_PAN }
+			// navigationControl / NavigationControlStyle were removed from the
+			// Maps JavaScript API; reading them threw and no map was created.
+			zoomControl: true
 		};
 		if (data.mapTypeId && google.maps.MapTypeId[data.mapTypeId]) {
 			mapOptions.mapTypeId = google.maps.MapTypeId[data.mapTypeId];
