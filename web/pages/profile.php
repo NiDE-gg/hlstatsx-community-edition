@@ -1,6 +1,15 @@
 <?php
 
-if($_REQUEST['reset']) {
+if (!defined('IN_HLSTATS')) {
+	die('Do not access this file directly.');
+}
+
+// SQL profiling data (see class_db.php): full admins only
+if (empty($_SESSION['loggedin']) || ($_SESSION['acclevel'] ?? 0) < 100) {
+	error('Access denied!');
+}
+
+if (!empty($_POST['reset'])) {
 	$db->query("delete from hlstats_sql_web_profile");
 	$db->query("delete from hlstats_sql_daemon_profile");
 	die("Stats reset.");

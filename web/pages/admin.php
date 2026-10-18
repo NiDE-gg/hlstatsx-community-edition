@@ -1064,7 +1064,13 @@ if (!empty($admintasks[$selTask]) && ($admintasks[$selTask]->type == 'tool' || $
 <img src="<?php echo IMAGE_PATH; ?>/spacer.gif" width="1" height="8" border="0" alt="" /><br />
 
 <?php
-	include (PAGE_PATH . "/admintasks/$code.php");
+	// Same check as the general and game task lists below: several tools
+	// require level 100 but only test for 80 themselves.
+	if ($auth->userdata['acclevel'] >= $task->acclevel) {
+		include (PAGE_PATH . "/admintasks/$code.php");
+	} else {
+		error('Access denied!', false);
+	}
 }
 else
 {
