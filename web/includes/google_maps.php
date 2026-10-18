@@ -50,7 +50,7 @@ function printMap($type = 'main')
 	global $db, $game, $g_options, $clandata, $clan;
 
 	if ($type == 'main') {
-		echo ('<script src="http://maps.google.com/maps/api/js?callback=Function.prototype&key=' . GOOGLE_MAPS_API_KEY . '" type="text/javascript"></script>' . "\n");
+		echo ('<script src="https://maps.googleapis.com/maps/api/js?callback=Function.prototype&amp;key=' . rawurlencode(GOOGLE_MAPS_API_KEY) . '" type="text/javascript"></script>' . "\n");
 	}
 
 	$mapCenter = getMapCenter(($type == 'clan' && $clandata['mapregion'] != '') ? $clandata['mapregion'] : $g_options['google_map_region']);
