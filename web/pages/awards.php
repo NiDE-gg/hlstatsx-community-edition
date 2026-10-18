@@ -59,7 +59,7 @@
     $tab = filter_input(INPUT_GET, 'tab', FILTER_UNSAFE_RAW) ?? '';
 
     if ($type == 'ajax') {
-        $tabs = explode('|', preg_replace('/[^a-z]/', '', $tab));
+        $tabs = explode('|', preg_replace('/[^a-z|]/', '', $tab));
 
         foreach ($tabs as $tab) {
             $awardPath = PAGE_PATH . '/awards_' . $tab . '.php';

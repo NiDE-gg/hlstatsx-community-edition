@@ -109,7 +109,7 @@
 	}
 
     if (!empty($_GET['type']) && $_GET['type'] == 'ajax') {
-		$tabs = explode('|', preg_replace('[^a-z]', '', $_GET['tab']));
+		$tabs = explode('|', preg_replace('/[^a-z|]/', '', $_GET['tab'] ?? ''));
 		unset($_GET['type']);
 
 		foreach ($tabs as $tab) {

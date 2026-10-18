@@ -155,17 +155,22 @@ if (empty($g_options)) {
 //// Main
 ////
 
-$game = valid_request(isset($_GET['game']) ? $_GET['game'] : '', false);
-
-$realgame = $_SESSION['realgame'] ?? null;
+$game = valid_game_code($_GET['game'] ?? '');
 
 if (!$game)
 {
-	$game = isset($_SESSION['game'])?$_SESSION['game']:'';
+	$game = valid_game_code($_SESSION['game'] ?? '');
 }
 else
 {
 	$_SESSION['game'] = $game;
+}
+
+// realgame is cached per game: switching games must not keep the previous one
+$realgame = null;
+if ($game && ($_SESSION['realgame_game'] ?? null) === $game)
+{
+	$realgame = $_SESSION['realgame'] ?? null;
 }
 
 if (!$realgame && $game)
@@ -174,6 +179,7 @@ if (!$realgame && $game)
 	$realgame = $gameRepo->getGameByCode($game, 'realgame');
 
 	$_SESSION['realgame'] = $realgame;
+	$_SESSION['realgame_game'] = $game;
 }
 
 $mode = isset($_GET['mode']) ? $_GET['mode'] : '';

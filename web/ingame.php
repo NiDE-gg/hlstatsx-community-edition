@@ -108,7 +108,7 @@ if (empty($g_options)) {
 ////
 
 if (isset($_GET["game"])) {
-	$game = valid_request($_GET["game"], false);
+	$game = valid_game_code($_GET["game"]);
 }
 
 $mode = isset($_GET["mode"]) ? $_GET["mode"] : "";

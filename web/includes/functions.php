@@ -183,6 +183,26 @@ function valid_request($str, $numeric = false)
 }
 
 /**
+ * valid_game_code()
+ *
+ * Game codes are short identifiers (css, tf, l4d2, ...). Many legacy queries
+ * interpolate $game into SQL strings without escaping it, so the request
+ * value is checked here instead of with valid_request(), which keeps
+ * characters such as backslashes.
+ *
+ * @param mixed $str
+ * @return string The game code, or '' if it is not a valid one
+ */
+function valid_game_code($str)
+{
+	if (!is_string($str) || !preg_match('/^[A-Za-z0-9_.-]{1,32}$/', $str)) {
+		return '';
+	}
+
+	return $str;
+}
+
+/**
  * timestamp_to_str()
  * 
  * @param integer $timestamp

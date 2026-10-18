@@ -80,6 +80,11 @@ class DB_mysql
 
 		$this->querycount = 0;
 
+		// PHP 8.1+ makes mysqli throw on errors by default. This class reports
+		// errors itself (query() returns false with $showerror = false), and an
+		// uncaught exception would print the failing SQL.
+		mysqli_report(MYSQLI_REPORT_OFF);
+
 		if ( $use_pconnect )
 		{
 			$this->link = @mysqli_pconnect($db_addr, $db_user, $db_pass);
@@ -291,15 +296,30 @@ class DB_mysql
 
 	function error($message, $exit=true)
 	{
-		error(
-			"<b>Database Error</b><br />\n<br />\n" .
-			"<i>Server Address:</i> $this->db_addr<br />\n" .
-			"<i>Server Username:</i> $this->db_user<br /><br />\n" .
-			"<i>Error Diagnostic:</i><br />\n$message<br /><br />\n" .
-			"<i>Server Error:</i> (" . @mysqli_errno($this->link) . ") " . @mysqli_error($this->link) . "<br /><br />\n" .
-			"<i>Last SQL Query:</i><br />\n<pre style=\"font-size:2px;\">$this->last_query</pre>",
-			$exit
-		);
+		if ( $this->link )
+		{
+			$serverError = '(' . mysqli_errno($this->link) . ') ' . mysqli_error($this->link);
+		}
+		else
+		{
+			$serverError = '(' . mysqli_connect_errno() . ') ' . mysqli_connect_error();
+		}
+
+		$details = "Server Address: $this->db_addr\n" .
+			"Server Username: $this->db_user\n" .
+			"Error Diagnostic: $message\n" .
+			"Server Error: $serverError\n" .
+			"Last SQL Query:\n$this->last_query";
+
+		// Connection details and SQL are only shown to visitors in debug mode
+		error_log("HLstatsX database error:\n$details");
+
+		if ( defined('DB_DEBUG') && DB_DEBUG == true )
+		{
+			echo '<pre>' . eHtml($details) . '</pre>';
+		}
+
+		error('Database error. The details have been written to the web server error log.', $exit);
 	}
 }
 ?>
