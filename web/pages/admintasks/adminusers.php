@@ -46,7 +46,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	$edlist = new EditList("username", "hlstats_Users", "user", false);
 	$edlist->columns[] = new EditListColumn("username", "Username", 15, true, "text", "", 16);
-	$edlist->columns[] = new EditListColumn("password", "Password", 15, true, "password", "", 16);
+	$edlist->columns[] = new EditListColumn("password", "Password", 15, true, "password", "", 72);
 	$edlist->columns[] = new EditListColumn("acclevel", "Access Level", 25, true, "select", "0/No Access;80/Restricted;100/Administrator");
 
 	if ($_POST)

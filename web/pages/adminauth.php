@@ -60,11 +60,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<table class="data-table">
 				<tr style="vertical-align:middle;">
 					<td class="bg1" style="width:45%;border:0;">Username:</td>
-					<td class="bg1" style="width:55%;border:0;"><input type="text" name="authusername" size="20" maxlength="16" value="<?php echo $this->username; ?>" class="textbox"></td>
+					<td class="bg1" style="width:55%;border:0;"><input type="text" name="authusername" size="20" maxlength="16" value="<?php echo eHtml($this->username); ?>" class="textbox"></td>
 				</tr>
 				<tr style="vertical-align:middle;">
 					<td class="bg1" style="width:45%;border:0;">Password:</td>
-					<td class="bg1" style="width:55%;border:0;"><input type="password" name="authpassword" size="20" maxlength="16" value="<?php echo $this->password; ?>" class="textbox"></td>
+					<td class="bg1" style="width:55%;border:0;"><input type="password" name="authpassword" size="20" maxlength="72" value="" class="textbox"></td>
 				</tr>
 				<tr>
 					<td class="bg1" style="border:0;">&nbsp;</td>
