@@ -66,7 +66,7 @@ The `hlstats_Events_*` tables hold millions of rows, and pages are crawled heavi
 - Per-player/per-clan aggregates (`GROUP BY` over event tables) need a **covering index** that starts with the filter column (see updater `80.php`). Otherwise each query does thousands of random row lookups. When adding such a query, check it with `EXPLAIN` on a realistically sized database.
 - When joining `hlstats_Actions` by `code`, also filter on `hlstats_Actions.game`: the same action code exists once per game.
 - Qualify column names whenever `hlstats_Players` is joined. It shares `playerId` with most event tables, and an ambiguous column is a fatal error (HTTP 500).
-- To re-read a legacy result set, use `$db->data_seek(0, $result)` and always pass `$result`: without it, `data_seek()` silently does nothing. Never re-run the query.
+- To re-read a legacy result set, use `$db->data_seek(0, $result)` and pass `$result` (without it, `data_seek()` rewinds the last query run, which is rarely the one you mean). Never re-run the query.
 
 ## Docker / deployment
 

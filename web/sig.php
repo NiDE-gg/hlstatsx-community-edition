@@ -165,7 +165,7 @@ function f_num($number) {
 		");
 		
 		if ($db->num_rows() != 1)
-		error("No such player '$player'.");
+		error('No such player.');
 		list($player_id) = $db->fetch_row();
 	}
 	
@@ -195,17 +195,10 @@ function f_num($number) {
 	//// Main
 	////
 
-if (isset($_GET['color']) && is_string($_GET['color'])) {
-	$color = hex2rgb(valid_request($_GET['color'], false));
-}
-
-if (isset($_GET['caption_color']) && is_string($_GET['caption_color'])) {
-	$caption_color = hex2rgb(valid_request($_GET['caption_color'], false));
-}
-
-if (isset($_GET['link_color']) && is_string($_GET['link_color'])) {
-	$link_color = hex2rgb(valid_request($_GET['link_color'], false));
-}
+// Optional colour overrides (RRGGBB), applied on top of the background preset below
+$user_color = tryHexToRgb(is_string($_GET['color'] ?? null) ? $_GET['color'] : '');
+$user_caption_color = tryHexToRgb(is_string($_GET['caption_color'] ?? null) ? $_GET['caption_color'] : '');
+$user_link_color = tryHexToRgb(is_string($_GET['link_color'] ?? null) ? $_GET['link_color'] : '');
 
 if ($player_id > 0) {
 	$db->query("
@@ -235,7 +228,7 @@ if ($player_id > 0) {
 			playerId='$player_id'
 	");
 	if ($db->num_rows() != 1)
-		error("No such player '$player'.");
+		error('No such player.');
 
 	$playerdata = $db->fetch_array();
 	$db->free_result();
@@ -373,6 +366,10 @@ if ($player_id > 0) {
 					$color = array('red' => 0, 'green' => 0, 'blue' => 0);
 					break;
 }
+
+	if ($user_color) $color = $user_color;
+	if ($user_caption_color) $caption_color = $user_caption_color;
+	if ($user_link_color) $link_color = $user_link_color;
 
 	$image			= imagecreatetruecolor(400, 75);
 
