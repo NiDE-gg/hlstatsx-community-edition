@@ -117,7 +117,12 @@ sub error
 	
 	if ($g_mailto && $g_mailpath)
 	{
-		system("echo \"$errormsg\" | $g_mailpath -s \"HLstatsX:CE crashed `date`\" $g_mailto");
+		# List form: MailPath/MailTo (web admin options) and the message never reach a shell
+		my $subject = "HLstatsX:CE crashed " . scalar(localtime());
+		if (open(my $mail, '|-', $g_mailpath, '-s', $subject, $g_mailto)) {
+			print $mail "$errormsg\n";
+			close($mail);
+		}
 	}
 
 	die("$errormsg\n");

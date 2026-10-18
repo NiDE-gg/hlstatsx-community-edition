@@ -350,10 +350,10 @@ else
 				UPDATE
 					hlstats_Events_Connects
 				SET
-					hostname='$hostname',
+					hostname='" . &quoteSQL($hostname) . "',
 					hostgroup='" . &quoteSQL($hostgroup) . "'
 				WHERE
-					ipAddress='$ipAddress'
+					ipAddress='" . &quoteSQL($ipAddress) . "'
 			");
 		
 			if ($g_debug > 0)

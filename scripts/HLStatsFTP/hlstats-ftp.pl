@@ -170,6 +170,11 @@ my @todo_files = ();
 my @todo_mtimes = ();
 
 foreach my $file (@files) {
+	# The listing comes from the remote server: plain log file names only
+	unless ($file =~ /^[\w.-]+\.log$/ && $file !~ /^\./) {
+		output("    - skipping unexpected file name \"$file\"\n");
+		next;
+	}
 	output("    - \"$file\" ");
 	my $mtime = $ftp->mdtm($file) || die "FTP mtdm failed: $!";
 	output("(mtime $mtime): ");
@@ -205,7 +210,14 @@ output(" + parsing log files:\n");
 for (my $i = 0; $i <= $#todo_files; $i++) {
 	my $progress = "(" . ($i+1) . "/" . ($#todo_files+1) . ")";
 	output("    - \"" . $todo_files[$i] . "\" " .  $progress . ": parsing... ");
-	system("./hlstats.pl --stdin --server-ip $gs_ip --server-port $gs_port < $tmp_dir/" . $todo_files[$i] . " > /dev/null");
+	# List-form system() without a shell: STDIN/STDOUT are redirected here instead
+	open(my $saved_in, '<&', \*STDIN) || die "Dup STDIN failed: $!";
+	open(my $saved_out, '>&', \*STDOUT) || die "Dup STDOUT failed: $!";
+	open(STDIN, '<', "$tmp_dir/$todo_files[$i]") || die "Open \"$tmp_dir/$todo_files[$i]\" failed: $!";
+	open(STDOUT, '>', '/dev/null') || die "Open /dev/null failed: $!";
+	system('./hlstats.pl', '--stdin', '--server-ip', $gs_ip, '--server-port', $gs_port);
+	open(STDIN, '<&', $saved_in) || die "Restore STDIN failed: $!";
+	open(STDOUT, '>&', $saved_out) || die "Restore STDOUT failed: $!";
 	output("updating last mtime...");
 	open(LASTMTIME, ">$last_mtime_filename") || die "Open file \"$last_mtime_filename\" failed: $!";
 	print LASTMTIME $todo_mtimes[$i];
