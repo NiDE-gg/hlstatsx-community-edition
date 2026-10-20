@@ -48,10 +48,13 @@ session_set_cookie_params([
 ]);
 session_start();
 
-if (!empty($_GET['logout']) && $_GET['logout'] == '1') {
+// Logout is a POST carrying the CSRF token, so another site can't log the admin out
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['logout'] ?? '') === '1') {
 	require_once(INCLUDE_PATH . '/class_auth.php');
-	Auth::logout();
-	session_regenerate_id(true);
+	if (Auth::checkCsrf()) {
+		Auth::logout();
+		session_regenerate_id(true);
+	}
 	header('Location: ' . basename($_SERVER['SCRIPT_NAME']));
 	die;
 }

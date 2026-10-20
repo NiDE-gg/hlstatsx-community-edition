@@ -593,6 +593,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 <script src="<?php echo asset_url(INCLUDE_PATH . '/js/admintasks.js'); ?>"></script>
 <form name="resetform" method="post">
+<?php echo Auth::csrfField(); ?>
 <table width="600" align="center" border="0" cellspacing="0" cellpadding="0" class="border">
 
 <tr>

@@ -98,7 +98,8 @@
 				[<a href="<?=$scriptUrl;?>?mode=admin">Admin</a>]
 
 				<?php if (isset($_SESSION['loggedin'])) : ?>
-					&nbsp;[<a href="hlstats.php?logout=1">Logout</a>]
+					<?php require_once(INCLUDE_PATH . '/class_auth.php'); ?>
+					&nbsp;[<form method="post" action="hlstats.php" style="display:inline;margin:0;padding:0;"><input type="hidden" name="logout" value="1" /><?php echo Auth::csrfField(); ?><button type="submit" style="background:none;border:0;margin:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;">Logout</button></form>]
 				<?php endif; ?>
 			</div>
 

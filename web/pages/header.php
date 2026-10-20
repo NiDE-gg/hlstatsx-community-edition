@@ -133,6 +133,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 </head>
 <body> 
 <?php
+	// Admin pages drop any POST without the CSRF token (Auth::resume), so the two
+	// forms below carry it while an admin is logged in.
+	$csrfField = (class_exists('Auth', false) && !empty($_SESSION['loggedin'])) ? Auth::csrfField() : '';
+
 	//JS Check
 
 	if (isset($_POST['js']) && $_POST['js']) {
@@ -144,7 +148,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<!-- Either this is your first visit in a while, or you don\'t have javascript enabled -->
 			<form name="jsform" id="jsform" action="" method="post" style="display:none">
 			<div>
-			<input name="js" type="text" value="true" />
+			<input name="js" type="text" value="true" />' . $csrfField . '
 			<script type="text/javascript">
 			document.jsform.submit();
 			</script>
@@ -233,7 +237,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		if ($g_options['display_style_selector'] == 1) {
 ?>
 		<div class="fNormal" style="float:right;"> 
-			<form name="style_selection" id="style_selection" action="" method="post"> Style: 
+			<form name="style_selection" id="style_selection" action="" method="post"> Style: <?php echo $csrfField; ?>
 				<select name="stylesheet" onchange="document.style_selection.submit()"> 
 				<?php 
 					$d = dir('styles'); 

@@ -823,6 +823,10 @@ if ($auth->ok === false) {
 
 pageHeader(array('Admin'), array('Admin' => ''));
 
+if ($auth->csrfRejected) {
+	message('warning', 'The form was not sent from this admin page, or has expired. Nothing was changed: please submit it again.');
+}
+
 $selTask = isset($_GET['task']) ? valid_request($_GET['task'], false) : '';
 $selGame = valid_game_code($_GET['game'] ?? '');
 ?>
@@ -912,6 +916,7 @@ else
 &nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin" name="<?php echo $code; ?>"><?php echo $task->title; ?></a></b><br /><br />
 
 <form method="post" action="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;task=<?php echo $code; ?>#<?php echo $code; ?>">
+<?php echo Auth::csrfField(); ?>
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
 
@@ -970,6 +975,7 @@ else
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo $gamecode; ?>" name="<?php echo $code; ?>"><?php echo $task->title; ?></a></b><br /><br />
 
 <form method="post" name="<?php echo $code; ?>form" action="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo $gamecode; ?>&task=<?php echo $code; ?>#<?php echo $code; ?>">
+<?php echo Auth::csrfField(); ?>
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
 
