@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="114";
-SET @VERSION="1.10.8";
+SET @DBVERSION="115";
+SET @VERSION="1.10.9";
 
 -- --------------------------------------------------------
 
@@ -2185,7 +2185,7 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Chat` (
   `message_mode` tinyint(2) NOT NULL default '0',
   `message` varchar(128) NOT NULL default '',
   PRIMARY KEY  (`id`),
-  KEY `playerId` (`playerId`),
+  KEY `playerId` (`playerId`,`eventTime`),
   KEY `serverId` (`serverId`),
   FULLTEXT KEY `message` (`message`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -3764,10 +3764,10 @@ CREATE TABLE IF NOT EXISTS `hlstats_Livestats` (
   `player_id` int(10) NOT NULL default '0',
   `server_id` int(10) NOT NULL default '0',
   `cli_address` varchar(32) NOT NULL default '',
-  `cli_city` varchar(64) NOT NULL default '',
-  `cli_country` varchar(64) NOT NULL default '',
+  `cli_city` varchar(128) NOT NULL default '',
+  `cli_country` varchar(128) NOT NULL default '',
   `cli_flag` varchar(16) NOT NULL default '',
-  `cli_state` varchar(64) NOT NULL default '',
+  `cli_state` varchar(128) NOT NULL default '',
   `cli_lat` FLOAT(7,4) NULL,
   `cli_lng` FLOAT(7,4) NULL,
   `steam_id` varchar(64) NOT NULL default '',
