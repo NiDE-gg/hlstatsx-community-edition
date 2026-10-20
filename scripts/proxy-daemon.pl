@@ -446,7 +446,9 @@ while ($server->recv($datagram,1024,$flags)) {
 		&printEvent("NOTICE", "Skipping message...", 1) if ($g_debug > 1);
 	} else {
 		if (defined($srv_list{$ipaddr}{$ipport}{'dest_ip'}) && defined($srv_list{$ipaddr}{$ipport}{'dest_port'})) {
-			$datagram =~ s/^.*RL /RL /g;
+			# Drop the \xff\xff\xff\xff packet header only: a greedy match up to "RL "
+			# would cut into signed "S<secret>L ..." lines that contain "RL " (sv_logsecret)
+			$datagram =~ s/^\xff+//;
 
 			&printEvent("NOTICE", "Sending $datagram to daemon $srv_list{$ipaddr}{$ipport}{'dest_ip'}:$srv_list{$ipaddr}{$ipport}{'dest_port'}", 1) if ($g_debug > 1);	
 			# Sedning actual message to the daemon.

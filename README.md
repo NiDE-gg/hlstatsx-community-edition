@@ -21,6 +21,16 @@ a PHP frontend.
 > Date format: DD.MM.YYYY
 ---
 
+### :lock: Signed server logs (`sv_logsecret`)
+
+The daemon identifies a game server by the source address of its UDP log packets, which can be spoofed. Source engine servers can sign their log lines instead:
+
+1. On the game server, set `sv_logsecret <number>` (for example in `server.cfg`, before `logaddress_add`).
+2. In the admin panel, open *Game Settings* → *Edit Servers* → *Server Details* and set **LogSecret** to the same number.
+3. Reload or restart the daemon.
+
+The daemon then drops every line claiming to come from that server that is not signed with the secret. Leave LogSecret empty to keep the old behaviour. GoldSrc servers can't sign their logs.
+
 ### :book: Documentation
 * https://github.com/NomisCZ/hlstatsx-community-edition/wiki 🚧 Wiki - work in progress 🚧
 ### :speech_balloon: Help

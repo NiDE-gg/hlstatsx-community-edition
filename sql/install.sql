@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="117";
-SET @VERSION="1.10.11";
+SET @DBVERSION="118";
+SET @VERSION="1.11.0";
 
 -- --------------------------------------------------------
 
@@ -6491,7 +6491,8 @@ INSERT INTO `hlstats_Servers_Config_Default` (`parameter`, `value`, `description
 ('TKPenalty', '50', 'Penalty for a team kill (Default: 50 points).'),
 ('TrackServerLoad', '1', 'Saves every 5 min how much players are playing on the server.'),
 ('UpdateHostname', '1', 'Toggles auto-update of server name from hostname cvar 1=on(default) 0=off'),
-('PlayerEventsCommandHint', 'hlx_sm_hint', 'The command to display "hint" style messages for ATB switches. Default is "".');
+('PlayerEventsCommandHint', 'hlx_sm_hint', 'The command to display "hint" style messages for ATB switches. Default is "".'),
+('LogSecret', '', 'Source engine only. Set the same number as <b>sv_logsecret</b> on the game server: the daemon then drops every log line for this server that is not signed with it, so nobody can inject events by spoofing the server address. Empty (default) = not checked. Restart or reload the daemon after changing it.');
 -- --------------------------------------------------------
 
 --
