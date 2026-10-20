@@ -307,7 +307,6 @@ For support and installation notes visit http://www.hlxcommunity.com
 			$result = $db->query
 			("
 				SELECT
-					SQL_CALC_FOUND_ROWS
 					hlstats_Players.playerId,
 					hlstats_Players.connection_time,
                                         unhex(replace(hex(hlstats_Players.lastName), 'E280AE', '')) as lastName,
@@ -337,8 +336,18 @@ For support and installation notes visit http://www.hlxcommunity.com
 					$table->startitem,
 					$table->numperpage
 			");
-			
-			$resultCount = $db->query("SELECT FOUND_ROWS()");
+
+			$resultCount = $db->query
+			("
+				SELECT
+					COUNT(*)
+				FROM
+					hlstats_Players
+				WHERE
+					hlstats_Players.game = '$game_sql'
+					AND hlstats_Players.hideranking = 0
+					AND hlstats_Players.kills >= $minkills
+			");
 			list($numitems) = $db->fetch_row($resultCount);
 		}
 		else
@@ -357,25 +366,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 				$maxEvent = $minEvent + 86400;
 			}
 
-			$result = $db->query("
-				SELECT
-					SQL_CALC_FOUND_ROWS
-					hlstats_Players_History.playerId,
-					hlstats_Players.lastName,
-					hlstats_Players.flag,
-					hlstats_Players.country,
-					hlstats_Players.mmrank,
-					SUM(hlstats_Players_History.connection_time) AS connection_time,
-					SUM(hlstats_Players_History.skill_change) AS skill,
-					SUM(hlstats_Players_History.skill_change) AS skill_change,
-					SUM(hlstats_Players_History.skill_change) AS last_skill_change,
-					SUM(hlstats_Players_History.kills) AS kills,
-					SUM(hlstats_Players_History.deaths) AS deaths,
-					ROUND(SUM(hlstats_Players_History.kills) / IF(SUM(hlstats_Players_History.deaths) = 0, 1, SUM(hlstats_Players_History.deaths)), 2) AS kpd,
-					SUM(hlstats_Players_History.headshots) AS headshots,
-					ROUND(SUM(hlstats_Players_History.headshots) / SUM(hlstats_Players_History.kills), 2) AS hpk,
-					IFNULL(ROUND((SUM(hlstats_Players_History.hits) / SUM(hlstats_Players_History.shots) * 100), 1), 0) AS acc,
-					activity
+			// Shared by the page query and its row count.
+			$historyFrom = "
 				FROM
 					hlstats_Players_History
 				INNER JOIN
@@ -392,6 +384,27 @@ For support and installation notes visit http://www.hlxcommunity.com
 					hlstats_Players_History.playerId
 				HAVING
 					SUM(hlstats_Players_History.kills) >= $minkills
+			";
+
+			$result = $db->query("
+				SELECT
+					hlstats_Players_History.playerId,
+					hlstats_Players.lastName,
+					hlstats_Players.flag,
+					hlstats_Players.country,
+					hlstats_Players.mmrank,
+					SUM(hlstats_Players_History.connection_time) AS connection_time,
+					SUM(hlstats_Players_History.skill_change) AS skill,
+					SUM(hlstats_Players_History.skill_change) AS skill_change,
+					SUM(hlstats_Players_History.skill_change) AS last_skill_change,
+					SUM(hlstats_Players_History.kills) AS kills,
+					SUM(hlstats_Players_History.deaths) AS deaths,
+					ROUND(SUM(hlstats_Players_History.kills) / IF(SUM(hlstats_Players_History.deaths) = 0, 1, SUM(hlstats_Players_History.deaths)), 2) AS kpd,
+					SUM(hlstats_Players_History.headshots) AS headshots,
+					ROUND(SUM(hlstats_Players_History.headshots) / SUM(hlstats_Players_History.kills), 2) AS hpk,
+					IFNULL(ROUND((SUM(hlstats_Players_History.hits) / SUM(hlstats_Players_History.shots) * 100), 1), 0) AS acc,
+					activity
+				$historyFrom
 				ORDER BY
 					$table->sort $table->sortorder,
 					$table->sort2 $table->sortorder,
@@ -400,7 +413,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					$table->startitem,
 					$table->numperpage
 			");
-			$resultCount = $db->query("SELECT FOUND_ROWS()");
+			$resultCount = $db->query("SELECT COUNT(*) FROM (SELECT hlstats_Players_History.playerId $historyFrom) AS ranked");
 			list($numitems) = $db->fetch_row($resultCount);
 		}
 		$table->draw($result, $numitems, 95);
