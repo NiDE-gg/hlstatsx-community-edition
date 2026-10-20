@@ -1974,6 +1974,23 @@ if ($g_global_chat == 1) {
 
 &printEvent("HLSTATSX", "HLstatsX:CE is now running ($g_mode mode, debug level $g_debug)", 1);
 
+# Tell the web frontend which build is running and since when (Admin > Daemon Control).
+# HLX_BUILD_COMMIT/HLX_BUILD_DATE are set when CI builds the Docker image.
+my ($build_commit) = ($ENV{HLX_BUILD_COMMIT} // "") =~ /^([0-9a-f]{7})/i;
+my $build_date = $ENV{HLX_BUILD_DATE} // "";
+if (defined($build_commit)) {
+	$g_build_info = $build_commit . ($build_date ne "" ? ", built $build_date" : "");
+} else {
+	$g_build_info = "unknown (not a CI-built image)";
+}
+&printEvent("HLSTATSX", "Build: $g_build_info", 1);
+if (!$g_stdin) {
+	foreach my $opt (["daemon_build", $g_build_info], ["daemon_started", time()]) {
+		&execNonQuery("INSERT INTO hlstats_Options (keyname, value, opttype) VALUES ('" . $opt->[0] . "', '" . &quoteSQL($opt->[1]) . "', 2)
+			ON DUPLICATE KEY UPDATE value = VALUES(value)");
+	}
+}
+
 $start_time    = time();
 if ($g_stdin) {
   $g_timestamp       = 1;
@@ -2089,11 +2106,11 @@ while ($loop = &getLine()) {
 
 			my $dest = sockaddr_in($port, inet_aton($address));
 			if ($data[1] eq "HEARTBEAT") {
-				my $msg = "Heartbeat OK";
+				my $msg = "Heartbeat OK (build $g_build_info, running since " . localtime($start_time) . ")";
 				$bytes = send($::s_socket, $msg, 0, $dest);
 				&printEvent("CONTROL", "Send heartbeat status to frontend at '$address:$port'", 1);
 			} else {
-				my $msg = "OK, EXECUTING COMMAND: ".$data[1];
+				my $msg = "OK, EXECUTING COMMAND: ".$data[1]." (build $g_build_info)";
 				$bytes = send($::s_socket, $msg, 0, $dest);
 				&printEvent("CONTROL", "Sent $bytes bytes to frontend at '$address:$port'", 1);
 			}

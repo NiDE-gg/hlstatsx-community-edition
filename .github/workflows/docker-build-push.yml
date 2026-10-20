@@ -20,9 +20,16 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Build date
+      id: meta
+      run: echo "date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v7
       with:
         context: ./scripts
         push: true
         tags: ghcr.io/nide-gg/hlstatsx-deamon:latest
+        build-args: |
+          BUILD_COMMIT=${{ github.sha }}
+          BUILD_DATE=${{ steps.meta.outputs.date }}

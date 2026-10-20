@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="118";
-SET @VERSION="1.11.0";
+SET @DBVERSION="119";
+SET @VERSION="1.12.0";
 
 -- --------------------------------------------------------
 
@@ -3950,7 +3950,9 @@ INSERT INTO `hlstats_Options` (`keyname`, `value`, `opttype`) VALUES
 ('sourcebans_address', '', 2),
 ('forum_address', '', 2),
 ('display_gamelist', '1', 2),
-('display_style_selector', '0', 2);
+('display_style_selector', '0', 2),
+('daemon_build', '', 2),
+('daemon_started', '0', 2);
 
 
 CREATE TABLE IF NOT EXISTS `hlstats_Options_Choices` (

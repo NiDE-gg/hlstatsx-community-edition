@@ -51,4 +51,10 @@ RUN dos2unix /usr/local/bin/docker-hlxce-daemon-entrypoint \
 
 EXPOSE 32578/udp
 
+# Set by the CI build; the daemon reports them to the web frontend (Admin > Daemon Control)
+ARG BUILD_COMMIT=""
+ARG BUILD_DATE=""
+ENV HLX_BUILD_COMMIT=${BUILD_COMMIT} \
+    HLX_BUILD_DATE=${BUILD_DATE}
+
 ENTRYPOINT ["docker-hlxce-daemon-entrypoint"]
