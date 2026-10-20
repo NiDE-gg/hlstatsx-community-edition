@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="115";
-SET @VERSION="1.10.9";
+SET @DBVERSION="116";
+SET @VERSION="1.10.10";
 
 -- --------------------------------------------------------
 
@@ -3929,6 +3929,7 @@ INSERT INTO `hlstats_Options` (`keyname`, `value`, `opttype`) VALUES
 ('awardribbonscols', '5',2),
 ('sigbackground', 'random',2),
 ('playerinfo_tabs', '1',2),
+('counter_enabled', '1',2),
 ('counter_hits', '0',2),
 ('counter_visits', '0',2),
 ('counter_visit_timeout', '5',2),
@@ -4055,6 +4056,8 @@ INSERT INTO `hlstats_Options_Choices` (`keyname`, `value`, `text`, `isDefault`) 
 ('SkillRatioCap', '1', 'Yes', 0),
 ('UseGeoIPBinary', '0', 'GeoIP lookup via database', 1),
 ('UseGeoIPBinary', '1', 'GeoIP lookup via binary file', 0),
+('counter_enabled', '1', 'Yes', 1),
+('counter_enabled', '0', 'No', 0),
 ('showqueries', '0', 'No', 1),
 ('showqueries', '1', 'Yes', 0),
 ('display_gamelist', '1', 'Yes', 1),

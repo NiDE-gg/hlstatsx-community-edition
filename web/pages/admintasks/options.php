@@ -239,6 +239,7 @@ RewriteRule sig-(.*)-(.*).png$ sig.php?player_id=$1&background=$2 [L]</textarea>
 	$optiongroups[2]->options[] = new Option('awardribbonscols', 'Ribbons: columns count', 'text');
 
 	$optiongroups[3] = new OptionGroup('Hit counter settings');
+	$optiongroups[3]->options[] = new Option('counter_enabled', 'Count page hits and visits (one database write per page view; crawlers are never counted)', 'select');
 	$optiongroups[3]->options[] = new Option('counter_visit_timeout', 'Visit cookie timeout in minutes', 'text');
 	$optiongroups[3]->options[] = new Option('counter_visits', 'Current Visits', 'text');
 	$optiongroups[3]->options[] = new Option('counter_hits', 'Current Page Hits', 'text');
