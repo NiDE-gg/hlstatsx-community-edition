@@ -45,6 +45,8 @@ class Auth
 	public $error = false;
 	public $username = '';
 	public $userdata = array();
+	// True when a POST was dropped because its CSRF token was missing or wrong
+	public $csrfRejected = false;
 
 	function __construct()
 	{
@@ -85,6 +87,7 @@ class Auth
 		$_SESSION['acclevel'] = $user['acclevel'];
 		$_SESSION['authsessionStart'] = time();
 		$_SESSION['authhash'] = self::fingerprint($user['password']);
+		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
 		$this->userdata = $user;
 		$this->ok = true;
@@ -114,9 +117,41 @@ class Auth
 		$_SESSION['authsessionStart'] = time();
 		$_SESSION['acclevel'] = $user['acclevel'];
 
+		// Admin pages only act on POST data, so a POST without this session's
+		// token is emptied before any task sees it.
+		if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !self::checkCsrf()) {
+			$_POST = array();
+			$this->csrfRejected = true;
+		}
+
 		$this->username = $user['username'];
 		$this->userdata = $user;
 		$this->ok = true;
+	}
+
+	static function csrfToken()
+	{
+		if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+			$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+		}
+
+		return $_SESSION['csrf_token'];
+	}
+
+	// Hidden input carrying the token; every admin form that posts must include it
+	static function csrfField()
+	{
+		return '<input type="hidden" name="csrf_token" value="' . self::csrfToken() . '" />';
+	}
+
+	static function checkCsrf()
+	{
+		$sent = (isset($_POST['csrf_token']) && is_string($_POST['csrf_token'])) ? $_POST['csrf_token'] : '';
+
+		return $sent !== ''
+			&& !empty($_SESSION['csrf_token'])
+			&& is_string($_SESSION['csrf_token'])
+			&& hash_equals($_SESSION['csrf_token'], $sent);
 	}
 
 	function printAuth()
@@ -134,7 +169,8 @@ class Auth
 			$_SESSION['password'],
 			$_SESSION['acclevel'],
 			$_SESSION['authsessionStart'],
-			$_SESSION['authhash']
+			$_SESSION['authhash'],
+			$_SESSION['csrf_token']
 		);
 	}
 
