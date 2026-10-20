@@ -1715,6 +1715,9 @@ sub readDatabaseConfig()
 		if (!defined($g_config_servers{$addr}{"DefaultDisplayEvents"})) {
 			$g_config_servers{$addr}{"DefaultDisplayEvents"}			= 1;
 		}
+		if (!defined($g_config_servers{$addr}{"LogSecret"})) {
+			$g_config_servers{$addr}{"LogSecret"}						= "";
+		}
 	}
 
 	&printEvent("CONFIG", "I have found the following server configs in database:", 1);
@@ -2113,6 +2116,22 @@ while ($loop = &getLine()) {
 		$s_output =~ s/\[OLD.C-D\]//g;	# remove [OLD C-D] tag
 		$s_output =~ s/\[NOCL\]//g;	# remove [NOCL] tag
 
+		# The source ip:port alone can be spoofed. A server with LogSecret set
+		# (sv_logsecret on the game server) signs its lines "S<secret>L ..."
+		# instead of "RL ...": drop anything else claiming to come from it.
+		if (!$g_stdin && defined($g_config_servers{$s_addr})) {
+			my $logSecret = $g_config_servers{$s_addr}{"LogSecret"} // "";
+			if ($logSecret ne "" && $s_output !~ /^[^A-Za-z0-9]*S\Q$logSecret\EL /) {
+				# At most one line per server and minute, so a flood can't fill the log
+				if (($g_logsecret_warned{$s_addr} // 0) < time() - 60) {
+					$g_logsecret_warned{$s_addr} = time();
+					&printEvent(997, "LOG SECRET MISMATCH: dropping log lines from $s_addr that are not signed with its LogSecret");
+				}
+				&printEvent(997, "LOG SECRET MISMATCH: " . $s_output) if ($g_debug > 1);
+				next;
+			}
+		}
+
 		# Get the server info, if we know the server, otherwise ignore the data
 		if (!defined($g_servers{$s_addr})) {
 			if (($g_onlyconfig_servers == 1) && (!defined($g_config_servers{$s_addr}))) {
@@ -2152,6 +2171,7 @@ while ($loop = &getLine()) {
 				$std_cfg{"UpdateHostname"}					= 0;
 				$std_cfg{"ConnectAnnounce"}					= 1;
 				$std_cfg{"DefaultDisplayEvents"}			= 1;
+				$std_cfg{"LogSecret"}						= "";
 				%{$g_config_servers{$s_addr}}				= %std_cfg;
 				&printEvent("CFG", "Created default config for unknown server [$s_addr]");
 				&printEvent("DETECT", "New server with game: " . &getServerMod($s_peerhost, $s_peerport));
