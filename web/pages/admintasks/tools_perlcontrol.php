@@ -49,10 +49,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 
-   $commands[0]["name"] = "Reload Configuration";
-   $commands[0]["cmd"] = "RELOAD";
-   $commands[1]["name"] = "Shut down the Daemon *";
-   $commands[1]["cmd"] = "KILL";
+   $commands[0]["name"] = "Check status (heartbeat, shows the running build)";
+   $commands[0]["cmd"] = "HEARTBEAT";
+   $commands[1]["name"] = "Reload Configuration";
+   $commands[1]["cmd"] = "RELOAD";
+   $commands[2]["name"] = "Shut down the Daemon *";
+   $commands[2]["cmd"] = "KILL";
 
 	if (isset($_POST['confirm'])) {
 		$host = $_POST['masterserver'];
@@ -110,7 +112,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		echo "recieving <strong>$recv_bytes</strong> bytes in <strong>$packets</strong> packets...<strong>OK</strong></li>";
 	  
 		if ($packets>0) {
-			echo "<li>Backend Answer: ".$answer."</li>";
+			echo "<li>Backend Answer: ".htmlspecialchars($answer, ENT_QUOTES, 'UTF-8')."</li>";
 		} 
 		else 
 		{
@@ -126,7 +128,19 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
 		else
 		{
-		
+			// Written by hlstats.pl each time it starts
+			$daemonBuild = $g_options['daemon_build'] ?? '';
+			$daemonStarted = (int) ($g_options['daemon_started'] ?? 0);
+			if ($daemonBuild !== '' && $daemonStarted > 0) {
+				$uptime = time() - $daemonStarted;
+				$uptimeText = $uptime >= 86400 ? floor($uptime / 86400) . ' d ' . floor($uptime % 86400 / 3600) . ' h'
+					: ($uptime >= 3600 ? floor($uptime / 3600) . ' h ' . floor($uptime % 3600 / 60) . ' min' : floor($uptime / 60) . ' min');
+				echo '<p><strong>Last daemon start:</strong> ' . date('Y-m-d H:i:s T', $daemonStarted) . " ($uptimeText ago), build <strong>"
+					. htmlspecialchars($daemonBuild, ENT_QUOTES, 'UTF-8') . '</strong>.<br />'
+					. 'Use "Check status" below to ask the running daemon directly.</p>';
+			} else {
+				echo '<p><strong>Last daemon start:</strong> not reported yet. The daemon records its build when it starts (version 1.12.0 and later).</p>';
+			}
 ?>
 
 <p>After every configuration change made in the Administration Center, you should reload the daemon configuration.  To do so, enter the hostname or IP address of your HLXCE daemon and choose the reload option.  You can also shut down your daemon from this panel.  <strong>NOTE: The daemon can not be restarted through the web interface!</strong></p>
