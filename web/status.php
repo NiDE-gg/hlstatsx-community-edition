@@ -65,13 +65,6 @@ foreach ($_SERVER as $key => $entry) {
 require('config.php');
 header('Content-Type: text/html; charset=utf-8');
 
-// Check PHP configuration
-
-if (version_compare(phpversion(), "8.3.0", "<"))
-{
-	error("HLstats requires PHP version 8.3.0 or newer (you are running PHP version " . phpversion() . ").");
-}
-
 // do not report NOTICE warnings
 error_reporting(E_ALL ^ E_NOTICE);
 
