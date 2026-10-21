@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-HLstatsX Community Edition (NiDE-gg fork of NomisCZ/hlstatsx-community-edition): real-time stats and rankings for Source/GoldSrc game servers. Requirements: PHP 8.3+, MySQL/MariaDB 5.7+ (8.0 recommended). Licensed GPLv2.
+HLstatsX Community Edition (NiDE-gg fork of NomisCZ/hlstatsx-community-edition): real-time stats and rankings for Source/GoldSrc game servers. Requirements: PHP 8.3+ (at least 8.3.36 / 8.4.27 / 8.5.12, which fix CVE-2026-109618/109619; `php_security_update_required()` in `includes/functions.php` holds these minimums and drives an admin-panel warning), MySQL/MariaDB 5.7+ (8.0 recommended). Licensed GPLv2.
 
 There is no build system, test suite or package manager (no composer/npm). Verify PHP changes with `php -l <file>` and Perl changes with `perl -c scripts/hlstats.pl` (run from `scripts/`, needs DBI/DBD::mysql installed).
 

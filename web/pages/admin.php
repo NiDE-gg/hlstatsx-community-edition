@@ -827,6 +827,10 @@ if ($auth->csrfRejected) {
 	message('warning', 'The form was not sent from this admin page, or has expired. Nothing was changed: please submit it again.');
 }
 
+if ($phpUpdate = php_security_update_required()) {
+	message('warning', 'This server runs PHP ' . PHP_VERSION . ', which has critical remote code execution bugs (CVE-2026-109618, CVE-2026-109619). Update PHP to ' . $phpUpdate . ' or newer, or check that your distribution backported the fixes to this version. See the README for stopgap settings until then.');
+}
+
 $selTask = isset($_GET['task']) ? valid_request($_GET['task'], false) : '';
 $selGame = valid_game_code($_GET['game'] ?? '');
 ?>
