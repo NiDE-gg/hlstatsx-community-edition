@@ -5,10 +5,10 @@
     }
 
     $dbversion = 120;
-    $version = "1.12.1";
+    $version = "1.13.0";
 
-    // Version bump only: the admin panel warns when PHP lacks the fixes for
-    // CVE-2026-109618 and CVE-2026-109619 (PHP 8.3.36, 8.4.27, 8.5.12).
+    // Version bump only: the web frontend now requires PHP 8.5.12 or newer, the
+    // first 8.5 release with the fixes for CVE-2026-109618 and CVE-2026-109619.
 
     // Perform database schema update notification
     print "Updating database and verion schema numbers.<br />";

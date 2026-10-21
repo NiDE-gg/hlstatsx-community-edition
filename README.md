@@ -2,7 +2,7 @@
 
 ### 📌 Requirements
 
-- **PHP:** version 8.3 or higher required, at least **8.3.36, 8.4.27 or 8.5.12** (see [PHP security update](#warning-php-security-update-october-2026)).
+- **PHP:** version **8.5.12** or higher required (see [PHP security update](#warning-php-security-update-october-2026)).
 - **MySQL / MariaDB:** version 5.7 or higher required (recommended 8.0).
 ---
 HLstatsX Community Edition is an open-source project licensed
@@ -23,9 +23,9 @@ a PHP frontend.
 
 ### :warning: PHP security update (October 2026)
 
-PHP 8.5.12, 8.4.27 and 8.3.36 (released 21.10.2026) fix two critical remote code execution bugs, CVE-2026-109618 and CVE-2026-109619 ([advisory](https://www.php.net/archive/2026.php#2026-10-21-5)). They are triggered while PHP parses the request, before any HLstats code runs, so no change to HLstats can block them: **update PHP** on the web server (distribution packages, or the [downloads page](https://www.php.net/downloads.php)), then restart PHP-FPM or Apache. The admin panel shows a warning while the running PHP is older than these releases. Distributions that backport fixes keep an older version number (Ubuntu 24.04 ships 8.3.6, for example): there, check your vendor's security notice instead.
+PHP 8.5.12, 8.4.27 and 8.3.36 (released 21.10.2026) fix two critical remote code execution bugs, CVE-2026-109618 and CVE-2026-109619 ([advisory](https://www.php.net/archive/2026.php#2026-10-21-5)). HLstats therefore requires **PHP 8.5.12 or newer** and refuses to run on anything older, including 8.3 and 8.4 and distribution packages that backport the fixes under an older version number. Update PHP on the web server (distribution or vendor packages, or the [downloads page](https://www.php.net/downloads.php)), then restart PHP-FPM or Apache.
 
-Until you can update, these settings reduce the risk without fixing it. HLstats needs no file uploads and no upload progress, so they don't affect it. Set them in `php.ini`, the PHP-FPM pool or the Apache configuration (not with `.user.ini` or `ini_set()`), then restart every PHP worker:
+Refusing to run does not protect an outdated server: these bugs are triggered while PHP parses the request, before any HLstats code runs. Until you can update, these settings reduce the risk without fixing it. HLstats needs no file uploads and no upload progress, so they don't affect it. Set them in `php.ini`, the PHP-FPM pool or the Apache configuration (not with `.user.ini` or `ini_set()`), then restart every PHP worker:
 
 ```ini
 ; PHP-FPM pool syntax; in php.ini use the plain names (memory_limit = -1, ...)

@@ -40,6 +40,14 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
+// Every entry point loads this file first. PHP releases before 8.5.12 have critical
+// remote code execution bugs (CVE-2026-109618, CVE-2026-109619), so refuse to run on them.
+if (PHP_VERSION_ID < 80512) {
+	http_response_code(500);
+	header('Content-Type: text/plain; charset=utf-8');
+	exit('HLstats requires PHP 8.5.12 or newer (this server runs PHP ' . PHP_VERSION . '). Older releases have critical security bugs: update PHP.');
+}
+
 // Credentials and other server-specific values are read from a .env file one level
 // above this folder (the repository root), outside the web root so it is never served.
 // It is not tracked by git, so deployments never overwrite it. See .env.example.

@@ -40,25 +40,6 @@ if (!defined('IN_HLSTATS')) {
 	die('Do not access this file directly.');
 }
 
-/**
- * Returns the PHP release to update to when the running PHP has known remote
- * code execution bugs (CVE-2026-109618 and CVE-2026-109619, fixed on
- * 2026-10-21), or null when it is patched. These bugs are hit while PHP parses
- * the request, before any HLstats code runs, so only a PHP update fixes them.
- */
-function php_security_update_required(string $version = PHP_VERSION) : ?string
-{
-	$patched = ['8.3' => '8.3.36', '8.4' => '8.4.27', '8.5' => '8.5.12'];
-	$branch = implode('.', array_slice(explode('.', $version), 0, 2));
-
-	if (isset($patched[$branch])) {
-		return version_compare($version, $patched[$branch], '<') ? $patched[$branch] : null;
-	}
-
-	// Branches older than 8.3 are refused elsewhere; newer ones ship the fix.
-	return version_compare($version, '8.3', '<') ? $patched['8.3'] : null;
-}
-
 function checkValidGame(string $gameStr, array $allowedGames, ?string &$retError) : bool
 {
 	// Not object and array
