@@ -44,7 +44,6 @@ scripts/hlstats-awards.pl  -- daily cron: awards, ranks, cleanup
 - **Options**: `$g_options` (from `OptionService::getAllOptions()`, cached for the current request only) holds `hlstats_Options` rows, e.g. `scripturl`, `version`, `dbversion`.
 - **External calls**: never call remote services (e.g. steamcommunity.com) inline while rendering a page. Steam avatar and online state go through `Service\SteamProfileService`, which caches them in `hlstats_SteamProfiles`, uses short curl timeouts and backs off after HTTP 429 (Steam rate-limits aggressively).
 - **Config**: `web/config.php` defines constants (`DB_*`, `INCLUDE_PATH`, `PAGE_PATH`, `IMAGE_PATH`, `ROOT_PATH`, `CHAT_DELAY_*`). It is tracked and overwritten on every deploy, so it holds no secrets: DB credentials and API keys are read from an untracked `.env` at the repository root (one level above `web/`, outside the web root; see `.env.example`, same variable names as the Docker daemon). Never commit real credentials, and never put `.env` inside `web/` (it would be served as plain text). `web/hlstatsimg/progress/` must still be writable (forum signature image cache, `sig.php`).
-- Note: `web/bootstrap.php‎` (with a trailing U+200E invisible char) is a stray duplicate of `web/bootstrap.php`; the real one is the plain name.
 
 ## Database schema changes
 

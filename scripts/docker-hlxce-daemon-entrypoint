@@ -1,8 +1,12 @@
 #!/bin/bash
 
-sed -i "/DBHost/s/\"\([^\"]*\)\"/\"${DB_HOST}\"/g" /home/hlxce/hlstats.conf
-sed -i "/DBUsername/s/\"\([^\"]*\)\"/\"${DB_USERNAME}\"/g" /home/hlxce/hlstats.conf
-sed -i "/DBPassword/s/\"\([^\"]*\)\"/\"${DB_PASSWORD}\"/g" /home/hlxce/hlstats.conf
-sed -i "/DBName/s/\"\([^\"]*\)\"/\"${DB_NAME}\"/g" /home/hlxce/hlstats.conf
+# Copy DB_HOST, DB_USERNAME, DB_PASSWORD and DB_NAME into hlstats.conf. Perl reads
+# them from the environment, so values containing / & \ or " are written as-is
+# (a sed replacement would interpret them).
+perl -pi -e '
+    BEGIN { %env = (DBHost => "DB_HOST", DBUsername => "DB_USERNAME", DBPassword => "DB_PASSWORD", DBName => "DB_NAME") }
+    s/^(\s*(\w+)\s+).*$/$1"$ENV{$env{$2}}"/ if /^\s*(\w+)\s/ && exists $env{$1};
+' /home/hlxce/hlstats.conf
 
-perl hlstats.pl
+# exec, so the daemon gets SIGTERM from "docker stop" and flushes its queued events
+exec perl hlstats.pl

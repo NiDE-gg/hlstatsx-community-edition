@@ -12,7 +12,11 @@ WORKDIR /home/hlxce/
 
 COPY . /home/hlxce/
 
-RUN apt update && apt install -y \
+# Optional "maxmind_license_key" build secret: install_binary.sh then downloads
+# the current GeoLite2-City database instead of using the bundled one
+# (docker build --secret id=maxmind_license_key,env=MAXMIND_LICENSE_KEY ...)
+RUN --mount=type=secret,id=maxmind_license_key \
+    apt update && apt install -y \
             curl \
             tar \
             ca-certificates \
