@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="121";
-SET @VERSION="1.13.1";
+SET @DBVERSION="122";
+SET @VERSION="1.14.0";
 
 -- --------------------------------------------------------
 
@@ -3865,6 +3865,19 @@ INSERT INTO `hlstats_Mods_Supported` (`code`, `name`) VALUES
 ('BEETLE', 'BeetlesMod'),
 ('MINISTATS', 'MiniStats'),
 ('AMXX', 'AMX Mod X');
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hlstats_LoginFailures`
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_LoginFailures` (
+  `key` varchar(80) NOT NULL,
+  `failures` int(10) unsigned NOT NULL default '0',
+  `last_failure` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`key`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- --------------------------------------------------------
 
 --
