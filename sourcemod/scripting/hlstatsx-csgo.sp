@@ -22,13 +22,13 @@
 
 #pragma semicolon 1
 
-#define REQUIRE_EXTENSIONS 
 #include <sourcemod>
 #include <sdktools>
 #include <cstrike>
 #include <clientprefs>
+#include <loghelper>
 
-#define VERSION "1.6.19"
+#define VERSION "1.6.20"
 #define HLXTAG "HLstatsX:CE"
 
 new Handle: hlx_block_chat_commands;
@@ -125,9 +125,17 @@ public OnPluginStart()
 	if (g_bLateLoad)
 	{
 		GetConVarString(hlx_message_prefix, message_prefix, sizeof(message_prefix));
-		decl String:protaddr[24];
+		decl String:protaddr[64];
 		GetConVarString(hlx_protect_address, protaddr, sizeof(protaddr));
 		OnProtectAddressChange(hlx_protect_address, "", protaddr);
+
+		for (new client = 1; client <= MaxClients; client++)
+		{
+			if (IsClientInGame(client) && IsClientAuthorized(client))
+			{
+				OnClientPostAdminCheck(client);
+			}
+		}
 	}
 	
 	MyAddServerTag(HLXTAG);
@@ -147,6 +155,8 @@ public OnPluginStart()
 
 	PlayerColorArray = CreateArray();
 	message_recipients = CreateStack();
+
+	GetTeams();
 }
 
 public OnAllPluginsLoaded()
@@ -167,6 +177,8 @@ public HLXSettingsMenu(client, CookieMenuAction:action, any:info, String:buffer[
 
 public OnMapStart()
 {
+	GetTeams();
+
 	if (g_bTrackColors4Chat)
 	{
 		find_player_team_slot(2);
@@ -222,12 +234,19 @@ stock MyRemoveServerTag(const String:tag[])
 	}
 	
 	ReplaceString(current_tags, sizeof(current_tags), tag, "");
-	ReplaceString(current_tags, sizeof(current_tags), ",,", "");
-	
+	ReplaceString(current_tags, sizeof(current_tags), ",,", ",");
+
+	// drop the comma left behind when the tag was first or last
+	new len = strlen(current_tags);
+	if (len > 0 && current_tags[len - 1] == ',')
+	{
+		current_tags[len - 1] = 0;
+	}
+
 	new flags = GetConVarFlags(sv_tags);
 	SetConVarFlags(sv_tags, flags & ~FCVAR_NOTIFY);
 	g_bIgnoreNextTagChange = true;
-	SetConVarString(sv_tags, current_tags);
+	SetConVarString(sv_tags, current_tags[(current_tags[0] == ',') ? 1 : 0]);
 	g_bIgnoreNextTagChange = false;
 	SetConVarFlags(sv_tags, flags);
 }
@@ -236,15 +255,16 @@ public OnClientPostAdminCheck(client)
 {
 	if (g_bGameCanDoMotd && !IsFakeClient(client))
 	{
-		QueryClientConVar(client, "cl_disablehtmlmotd", motdQuery);
+		QueryClientConVar(client, "cl_disablehtmlmotd", motdQuery, GetClientUserId(client));
 	}
 }
 
-public motdQuery(QueryCookie:cookie, client, ConVarQueryResult:result, const String:cvarName[], const String:cvarValue[])
+public motdQuery(QueryCookie:cookie, client, ConVarQueryResult:result, const String:cvarName[], const String:cvarValue[], any:userid)
 {
-	if (result == ConVarQuery_Okay && StringToInt(cvarValue) == 0 || result != ConVarQuery_Okay)
+	// the answer may arrive after the player left and someone else took the slot
+	if (GetClientOfUserId(userid) == client)
 	{
-		g_bPlyrCanDoMotd[client] = true;
+		g_bPlyrCanDoMotd[client] = (result != ConVarQuery_Okay || StringToInt(cvarValue) == 0);
 	}
 }
 
@@ -380,6 +400,7 @@ public OnMessagePrefixChange(Handle:cvar, const String:oldVal[], const String:ne
 public Action:MessagePrefixClear(args)
 {
 	message_prefix = "";
+	return Plugin_Handled;
 }
 
 find_player_team_slot(team_index) 
@@ -398,24 +419,14 @@ find_player_team_slot(team_index)
 	}
 }
 
-stock validate_team_colors() 
+stock validate_team_colors()
 {
-	for (new i = 0; i < sizeof(ColorSlotArray); i++)
+	for (new team_index = 2; team_index <= 3; team_index++)
 	{
-		new color_client = ColorSlotArray[i];
-		if (color_client > 0)
+		new color_client = ColorSlotArray[team_index];
+		if (color_client <= 0 || !IsClientInGame(color_client) || GetClientTeam(color_client) != team_index)
 		{
-			if (IsClientInGame(color_client) && GetClientTeam(color_client) != color_client)
-			{
-				find_player_team_slot(i);
-			}
-		}
-		else
-		{
-			if (i == 2 || i == 3 )
-			{
-				find_player_team_slot(i);
-			}
+			find_player_team_slot(team_index);
 		}
 	}
 }
@@ -588,7 +599,7 @@ public Action:hlx_sm_psay(args)
 		return Plugin_Handled;
 	}
 
-	decl String: client_list[192];
+	decl String: client_list[512];
 	GetCmdArg(1, client_list, sizeof(client_list));
 	BuildClientList(client_list);
 
@@ -686,7 +697,7 @@ public Action:hlx_sm_psay2(args)
 		return Plugin_Handled;
 	}
 	
-	decl String: client_list[192];
+	decl String: client_list[512];
 	GetCmdArg(1, client_list, sizeof(client_list));
 	BuildClientList(client_list);
 
@@ -775,7 +786,7 @@ public Action:hlx_sm_msay(args)
 	new need_handler = 0;
 	if (handler_param[1] == 0 && (handler_param[0] == '1' || handler_param[0] == '0'))
 	{
-		need_handler = 1;
+		need_handler = (handler_param[0] == '1') ? 1 : 0;
 		ignore_param = 1;
 	}
 
@@ -844,7 +855,7 @@ public Action:hlx_sm_hint(args)
 		return Plugin_Handled;
 	}
 
-	decl String: client_list[192];
+	decl String: client_list[512];
 	GetCmdArg(1, client_list, sizeof(client_list));
 	BuildClientList(client_list);
 
@@ -876,7 +887,7 @@ public Action:hlx_sm_browse(args)
 		return Plugin_Handled;
 	}
 
-	decl String: client_list[192];
+	decl String: client_list[512];
 	GetCmdArg(1, client_list, sizeof(client_list));
 	BuildClientList(client_list);
 
@@ -885,6 +896,9 @@ public Action:hlx_sm_browse(args)
 
 	if (IsStackEmpty(message_recipients) == false && strcmp(client_url, "") != 0)
 	{
+		// wrap the URL once, not again for each recipient
+		FixMotdCSGO(client_url);
+
 		while (IsStackEmpty(message_recipients) == false)
 		{
 			new recipient_client = -1;
@@ -897,7 +911,6 @@ public Action:hlx_sm_browse(args)
 				{
 					if (g_bPlyrCanDoMotd[player_index])
 					{
-						FixMotdCSGO(client_url);
 						ShowMOTDPanel(player_index, "HLstatsX:CE", client_url, MOTDPANEL_TYPE_URL);
 					}
 					else
@@ -950,7 +963,7 @@ public Action:hlx_sm_redirect(args)
 	decl String: display_time[16];
 	GetCmdArg(1, display_time, sizeof(display_time));
 
-	decl String: client_list[192];
+	decl String: client_list[512];
 	GetCmdArg(2, client_list, sizeof(client_list));
 	BuildClientList(client_list);
 	
@@ -1367,6 +1380,13 @@ public HLstatsXEventsCommandHandler(Handle:menu, MenuAction:action, param1, para
 
 stock BuildClientList(const String:client_list[])
 {
+	// a command that returned early (empty text, URL or address) left its recipients
+	// on the stack, and they would get this message too
+	while (IsStackEmpty(message_recipients) == false)
+	{
+		PopStack(message_recipients);
+	}
+
 	if (StrContains(client_list, ",") > -1)
 	{
 		decl String:MessageRecipients[MaxClients][8];
@@ -1469,163 +1489,4 @@ stock PbSayText(client, author = 0, bool:bWantsToChat = false, const String:szFo
 stock FixMotdCSGO(String:web[512])
 {
 	Format(web, sizeof(web), "javascript: var x = screen.width * 0.90;var y = screen.height * 0.90;window.open(\"%s\", \"Really boomix, JS?\",\"scrollbars=yes, width='+x+',height='+y+'\");", web);
-}
-
-/////////////////////////////////////////////////////////logege 
-
-#define LOGHELPER_VERSION 3
-new String:g_team_list[16][64];
-
-stock LogPlayerEvent(client, const String:verb[], const String:event[], bool:display_location = false, const String:properties[] = "")
-{
-	if (IsValidPlayer(client))
-	{
-		decl String:player_authid[32];
-		if (!GetClientAuthId(client, AuthId_Steam2, player_authid, sizeof(player_authid)))
-		{
-			strcopy(player_authid, sizeof(player_authid), "UNKNOWN");
-		}
-
-		if (display_location)
-		{
-			decl Float:player_origin[3];
-			GetClientAbsOrigin(client, player_origin);
-			LogToGame("\"%N<%d><%s><%s>\" %s \"%s\"%s (position \"%d %d %d\")", client, GetClientUserId(client), player_authid, g_team_list[GetClientTeam(client)], verb, event, properties, RoundFloat(player_origin[0]), RoundFloat(player_origin[1]), RoundFloat(player_origin[2])); 
-		}
-		else
-		{
-			LogToGame("\"%N<%d><%s><%s>\" %s \"%s\"%s", client, GetClientUserId(client), player_authid, g_team_list[GetClientTeam(client)], verb, event, properties); 
-		}
-	}
-}
-
-stock LogPlyrPlyrEvent(client, victim, const String:verb[], const String:event[], bool:display_location = false, const String:properties[] = "")
-{
-	if (IsValidPlayer(client) && IsValidPlayer(victim))
-	{
-		decl String:player_authid[32];
-		if (!GetClientAuthString(client, player_authid, sizeof(player_authid)))
-		{
-			strcopy(player_authid, sizeof(player_authid), "UNKNOWN");
-		}
-		decl String:victim_authid[32];
-		if (!GetClientAuthString(victim, victim_authid, sizeof(victim_authid)))
-		{
-			strcopy(victim_authid, sizeof(victim_authid), "UNKNOWN");
-		}
-		
-		if (display_location)
-		{
-			decl Float:player_origin[3];
-			GetClientAbsOrigin(client, player_origin);
-			
-			decl Float:victim_origin[3];
-			GetClientAbsOrigin(victim, victim_origin);
-			
-			LogToGame("\"%N<%d><%s><%s>\" %s \"%s\" against \"%N<%d><%s><%s>\"%s (position \"%d %d %d\") (victim_position \"%d %d %d\")", client, GetClientUserId(client), player_authid, g_team_list[GetClientTeam(client)], verb, event, victim, GetClientUserId(victim), victim_authid, g_team_list[GetClientTeam(victim)], properties, RoundFloat(player_origin[0]), RoundFloat(player_origin[1]), RoundFloat(player_origin[2]), RoundFloat(victim_origin[0]), RoundFloat(victim_origin[1]), RoundFloat(victim_origin[2])); 
-		}
-		else
-		{
-			LogToGame("\"%N<%d><%s><%s>\" %s \"%s\" against \"%N<%d><%s><%s>\"%s", client, GetClientUserId(client), player_authid, g_team_list[GetClientTeam(client)], verb, event, victim, GetClientUserId(victim), victim_authid, g_team_list[GetClientTeam(victim)], properties); 
-		}
-	}
-}
-
-stock LogKill(attacker, victim, const String:weapon[], bool:display_location = false, const String:properties[] = "")
-{
-	if (IsValidPlayer(attacker) && IsValidPlayer(victim))
-	{
-		decl String:attacker_authid[32];
-		if (!GetClientAuthString(attacker, attacker_authid, sizeof(attacker_authid)))
-		{
-			strcopy(attacker_authid, sizeof(attacker_authid), "UNKNOWN");
-		}
-		decl String:victim_authid[32];
-		if (!GetClientAuthString(victim, victim_authid, sizeof(victim_authid)))
-		{
-			strcopy(victim_authid, sizeof(victim_authid), "UNKNOWN");
-		}
-		
-		if (display_location)
-		{
-			decl Float:attacker_origin[3];
-			GetClientAbsOrigin(attacker, attacker_origin);
-			decl Float:victim_origin[3];
-			GetClientAbsOrigin(victim, victim_origin);
-			
-			LogToGame("\"%N<%d><%s><%s>\" killed \"%N<%d><%s><%s>\" with \"%s\"%s (attacker_position \"%d %d %d\") (victim_position \"%d %d %d\")", attacker, GetClientUserId(attacker), attacker_authid, g_team_list[GetClientTeam(attacker)], victim, GetClientUserId(victim), victim_authid, g_team_list[GetClientTeam(victim)], weapon, properties, RoundFloat(attacker_origin[0]), RoundFloat(attacker_origin[1]), RoundFloat(attacker_origin[2]), RoundFloat(victim_origin[0]), RoundFloat(victim_origin[1]), RoundFloat(victim_origin[2])); 
-		}
-		else
-		{
-			LogToGame("\"%N<%d><%s><%s>\" killed \"%N<%d><%s><%s>\" with \"%s\"%s", attacker, GetClientUserId(attacker), attacker_authid, g_team_list[GetClientTeam(attacker)], victim, GetClientUserId(victim), victim_authid, g_team_list[GetClientTeam(victim)], weapon, properties); 
-		}
-	}
-}
-
-// For Psychostats "KTRAJ" kill trajectory log lines
-stock LogPSKillTraj(attacker, victim, const String:weapon[])
-{
-	if (IsValidPlayer(attacker) && IsValidPlayer(victim))
-	{
-		decl String:attacker_authid[32];
-		if (!GetClientAuthString(attacker, attacker_authid, sizeof(attacker_authid)))
-		{
-			strcopy(attacker_authid, sizeof(attacker_authid), "UNKNOWN");
-		}
-		decl String:victim_authid[32];
-		if (!GetClientAuthString(victim, victim_authid, sizeof(victim_authid)))
-		{
-			strcopy(victim_authid, sizeof(victim_authid), "UNKNOWN");
-		}
-		
-		decl Float:attacker_origin[3];
-		GetClientAbsOrigin(attacker, attacker_origin);
-		decl Float:victim_origin[3];
-		GetClientAbsOrigin(victim, victim_origin);
-		
-		LogToGame("[KTRAJ] \"%N<%d><%s><%s>\" killed \"%N<%d><%s><%s>\" with \"%s\" (attacker_position \"%d %d %d\") (victim_position \"%d %d %d\")", attacker, GetClientUserId(attacker), attacker_authid, g_team_list[GetClientTeam(attacker)], victim, GetClientUserId(victim), victim_authid, g_team_list[GetClientTeam(victim)], weapon, RoundFloat(attacker_origin[0]), RoundFloat(attacker_origin[1]), RoundFloat(attacker_origin[2]), RoundFloat(victim_origin[0]), RoundFloat(victim_origin[1]), RoundFloat(victim_origin[2]));
-	}
-}
-
-// Verb should always be triggered" for this.
-stock LogTeamEvent(team, const String:verb[], const String:event[], const String:properties[] = "")
-{
-	if (team > -1)
-	{
-		LogToGame("Team \"%s\" %s \"%s\"%s", g_team_list[team], verb, event, properties);
-	}
-}
-
-stock LogKillLoc(attacker, victim)
-{
-	if (attacker > 0 && victim > 0)
-	{
-		decl Float:attacker_origin[3];
-		GetClientAbsOrigin(attacker, attacker_origin);
-		decl Float:victim_origin[3];
-		GetClientAbsOrigin(victim, victim_origin);
-		
-		LogToGame("World triggered \"killlocation\" (attacker_position \"%d %d %d\") (victim_position \"%d %d %d\")", RoundFloat(attacker_origin[0]), RoundFloat(attacker_origin[1]), RoundFloat(attacker_origin[2]), RoundFloat(victim_origin[0]), RoundFloat(victim_origin[1]), RoundFloat(victim_origin[2]));
-	}
-}
-
-stock LogRoleChange(client, const String:role[], const String:properties[] = "")
-{
-	LogPlayerEvent( client, "changed role to", role, false, properties );
-}
-
-stock LogMapLoad()
-{
-	decl String:map[64];
-	GetCurrentMap(map, sizeof(map));
-	LogToGame("Loading map \"%s\"", map);
-}
-
-stock IsValidPlayer(client)
-{
-	if (client > 0 && client <= MaxClients && IsClientInGame(client))
-	{
-		return true;
-	}
-	return false;
 }
