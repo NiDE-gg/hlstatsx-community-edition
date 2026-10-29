@@ -26,7 +26,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: CSS"
-#define VERSION "1.2.5"
+#define VERSION "1.2.6"
 
 #define MAX_LOG_WEAPONS 28
 #define IGNORE_SHOTS_START 25
@@ -119,13 +119,6 @@ public void OnPluginStart()
 	g_cvar_locations = CreateConVar("superlogs_locations", "1", "Enable logging of location on player death (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_ktraj = CreateConVar("superlogs_ktraj", "0", "Enable Psychostats \"KTRAJ\" logging (default off)", 0, true, 0.0, true, 1.0);
 	
-	// cvars will have already existed if plugin was reloaded and might be set to non-default values
-	g_logwstats = GetConVarBool(g_cvar_wstats);
-	g_logheadshots = GetConVarBool(g_cvar_headshots);
-	g_logactions = GetConVarBool(g_cvar_actions);
-	g_loglocations = GetConVarBool(g_cvar_locations);
-	g_logktraj = GetConVarBool(g_cvar_ktraj);
-	
 	HookConVarChange(g_cvar_wstats, OnCvarWstatsChange);
 	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
 	HookConVarChange(g_cvar_actions, OnCvarActionsChange);
@@ -142,6 +135,15 @@ public void OnPluginStart()
 	CreateTimer(1.0, LogMap);
 	
 	GetTeams();
+
+	// Everything above is hooked for the default values. The cvars keep theirs when the
+	// plugin is reloaded: apply them, so a disabled option is not hooked anyway (and
+	// hooked twice when enabled again).
+	OnCvarWstatsChange(g_cvar_wstats, "", "");
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarActionsChange(g_cvar_actions, "", "");
+	OnCvarLocationsChange(g_cvar_locations, "", "");
+	OnCvarKtrajChange(g_cvar_ktraj, "", "");
 }
 
 

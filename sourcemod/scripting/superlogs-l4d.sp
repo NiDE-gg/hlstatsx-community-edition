@@ -25,7 +25,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: L4D"
-#define VERSION "1.3.3"
+#define VERSION "1.3.4"
 
 #define MAX_LOG_WEAPONS 27
 #define MAX_WEAPON_LEN 16
@@ -146,6 +146,12 @@ public OnPluginStart()
 	GetTeams();
 	
 	g_iActiveWeaponOffset = FindSendPropInfo("CTerrorPlayer", "m_hActiveWeapon");
+
+	// apply the cvar values they kept if the plugin was reloaded
+	OnCvarWstatsChange(g_cvar_wstats, "", "");
+	OnCvarActionsChange(g_cvar_actions, "", "");
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarMeleeOverrideChange(g_cvar_meleeoverride, "", "");
 }
 
 

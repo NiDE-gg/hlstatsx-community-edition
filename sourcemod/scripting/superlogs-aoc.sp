@@ -25,7 +25,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: Age of Chivalry"
-#define VERSION "1.0.2"
+#define VERSION "1.0.3"
 
 new Handle:g_cvar_headshots = INVALID_HANDLE;
 new Handle:g_cvar_locations = INVALID_HANDLE;
@@ -60,6 +60,7 @@ public OnPluginStart()
 	HookConVarChange(g_cvar_locations, OnCvarLocationsChange);
 	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
 	HookConVarChange(g_cvar_classchanges, OnCvarClasschangesChange);
+	HookConVarChange(g_cvar_actions, OnCvarActionsChange);
 
 	CreateConVar("superlogs_aoc_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
@@ -70,6 +71,12 @@ public OnPluginStart()
 	CreateTimer(1.0, LogMap);
 	
 	GetTeams();
+
+	// apply the cvar values they kept if the plugin was reloaded
+	OnCvarLocationsChange(g_cvar_locations, "", "");
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarClasschangesChange(g_cvar_classchanges, "", "");
+	OnCvarActionsChange(g_cvar_actions, "", "");
 }
 
 hook_classchanges()
@@ -181,7 +188,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public OnClientPutInGame(client)
+public OnClientPutInServer(client)
 {
 	g_bLogClassNextSpawn[client] = false;
 }

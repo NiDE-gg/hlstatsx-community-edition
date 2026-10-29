@@ -25,7 +25,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: Generic"
-#define VERSION "1.0"
+#define VERSION "1.0.1"
 
 new Handle:g_cvar_enable = INVALID_HANDLE;
 
@@ -52,8 +52,11 @@ public OnPluginStart()
 	CreateConVar("superlogs_generic_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
 	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Pre);
-	
+
 	CreateTimer(1.0, LogMap);
+
+	// apply the cvar value it kept if the plugin was reloaded
+	OnCvarEnableChange(g_cvar_enable, "", "");
 }
 
 

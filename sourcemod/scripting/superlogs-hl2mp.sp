@@ -26,7 +26,7 @@
 #include <sdkhooks>
 
 #define NAME "SuperLogs: HL2MP"
-#define VERSION "1.1.3"
+#define VERSION "1.1.4"
 
 #define MAX_LOG_WEAPONS 6
 #define MAX_WEAPON_LEN 14
@@ -126,6 +126,12 @@ public OnPluginStart()
 	}
 	
 	g_hBoltChecks = CreateStack();
+
+	GetTeams();
+
+	// apply the cvar values they kept if the plugin was reloaded
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarLocationsChange(g_cvar_locations, "", "");
 }
 
 public OnAllPluginsLoaded()
@@ -239,16 +245,16 @@ public OnTakeDamage(victim, attacker, inflictor, Float:damage, damagetype)
 			weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		}
 		new hitgroup = ((weapon_index == CROSSBOW)?g_iNextBowHitgroup[victim]:g_iNextHitgroup[victim]);
-		if (hitgroup < 8)
-		{
-			hitgroup += LOG_HIT_OFFSET;
-		}
 		new bool:headshot = (GetClientHealth(victim) <= 0 && hitgroup == HITGROUP_HEAD);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE] += RoundToNearest(damage);
-			g_weapon_stats[attacker][weapon_index][hitgroup]++;
+			// body parts are hitgroups 0-7; 10 is gear, which has no column
+			if (hitgroup < 8)
+			{
+				g_weapon_stats[attacker][weapon_index][hitgroup + LOG_HIT_OFFSET]++;
+			}
 			if (headshot)
 			{
 				g_weapon_stats[attacker][weapon_index][LOG_HIT_HEADSHOTS]++;

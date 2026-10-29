@@ -26,7 +26,7 @@
 #include <sdkhooks>
 
 #define NAME "SuperLogs: Dino D-Day"
-#define VERSION "1.1.1"
+#define VERSION "1.1.2"
 
 #define MAX_LOG_WEAPONS 47
 #define MAX_WEAPON_LEN 12
@@ -190,7 +190,10 @@ public Action:OnFireBullets( const String:szName[], const clients[], clientCount
 	new client = TE_ReadNum( "m_iPlayer" ) + 1;
 	new weapon_index = TE_ReadNum( "m_iWeaponID" );
 	
-	if( weapon_index >= 0 )
+	if( client < 1 || client > MaxClients || !IsClientInGame( client ) )
+		return Plugin_Continue;
+	
+	if( weapon_index >= 0 && weapon_index < MAX_LOG_WEAPONS )
 	{
 		if( GetEntProp(client, Prop_Send, "m_iPlayerClass") == PLAYERCLASS_TREX && weapon_index == WEAPON_MG42 )
 		{
@@ -219,17 +222,17 @@ public OnTakeDamage( victim, attacker, inflictor, Float:damage, damagetype )
 		
 		new weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		new hitgroup = g_iNextHitgroup[victim];
-		if ( hitgroup < 8 )
-		{
-			hitgroup += LOG_HIT_OFFSET;
-		}
 		
-		new bool:headshot = ( !IsPlayerAlive( victim ) && g_iNextHitgroup[victim] == HITGROUP_HEAD );
+		new bool:headshot = ( !IsPlayerAlive( victim ) && hitgroup == HITGROUP_HEAD );
 		if ( weapon_index > -1 )
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE] += RoundToNearest( damage );
-			g_weapon_stats[attacker][weapon_index][hitgroup]++;
+			// body parts are hitgroups 0-7; 10 is gear, which has no column
+			if ( hitgroup < 8 )
+			{
+				g_weapon_stats[attacker][weapon_index][hitgroup + LOG_HIT_OFFSET]++;
+			}
 			if ( headshot )
 			{
 				g_weapon_stats[attacker][weapon_index][LOG_HIT_HEADSHOTS]++;

@@ -25,7 +25,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: GES"
-#define VERSION "1.1.2"
+#define VERSION "1.1.3"
 
 #define MAX_LOG_WEAPONS 18
 #define MAX_WEAPON_LEN 13
@@ -127,6 +127,13 @@ public OnPluginStart()
 	CreateTimer(1.0, LogMap);
 	
 	GetTeams();
+
+	// apply the cvar values they kept if the plugin was reloaded
+	OnCvarWstatsChange(g_cvar_wstats, "", "");
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarLocationsChange(g_cvar_locations, "", "");
+	OnCvarActionsChange(g_cvar_actions, "", "");
+	OnCvarClasschangesChange(g_cvar_classchanges, "", "");
 }
 
 
@@ -452,8 +459,9 @@ public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newV
 		{
 			HookEvent("round_end", Event_RoundEnd);
 		}
-		else if (!g_logactions)
+		else if (!g_logwstats)
 		{
+			// round_end also dumps the weapon stats: keep it while those are logged
 			UnhookEvent("round_end", Event_RoundEnd);
 		}
 	}
