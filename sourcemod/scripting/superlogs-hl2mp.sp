@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -34,8 +35,8 @@
 #define CROSSBOW 0
 
 
-new g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
-new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = { 
+int g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
+char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = { 
 									"crossbow_bolt",
 									"pistol",
 									"357",
@@ -44,27 +45,27 @@ new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"shotgun"
 								};
 
-new Handle:g_cvar_headshots = INVALID_HANDLE;
-new Handle:g_cvar_locations = INVALID_HANDLE;
-new Handle:g_cvar_teamplay = INVALID_HANDLE;
+Handle g_cvar_headshots = INVALID_HANDLE;
+Handle g_cvar_locations = INVALID_HANDLE;
+Handle g_cvar_teamplay = INVALID_HANDLE;
 
-new bool:g_logheadshots = true;
-new bool:g_loglocations = true;
+bool g_logheadshots = true;
+bool g_loglocations = true;
 
-new g_iNextHitgroup[MAXPLAYERS+1];
-new g_iNextBowHitgroup[MAXPLAYERS+1];
+int g_iNextHitgroup[MAXPLAYERS+1];
+int g_iNextBowHitgroup[MAXPLAYERS+1];
 
-new g_bTeamPlay;
+int g_bTeamPlay;
 
-new g_iCrossBowOwnerOffs = -1;
+int g_iCrossBowOwnerOffs = -1;
 
-new Handle:g_hBoltChecks = INVALID_HANDLE;
+Handle g_hBoltChecks = INVALID_HANDLE;
 
 #include <loghelper>
 #include <wstatshelper>
 
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic",
 	description = "Advanced logging for HL2DM & Sourceforts. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -72,36 +73,24 @@ public Plugin:myinfo = {
 	url = "http://www.hlxcommunity.com"
 };
 
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
-#else
-public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
-#endif
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	decl String:szGameDesc[64];
+	char szGameDesc[64];
 	GetGameDescription(szGameDesc, sizeof(szGameDesc), true);
 	if (StrContains(szGameDesc, "Half-Life 2 Deathmatch", false) == -1 && StrContains(szGameDesc, "SourceForts", false) == -1)
 	{
-		decl String:szGameDir[64];
+		char szGameDir[64];
 		GetGameFolderName(szGameDir, sizeof(szGameDir));
 		if (StrContains(szGameDir, "hl2mp", false) == -1 && StrContains(szGameDir, "sourceforts", false) == -1)
 		{
 			strcopy(error, err_max, "This plugin is only supported on HL2MP & SourceForts");
-			#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-				return APLRes_Failure;
-			#else
-				return false;
-			#endif
+			return APLRes_Failure;
 		}
 	}	
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 	return APLRes_Success;
-#else
-	return true;
-#endif
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreatePopulateWeaponTrie();
 	
@@ -134,13 +123,13 @@ public OnPluginStart()
 	OnCvarLocationsChange(g_cvar_locations, "", "");
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
 	if (GetExtensionFileStatus("sdkhooks.ext") != 1)
 	{
 		SetFailState("SDK Hooks v1.3 or higher is required for SuperLogs: HL2MP");
 	}
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i))
 		{
@@ -151,12 +140,12 @@ public OnAllPluginsLoaded()
 	}
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams();
 }
 
-hook_wstats()
+void hook_wstats()
 {
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("player_spawn", Event_PlayerSpawn);
@@ -164,7 +153,7 @@ hook_wstats()
 	HookEvent("player_disconnect", Event_PlayerDisconnect, EventHookMode_Pre);
 }
 
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_FireBulletsPost, OnFireBullets);
 	SDKHook(client, SDKHook_TraceAttackPost, OnTraceAttack);
@@ -172,7 +161,7 @@ public OnClientPutInServer(client)
 	reset_player_stats(client);
 }
 
-public OnEntityCreated(entity, const String:classname[])
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (strcmp(classname, "crossbow_bolt") == 0)
 	{
@@ -180,15 +169,15 @@ public OnEntityCreated(entity, const String:classname[])
 	}
 }
 
-public OnGameFrame()
+public void OnGameFrame()
 {
-	new bowent;
+	int bowent;
 	while (PopStackCell(g_hBoltChecks, bowent))
 	{
 		if (!IsValidEntity(bowent))
 			continue;
 			
-		new owner = GetEntDataEnt2(bowent, g_iCrossBowOwnerOffs);
+		int owner = GetEntDataEnt2(bowent, g_iCrossBowOwnerOffs);
 		if (owner < 0 || owner > MaxClients)
 			continue;
 			
@@ -196,11 +185,11 @@ public OnGameFrame()
 	}
 }
 
-public OnFireBullets(attacker, shots, String:weaponname[])
+public void OnFireBullets(int attacker, int shots, char[] weaponname)
 {
 	if (attacker > 0 && attacker <= MaxClients)
 	{
-		new weapon_index = get_weapon_index(weaponname[PREFIX_LEN]);
+		int weapon_index = get_weapon_index(weaponname[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_SHOTS]++;
@@ -208,13 +197,13 @@ public OnFireBullets(attacker, shots, String:weaponname[])
 	}
 }
 
-public OnTraceAttack(victim, attacker, inflictor, Float:damage, damagetype, ammotype, hitbox, hitgroup)
+public void OnTraceAttack(int victim, int attacker, int inflictor, float damage, int damagetype, int ammotype, int hitbox, int hitgroup)
 {
 	if (hitgroup > 0 && attacker > 0 && attacker <= MaxClients && victim > 0 && victim <= MaxClients)
 	{
 		if (IsValidEntity(inflictor))
 		{
-			decl String:inflictorclsname[64];
+			char inflictorclsname[64];
 			if (GetEntityNetClass(inflictor, inflictorclsname, sizeof(inflictorclsname)) && strcmp(inflictorclsname, "CCrossbowBolt") == 0)
 			{
 				g_iNextBowHitgroup[victim] = hitgroup;
@@ -225,16 +214,16 @@ public OnTraceAttack(victim, attacker, inflictor, Float:damage, damagetype, ammo
 	}
 }
 
-public OnTakeDamage(victim, attacker, inflictor, Float:damage, damagetype)
+public void OnTakeDamage(int victim, int attacker, int inflictor, float damage, int damagetype)
 {	
 	if (attacker > 0 && attacker <= MaxClients && victim > 0 && victim <= MaxClients)
 	{
-		decl String: weapon[MAX_WEAPON_LEN + PREFIX_LEN];
+		char weapon[MAX_WEAPON_LEN + PREFIX_LEN];
 		GetClientWeapon(attacker, weapon, sizeof(weapon));
-		new weapon_index = -1;
+		int weapon_index = -1;
 		if (IsValidEntity(inflictor))
 		{
-			decl String:inflictorclsname[64];
+			char inflictorclsname[64];
 			if (GetEntityNetClass(inflictor, inflictorclsname, sizeof(inflictorclsname)) && strcmp(inflictorclsname, "CCrossbowBolt") == 0)
 			{
 				weapon_index = CROSSBOW;
@@ -244,8 +233,8 @@ public OnTakeDamage(victim, attacker, inflictor, Float:damage, damagetype)
 		{
 			weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		}
-		new hitgroup = ((weapon_index == CROSSBOW)?g_iNextBowHitgroup[victim]:g_iNextHitgroup[victim]);
-		new bool:headshot = (GetClientHealth(victim) <= 0 && hitgroup == HITGROUP_HEAD);
+		int hitgroup = ((weapon_index == CROSSBOW)?g_iNextBowHitgroup[victim]:g_iNextHitgroup[victim]);
+		bool headshot = (GetClientHealth(victim) <= 0 && hitgroup == HITGROUP_HEAD);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
@@ -272,14 +261,14 @@ public OnTakeDamage(victim, attacker, inflictor, Float:damage, damagetype)
 }
 
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID who died                             
 	// "attacker"      "short"         // user ID who killed
 	// "weapon"        "string"        // weapon name killer used 
 	
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	
 	if (g_loglocations)
 	{
@@ -287,7 +276,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	}
 	if (g_logheadshots)
 	{
-		decl String:weapon[64];
+		char weapon[64];
 		GetEventString(event, "weapon", weapon, sizeof(weapon));
 		if (strcmp(weapon, "crossbow_bolt") == 0)
 		{
@@ -305,23 +294,23 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	// this extents the original player_death by a new fields
 	// "userid"        "short"         // user ID who died                             
 	// "attacker"      "short"         // user ID who killed
 	// "weapon"        "string"        // weapon name killer used 
 	
-	new victim   = GetClientOfUserId(GetEventInt(event, "userid"));
+	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
 	
 	if (victim > 0)
 	{
-		new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+		int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 		if (attacker != victim && attacker > 0)
 		{
-			decl String: weapon[MAX_WEAPON_LEN];
+			char weapon[MAX_WEAPON_LEN];
 			GetEventString(event, "weapon", weapon, sizeof(weapon));
-			new weapon_index = get_weapon_index(weapon);
+			int weapon_index = get_weapon_index(weapon);
 			if (weapon_index > -1)
 			{
 				g_weapon_stats[attacker][weapon_index][LOG_HIT_KILLS]++;		
@@ -336,39 +325,40 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
 	WstatsDumpAll();
 }
 
-public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
 
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
 
-public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logheadshots;
+	bool old_value = g_logheadshots;
 	g_logheadshots = GetConVarBool(g_cvar_headshots);
 	
 	if (old_value != g_logheadshots)
@@ -384,9 +374,9 @@ public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_loglocations;
+	bool old_value = g_loglocations;
 	g_loglocations = GetConVarBool(g_cvar_locations);
 	
 	if (old_value != g_loglocations)
@@ -402,7 +392,7 @@ public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnTeamPlayChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnTeamPlayChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
 	g_bTeamPlay = GetConVarBool(g_cvar_teamplay);
 }

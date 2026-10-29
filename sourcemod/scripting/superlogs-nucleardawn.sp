@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -38,8 +39,8 @@
 #define ND_TEAM_EMP 3
 #define ND_TEAM_CT 2
 
-new g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
-new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
+int g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
+char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"avenger", 
 									"bag90",
 									"chaingun", 
@@ -73,10 +74,10 @@ new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 #include <loghelper>
 #include <wstatshelper>
 
-new g_bReadyToShoot[MAXPLAYERS+1] = {false,...};
-new g_iBunkerAttacked[2] = {0,...};
+int g_bReadyToShoot[MAXPLAYERS+1] = {false,...};
+int g_iBunkerAttacked[2] = {0,...};
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "Peace-Maker",
 	description = "Advanced logging. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -85,7 +86,7 @@ public Plugin:myinfo = {
 };
 
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreatePopulateWeaponTrie();
 	CreateConVar("superlogs_nucleardawn_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
@@ -108,14 +109,14 @@ public OnPluginStart()
 	strcopy(g_team_list[ND_TEAM_CT], sizeof(g_team_list[]), "CONSORTIUM");
 	strcopy(g_team_list[ND_TEAM_EMP], sizeof(g_team_list[]), "EMPIRE");
 	
-	for(new i=1;i<=MaxClients;i++)
+	for(int i=1;i<=MaxClients;i++)
 	{
 		if(IsClientInGame(i))
 			OnClientPutInServer(i);
 	}
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams();
 	// GetTeamName gets #ND_Consortium and #ND_Empire in release version -.-. Game logs with CONSORTIUM and EMPIRE translated
@@ -126,7 +127,7 @@ public OnMapStart()
 	g_iBunkerAttacked[1] = 0;
 }
 
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	g_bReadyToShoot[client] = false;
 	SDKHook(client, SDKHook_TraceAttackPost, Hook_TraceAttackPost);
@@ -135,12 +136,12 @@ public OnClientPutInServer(client)
 	reset_player_stats(client);
 }
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
-	new victim   = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	
-	decl String:weapon[MAX_WEAPON_LEN];
+	char weapon[MAX_WEAPON_LEN];
 	GetEventString(event, "weapon", weapon, sizeof(weapon));
 	
 	if (attacker <= 0 || victim <= 0)
@@ -151,7 +152,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	// Which commander ablilty?!
 	if(StrEqual(weapon, "commander ability"))
 	{
-		new damagebits = GetEventInt(event, "damagebits");
+		int damagebits = GetEventInt(event, "damagebits");
 		if(damagebits & DMG_ENERGYBEAM)
 		{
 			Format(weapon, sizeof(weapon), "commander poison");
@@ -171,7 +172,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 			LogPlayerEvent(attacker, "triggered", "killed_commander");
 	}
 	
-	new weapon_index = get_weapon_index(weapon);
+	int weapon_index = get_weapon_index(weapon);
 	if (weapon_index > -1)
 	{
 		g_weapon_stats[attacker][weapon_index][LOG_HIT_KILLS]++;
@@ -186,40 +187,40 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public Hook_PostThink(client)
+public void Hook_PostThink(int client)
 {
 	if(!IsPlayerAlive(client))
 		return;
 	
-	new iWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	int iWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
 	if(iWeapon == -1 || !IsValidEdict(iWeapon))
 	{
 		g_bReadyToShoot[client] = false;
 		return;
 	}
 	
-	decl String:sWeapon[32];
+	char sWeapon[32];
 	GetEdictClassname(iWeapon, sWeapon, sizeof(sWeapon));
 	if(StrContains(sWeapon, "weapon_", false) != 0)
 		return;
 	
-	new Float:flNextAttackTime = GetEntPropFloat(iWeapon, Prop_Send, "m_flNextPrimaryAttack");
+	float flNextAttackTime = GetEntPropFloat(iWeapon, Prop_Send, "m_flNextPrimaryAttack");
 	if(flNextAttackTime <= GetGameTime() && GetEntProp(iWeapon, Prop_Send, "m_iClip1") > 0)
 		g_bReadyToShoot[client] = true;
 	else
 		g_bReadyToShoot[client] = false;
 }
 
-public Hook_PostThinkPost(client)
+public void Hook_PostThinkPost(int client)
 {
 	if(!IsPlayerAlive(client))
 		return;
 	
-	new iWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	int iWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
 	if(iWeapon == -1 || !IsValidEdict(iWeapon))
 		return;
 	
-	decl String:sWeapon[30];
+	char sWeapon[30];
 	GetEdictClassname(iWeapon, sWeapon, sizeof(sWeapon));
 	if(StrContains(sWeapon, "weapon_", false) != 0)
 		return;
@@ -227,10 +228,10 @@ public Hook_PostThinkPost(client)
 	ReplaceString(sWeapon, sizeof(sWeapon), "weapon_", "", false);
 	FixWeaponLoggingName(sWeapon, sizeof(sWeapon));
 	
-	new Float:flNextAttackTime = GetEntPropFloat(iWeapon, Prop_Send, "m_flNextPrimaryAttack");
+	float flNextAttackTime = GetEntPropFloat(iWeapon, Prop_Send, "m_flNextPrimaryAttack");
 	if(g_bReadyToShoot[client] && flNextAttackTime > GetGameTime())
 	{
-		new weapon_index = get_weapon_index(sWeapon);
+		int weapon_index = get_weapon_index(sWeapon);
 		if (weapon_index > -1 && weapon_index < IGNORE_SHOTS_START)
 		{
 			g_weapon_stats[client][weapon_index][LOG_HIT_SHOTS]++;
@@ -239,21 +240,21 @@ public Hook_PostThinkPost(client)
 	}
 }
 
-public Hook_TraceAttackPost(victim, attacker, inflictor, Float:damage, damagetype, ammotype, hitbox, hitgroup)
+public void Hook_TraceAttackPost(int victim, int attacker, int inflictor, float damage, int damagetype, int ammotype, int hitbox, int hitgroup)
 {
 	if(IsClientInGame(victim))
 	{
 		if(1 <= attacker <= MaxClients && IsClientInGame(attacker))
 		{
-			new iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
-			new String:sWeapon[64];
+			int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
+			char sWeapon[64];
 			if(iWeapon > 0)
 				GetEdictClassname(iWeapon, sWeapon, sizeof(sWeapon));
 			
 			ReplaceString(sWeapon, sizeof(sWeapon), "weapon_", "", false);
 			FixWeaponLoggingName(sWeapon, sizeof(sWeapon));
 			
-			new weapon_index = get_weapon_index(sWeapon);
+			int weapon_index = get_weapon_index(sWeapon);
 			
 			// player_death
 			if((GetClientHealth(victim) - RoundToCeil(damage)) < 0)
@@ -282,27 +283,27 @@ public Hook_TraceAttackPost(victim, attacker, inflictor, Float:damage, damagetyp
 	}
 }
 
-public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
 
-public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundWin(Handle event, const char[] name, bool dontBroadcast)
 {
-	new team = GetEventInt(event, "team");
+	int team = GetEventInt(event, "team");
 	if(team >= 2)
 	{
 		LogTeamEvent(team, "triggered", "round_win");
@@ -314,23 +315,23 @@ public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
 	WstatsDumpAll();
 }
 
-public Event_PromotedToCommander(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PromotedToCommander(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "promoted_to_commander");
 }
 
-public Event_ResourceCaptured(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_ResourceCaptured(Handle event, const char[] name, bool dontBroadcast)
 {
-	new team = GetEventInt(event, "team");
+	int team = GetEventInt(event, "team");
 	if(team >= 2)
 		LogTeamEvent(team, "triggered", "resource_captured");
 }
 
-public Event_StructureDamageSparse(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_StructureDamageSparse(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!GetEventBool(event, "bunker"))
 		return;
-	new team = GetEventInt(event, "ownerteam");
+	int team = GetEventInt(event, "ownerteam");
 	if(team >= 2)
 	{
 		g_iBunkerAttacked[team-2]++;
@@ -343,13 +344,13 @@ public Event_StructureDamageSparse(Handle:event, const String:name[], bool:dontB
 	}
 }
 
-public Event_StructureDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_StructureDeath(Handle event, const char[] name, bool dontBroadcast)
 {
-	new iEnt = GetEventInt(event, "entindex");
-	new iAttacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int iEnt = GetEventInt(event, "entindex");
+	int iAttacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	if(iAttacker > 0 && iAttacker <= MaxClients && iEnt != -1 && IsValidEntity(iEnt))
 	{
-		decl String:sBuffer[32];
+		char sBuffer[32];
 		GetEdictClassname(iEnt, sBuffer, sizeof(sBuffer));
 		
 		if(StrEqual(sBuffer, "struct_armoury"))
@@ -407,13 +408,14 @@ public Event_StructureDeath(Handle:event, const String:name[], bool:dontBroadcas
 	}
 }
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
 
-stock GetOtherTeam(team)
+stock int GetOtherTeam(int team)
 {
 	if(team == 2)
 		return 3;
@@ -423,7 +425,7 @@ stock GetOtherTeam(team)
 	return team;
 }
 
-stock FixWeaponLoggingName(String:sWeapon[], maxlength)
+stock void FixWeaponLoggingName(char[] sWeapon, int maxlength)
 {
 	if(StrEqual(sWeapon, "daisycutter"))
 		strcopy(sWeapon, maxlength, "daisy cutter");

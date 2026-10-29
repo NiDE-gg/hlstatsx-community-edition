@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -27,14 +28,14 @@
 #define NAME "SuperLogs: Generic"
 #define VERSION "1.0.1"
 
-new Handle:g_cvar_enable = INVALID_HANDLE;
+Handle g_cvar_enable = INVALID_HANDLE;
 
-new bool:g_log = true;
+bool g_log = true;
 
 #include <loghelper>
 
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic",
 	description = "Advanced logging. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -43,7 +44,7 @@ public Plugin:myinfo = {
 };
 
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	g_cvar_enable = CreateConVar("superlogs_locations", "1", "Enable logging of kill coordinates (default on)", 0, true, 0.0, true, 1.0);
 
@@ -60,16 +61,16 @@ public OnPluginStart()
 }
 
 
-public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogKillLoc(GetClientOfUserId(GetEventInt(event, "attacker")), GetClientOfUserId(GetEventInt(event, "userid")));	
 	
 	return Plugin_Continue;
 }
 
-public OnCvarEnableChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarEnableChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_log;
+	bool old_value = g_log;
 	g_log = GetConVarBool(g_cvar_enable);
 	
 	if (old_value != g_log)
@@ -85,8 +86,9 @@ public OnCvarEnableChange(Handle:cvar, const String:oldVal[], const String:newVa
 	}
 }
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }

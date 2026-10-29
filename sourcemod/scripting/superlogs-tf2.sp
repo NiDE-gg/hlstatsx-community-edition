@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #pragma semicolon 1
+#pragma newdecls required
 
 #include <sourcemod>
 #include <tf2_stocks> // NOTE: Gives us tf2 AND sdktools
@@ -62,7 +63,7 @@
 #define LUNCHBOX_CHOCOLATE 159
 #define LUNCHBOX_STEAK 311
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "Thomas \"CmptrWz\" Berezansky & psychonic",
 	description = "Advanced logging for TF2. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -71,84 +72,84 @@ public Plugin:myinfo = {
 };
 
 // Convars we need to monitor
-new Handle:cvar_crits; // tf_weapon_criticals - Needs to be on for weapon stats
+Handle cvar_crits; // tf_weapon_criticals - Needs to be on for weapon stats
 
 // Our convars
-new Handle:cvar_actions;
-new Handle:cvar_teleports;
-new Handle:cvar_teleports_again;
-new Handle:cvar_headshots;
-new Handle:cvar_backstabs;
-new Handle:cvar_sandvich;
-new Handle:cvar_fire;
-new Handle:cvar_wstats;
-new Handle:cvar_heals;
-new Handle:cvar_rolelogfix;
-new Handle:cvar_objlogfix;
+Handle cvar_actions;
+Handle cvar_teleports;
+Handle cvar_teleports_again;
+Handle cvar_headshots;
+Handle cvar_backstabs;
+Handle cvar_sandvich;
+Handle cvar_fire;
+Handle cvar_wstats;
+Handle cvar_heals;
+Handle cvar_rolelogfix;
+Handle cvar_objlogfix;
 
 // Booleans to keep track of them
-new bool:b_actions;
-new bool:b_teleports;
-new bool:b_teleports_again;
-new bool:b_headshots;
-new bool:b_backstabs;
-new bool:b_sandvich;
-new bool:b_fire;
-new bool:b_wstats;
-new bool:b_heals;
-new bool:b_rolelogfix;
-new bool:b_objlogfix;
+bool b_actions;
+bool b_teleports;
+bool b_teleports_again;
+bool b_headshots;
+bool b_backstabs;
+bool b_sandvich;
+bool b_fire;
+bool b_wstats;
+bool b_heals;
+bool b_rolelogfix;
+bool b_objlogfix;
 
 // Monitoring outside libraries/cvars
-new bool:b_sdkhookloaded = false;
+bool b_sdkhookloaded = false;
 
 // Weapon trie
-new Handle:h_weapontrie;
+Handle h_weapontrie;
 // Weapon Stats
-new weaponStats[MAXPLAYERS+1][MAX_LOG_WEAPONS][7];
-new nextHurt[MAXPLAYERS+1] = {-1, ...};
+int weaponStats[MAXPLAYERS+1][MAX_LOG_WEAPONS][7];
+int nextHurt[MAXPLAYERS+1] = {-1, ...};
 // Loadout Info
-new playerLoadout[MAXPLAYERS+1][MAX_LOADOUT_SLOTS][2];
-new bool:playerLoadoutUpdated[MAXPLAYERS+1];
-new Handle:itemsKv;
-new Handle:slotsTrie;
+int playerLoadout[MAXPLAYERS+1][MAX_LOADOUT_SLOTS][2];
+bool playerLoadoutUpdated[MAXPLAYERS+1];
+Handle itemsKv;
+Handle slotsTrie;
 // Stunball id (so we aren't looking it up in gameframe)
-new stunBallId = -1;
+int stunBallId = -1;
 // Stacks for "object destroyed at spawn"
-new Handle:h_objList[MAXPLAYERS+1];
+Handle h_objList[MAXPLAYERS+1];
 // Time storage for the same
-new Float:f_objRemoved[MAXPLAYERS+1];
+float f_objRemoved[MAXPLAYERS+1];
 // Stunball Stack
-new Handle:h_stunBalls;
+Handle h_stunBalls;
 // Wearables Stack
-new Handle:h_wearables;
+Handle h_wearables;
 
 // Teleporter Stat-Padding Fix: Keep track of last use of teleporter
-new Float:f_lastTeleport[MAXPLAYERS+1][MAXPLAYERS+1];
+float f_lastTeleport[MAXPLAYERS+1][MAXPLAYERS+1];
 // Heals
-new healPoints[MAXPLAYERS+1];
+int healPoints[MAXPLAYERS+1];
 // Rocket/Sticky Jump Status
-new jumpStatus[MAXPLAYERS+1];
+int jumpStatus[MAXPLAYERS+1];
 // Last dalokohs eaten
-new Float:dalokohs[MAXPLAYERS+1];
+float dalokohs[MAXPLAYERS+1];
 
 // Last known class of players
 // Likely less intensive to keep track of this for sound hooks
-new TFClassType:playerClass[MAXPLAYERS+1];
+TFClassType playerClass[MAXPLAYERS+1];
 
 // Is player carrying a building
-new bool:g_bCarryingObject[MAXPLAYERS+1] = {false,...};
-new g_iCarryingOffs = -1;
-new bool:g_bBlockLog = false;
+bool g_bCarryingObject[MAXPLAYERS+1] = {false,...};
+int g_iCarryingOffs = -1;
+bool g_bBlockLog = false;
 
 // Bullet Weapons Variable
-new bulletWeapons = 0;
+int bulletWeapons = 0;
 
 // Arrays
 // ONLY RULE OF THIS WEAPON LIST:
 // Unlockable variants of a weapon go AFTER the original variant
 // This will need to be tweaked if they make a second alt version of a weapon we track
-new const String:weaponList[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
+static const char weaponList[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 	"ball",
 	"flaregun",
 	"minigun",
@@ -179,7 +180,7 @@ new const String:weaponList[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 	"deflect_arrow"
 };
 // This list has none of the above rules
-new const String:weaponBullet[MAX_BULLET_WEAPONS][MAX_WEAPON_LEN] = {
+static const char weaponBullet[MAX_BULLET_WEAPONS][MAX_WEAPON_LEN] = {
 	"ambassador",
 	"force_a_nature",
 	"minigun",
@@ -196,7 +197,7 @@ new const String:weaponBullet[MAX_BULLET_WEAPONS][MAX_WEAPON_LEN] = {
 	"sniperrifle"
 };
 // This list is the list of weapons with an alternate in the next slot in the first list
-new const String:weaponUnlockables[MAX_UNLOCKABLE_WEAPONS][MAX_WEAPON_LEN] = {
+static const char weaponUnlockables[MAX_UNLOCKABLE_WEAPONS][MAX_WEAPON_LEN] = {
 	"minigun",
 	"revolver",
 	"scattergun",
@@ -205,13 +206,13 @@ new const String:weaponUnlockables[MAX_UNLOCKABLE_WEAPONS][MAX_WEAPON_LEN] = {
 	"tf_projectile_rocket"
 };
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	MarkNativeAsOptional("SDKHook"); // This needs to be marked optional for a number of reasons
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreateConVar("superlogs_tf_version", VERSION, NAME, FCVAR_NOTIFY);
 
@@ -261,7 +262,7 @@ public OnPluginStart()
 	PopulateWeaponTrie();
 
 	// Populate stacks
-	for(new i = 0; i <= MAXPLAYERS; i++)
+	for(int i = 0; i <= MAXPLAYERS; i++)
 		h_objList[i] = CreateStack();
 
 	// Hook Events
@@ -289,12 +290,12 @@ public OnPluginStart()
 	AddGameLogHook(OnGameLog);
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams(); // Loghelper says to put this here. Who am I to argue?
 }
 
-public OnConfigsExecuted()
+public void OnConfigsExecuted()
 {
 	OnConVarStatsChange(cvar_wstats, "", "");
 	OnConVarActionsChange(cvar_actions, "", "");
@@ -309,11 +310,11 @@ public OnConfigsExecuted()
 	OnConVarObjlogfixChange(cvar_objlogfix, "", "");
 }
 
-public Action:TF2_CalcIsAttackCritical(attacker, weapon, String:weaponname[], &bool:result)
+public Action TF2_CalcIsAttackCritical(int attacker, int weapon, char[] weaponname, bool &result)
 {
 	if(b_wstats && attacker > 0 && attacker <= MaxClients)
 	{
-		new weapon_index = GetWeaponIndex(weaponname[WEAPON_PREFIX_LENGTH], attacker);
+		int weapon_index = GetWeaponIndex(weaponname[WEAPON_PREFIX_LENGTH], attacker);
 		if(weapon_index != -1)
 		{
 			weaponStats[attacker][weapon_index][LOG_SHOTS]++;
@@ -325,14 +326,14 @@ public Action:TF2_CalcIsAttackCritical(attacker, weapon, String:weaponname[], &b
 	return Plugin_Continue;
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
 	b_sdkhookloaded = GetExtensionFileStatus("sdkhooks.ext") == 1;
 	if (b_sdkhookloaded)
 		HookAllClients();
 }
 
-public OnEntityCreated(entity, const String:className[])
+public void OnEntityCreated(int entity, const char[] className)
 {
 	if(b_wstats && StrEqual(className, "tf_projectile_stun_ball"))
 		PushStackCell(h_stunBalls, EntIndexToEntRef(entity));
@@ -342,7 +343,7 @@ public OnEntityCreated(entity, const String:className[])
 	}
 }
 
-public Action:OnGameLog(const String:message[])
+public Action OnGameLog(const char[] message)
 {
 	if (g_bBlockLog)
 		return Plugin_Handled;
@@ -350,11 +351,11 @@ public Action:OnGameLog(const String:message[])
 	return Plugin_Continue;
 }
 
-public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype)
 {
 	if(b_actions && attacker > 0 && attacker <= MaxClients && attacker != victim && inflictor > MaxClients && damage > 0.0 && IsValidEntity(inflictor) && (GetEntityFlags(victim) & (FL_ONGROUND | FL_INWATER)) == 0)
 	{
-		decl String:weapon[WEAPON_FULL_LENGTH];
+		char weapon[WEAPON_FULL_LENGTH];
 		GetEdictClassname(inflictor, weapon, sizeof(weapon));
 		if(weapon[3] == 'p' && weapon[4] == 'r') // Eliminate pumpkin bomb with the r
 		{
@@ -392,13 +393,13 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	return Plugin_Continue;
 }
 
-public OnTakeDamage_Post(victim, attacker, inflictor, Float:damage, damagetype)
+public void OnTakeDamage_Post(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
 	if(b_wstats && attacker > 0 && attacker <= MaxClients)
 	{
-		new weapon_index = -1;
-		new idamage = RoundFloat(damage);
-		decl String:weapon[WEAPON_FULL_LENGTH];
+		int weapon_index = -1;
+		int idamage = RoundFloat(damage);
+		char weapon[WEAPON_FULL_LENGTH];
 		if (inflictor <= MaxClients) // Inflictor is a player
 		{
 			if (damagetype & DMG_BURN)
@@ -438,12 +439,12 @@ public OnTakeDamage_Post(victim, attacker, inflictor, Float:damage, damagetype)
 	}
 }
 
-public OnGameFrame()
+public void OnGameFrame()
 {
-	new entity;
-	new owner;
-	new itemindex, slot;
-	decl String:tempstring[15];
+	int entity;
+	int owner;
+	int itemindex, slot;
+	char tempstring[15];
 	if(stunBallId > -1)
 	{
 		while(PopStackCell(h_stunBalls, entity))
@@ -485,15 +486,15 @@ public OnGameFrame()
 		}
 	}
 	
-	new cnt = GetClientCount();
-	for (new i = 1; i <= cnt; i++)
+	int cnt = GetClientCount();
+	for (int i = 1; i <= cnt; i++)
 	{
 		if (IsClientInGame(i) && GetEntData(i, g_iCarryingOffs, 1))
 			g_bCarryingObject[i] = true;
 	}
 }
 
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	if (b_sdkhookloaded)
 	{
@@ -504,7 +505,7 @@ public OnClientPutInServer(client)
 	
 	g_bCarryingObject[client] = false;
 	
-	for(new i = 0; i <= MaxClients; i++)
+	for(int i = 0; i <= MaxClients; i++)
 	{
 		// Clear both "we built" (client first) and "we used" (i first)
 		f_lastTeleport[client][i] = 0.0;
@@ -513,14 +514,14 @@ public OnClientPutInServer(client)
 	f_objRemoved[client] = 0.0;
 	playerClass[client] = TFClass_Unknown;
 	healPoints[client] = 0;
-	for(new i = 0; i < MAX_LOADOUT_SLOTS; i++)
+	for(int i = 0; i < MAX_LOADOUT_SLOTS; i++)
 		playerLoadout[client][i] = {-1, -1};
 	ResetWeaponStats(client);
 }
 
-public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if(client > 0 && IsClientInGame(client))
 	{
 		if(b_wstats) DumpWeaponStats(client);
@@ -530,9 +531,9 @@ public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:don
 	return Plugin_Continue;
 }
 
-HookAllClients()
+void HookAllClients()
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 		if (IsClientInGame(i))
 		{
 			SDKHook(i, SDKHook_OnTakeDamagePost, OnTakeDamage_Post);
@@ -540,31 +541,31 @@ HookAllClients()
 		}
 }
 
-public Action:Event_PlayerChangeclassPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerChangeclassPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	// Stop log entry!
 	return Plugin_Handled;
 }
 
-public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
-	new Float:time = GetGameTime();
-	new userid = GetEventInt(event, "userid");
-	new client = GetClientOfUserId(userid);
-	new TFClassType:spawnClass = TFClassType:GetEventInt(event, "class");
+	float time = GetGameTime();
+	int userid = GetEventInt(event, "userid");
+	int client = GetClientOfUserId(userid);
+	TFClassType spawnClass = view_as<TFClassType>(GetEventInt(event, "class"));
 	jumpStatus[client] = JUMP_NONE; // Play it safe
 	if(b_wstats) DumpWeaponStats(client); // Changed class without death, dump and reset stats
 	//if(b_wstats) ResetWeaponStats(client);
 	if(b_heals) DumpHeals(client, " (spawn)");
 	if(time == f_objRemoved[client])
 	{
-		decl String:owner[96];
-		decl String:player_authid[32];
-		decl String:objname[24];
+		char owner[96];
+		char player_authid[32];
+		char objname[24];
 		if (!GetClientAuthId(client, AuthId_Engine, player_authid, sizeof(player_authid)))
 			strcopy(player_authid, sizeof(player_authid), "UNKNOWN");
 		Format(owner, sizeof(owner), "\"%N<%d><%s><%s>\"", client, userid, player_authid, g_team_list[GetClientTeam(client)]);
-		new objecttype;
+		int objecttype;
 		while(PopStackCell(h_objList[client], objecttype))
 		{
 			switch(objecttype)
@@ -617,18 +618,18 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 	dalokohs[client] = -30.0;
 }
 
-public Event_ObjectRemoved(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_ObjectRemoved(Handle event, const char[] name, bool dontBroadcast)
 {
-	new Float:time = GetGameTime();
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	float time = GetGameTime();
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if(time != f_objRemoved[client])
 	{
 		f_objRemoved[client] = time;
 		while(PopStack(h_objList[client]))
 			continue;
 	}
-	new objtype = GetEventInt(event, "objecttype");
-	new objindex = GetEventInt(event, "index");
+	int objtype = GetEventInt(event, "objecttype");
+	int objindex = GetEventInt(event, "index");
 	if (IsValidEdict(objindex) && GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
 	{
 		objtype = OBJ_SENTRYGUN_MINI;
@@ -636,18 +637,18 @@ public Event_ObjectRemoved(Handle:event, const String:name[], bool:dontBroadcast
 	PushStackCell(h_objList[client], objtype);
 }
 
-public Event_PlayerStealsandvich(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerStealsandvich(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogPlyrPlyrEvent(GetClientOfUserId(GetEventInt(event, "target")), GetClientOfUserId(GetEventInt(event, "owner")), "triggered", "steal_sandvich", true);
 }
 
-public Event_PlayerStunned(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerStunned(Handle event, const char[] name, bool dontBroadcast)
 {
-	new String: properties[33];
-	new stunner = GetClientOfUserId(GetEventInt(event, "stunner"));
+	char properties[33];
+	int stunner = GetClientOfUserId(GetEventInt(event, "stunner"));
 	if(stunner > 0) // Stunner == 0 would be map stun (ghost/trigger), natascha stun (slowdown), taunt kill stun (medic, sniper)
 	{
-		new victim = GetClientOfUserId(GetEventInt(event, "victim"));
+		int victim = GetClientOfUserId(GetEventInt(event, "victim"));
 		if(GetEventBool(event, "victim_capping")) StrCat(properties, sizeof(properties), " (victim_capping)");
 		if(GetEventBool(event, "big_stun")) StrCat(properties, sizeof(properties), " (big_stun)");
 		LogPlyrPlyrEvent(stunner, victim, "triggered", "stun", true);
@@ -656,11 +657,11 @@ public Event_PlayerStunned(Handle:event, const String:name[], bool:dontBroadcast
 	}
 }
 
-public Event_PlayerTeleported(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerTeleported(Handle event, const char[] name, bool dontBroadcast)
 {
-	new builderid = GetClientOfUserId(GetEventInt(event, "builderid"));
-	new userid = GetClientOfUserId(GetEventInt(event, "userid"));
-	new Float:curTime = GetGameTime();
+	int builderid = GetClientOfUserId(GetEventInt(event, "builderid"));
+	int userid = GetClientOfUserId(GetEventInt(event, "userid"));
+	float curTime = GetGameTime();
 	if(b_teleports_again && f_lastTeleport[builderid][userid] > curTime - TELEPORT_AGAIN_TIME)
 	{
 		if(userid == builderid)
@@ -688,34 +689,34 @@ public Event_PlayerTeleported(Handle:event, const String:name[], bool:dontBroadc
 	f_lastTeleport[builderid][userid] = curTime;
 }
 
-public Event_DeployBuffBanner(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_DeployBuffBanner(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "buff_owner")), "triggered", "buff_deployed");
 }
 
-public Event_MedicDefended(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_MedicDefended(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "defended_medic");
 }
 
-public Event_PlayerEscortScore(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerEscortScore(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogPlayerEvent(GetEventInt(event, "player"), "triggered", "escort_score");
 }
 
-public Event_MedicDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_MedicDeath(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	healPoints[client] = GetEntProp(client, Prop_Send, "m_iHealPoints");
 }
 
-public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast)
 {
 	// NOTE: The weaponid in this event is the weapon the player is HOLDING as of the event happening
 	// Thus, only if we don't have SDK Hooks do we use it for airshot detection.
 	if(!b_sdkhookloaded)
 	{
-		new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+		int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 		if(b_wstats)
 		{
 			if(nextHurt[attacker] > -1)
@@ -724,7 +725,7 @@ public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 		}
 		if(b_actions)
 		{
-			new client = GetClientOfUserId(GetEventInt(event, "userid"));
+			int client = GetClientOfUserId(GetEventInt(event, "userid"));
 			if(client != attacker && client > 0 && client <= MaxClients && IsClientInGame(client)
 				&& IsPlayerAlive(client) && (GetEntityFlags(client) & (FL_ONGROUND | FL_INWATER)) == 0)
 			{
@@ -765,7 +766,7 @@ public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Action:Event_ObjectDestroyedPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_ObjectDestroyedPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
 	{
@@ -775,18 +776,18 @@ public Action:Event_ObjectDestroyedPre(Handle:event, const String:name[], bool:d
 	return Plugin_Continue;
 }
 
-public Event_ObjectDestroyed(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_ObjectDestroyed(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (g_bBlockLog)
 	{
 		g_bBlockLog = false;
-		decl String:weapon[64];
-		decl String:team[64];
-		decl String:auth[32];
-		decl String:properties[255];
+		char weapon[64];
+		char team[64];
+		char auth[32];
+		char properties[255];
 		GetEventString(event, "weapon", weapon, sizeof(weapon));
-		new victimuid = GetEventInt(event, "userid");
-		new victim = GetClientOfUserId(victimuid);
+		int victimuid = GetEventInt(event, "userid");
+		int victim = GetClientOfUserId(victimuid);
 		if (victim == 0 || !IsClientInGame(victim))
 			return;
 		GetClientAuthId(victim, AuthId_Engine, auth, sizeof(auth));
@@ -796,7 +797,7 @@ public Event_ObjectDestroyed(Handle:event, const String:name[], bool:dontBroadca
 	}
 }
 
-public Action:Event_PlayerBuiltObjectPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerBuiltObjectPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (g_bCarryingObject[GetClientOfUserId(GetEventInt(event, "userid"))] || GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
 	{
@@ -806,9 +807,9 @@ public Action:Event_PlayerBuiltObjectPre(Handle:event, const String:name[], bool
 	return Plugin_Continue;
 }
 
-public Event_PlayerBuiltObject(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerBuiltObject(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	
 	if (g_bBlockLog)
 	{
@@ -822,18 +823,18 @@ public Event_PlayerBuiltObject(Handle:event, const String:name[], bool:dontBroad
 	g_bCarryingObject[client] = false;
 }
 
-public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
-	new death_flags = GetEventInt(event, "death_flags");
+	int death_flags = GetEventInt(event, "death_flags");
 	if((death_flags & TF_DEATHFLAG_DEADRINGER) == TF_DEATHFLAG_DEADRINGER) // Not a dead ringer death?
 	{
 		return;
 	}
 	
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new customkill = GetEventInt(event, "customkill");
-	new bits = GetEventInt(event, "damagebits");
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int customkill = GetEventInt(event, "customkill");
+	int bits = GetEventInt(event, "damagebits");
 	if(b_heals && playerClass[client] != TFClass_Medic) // medic_death event handles this for dead medics
 		DumpHeals(client);
 	jumpStatus[client] = JUMP_NONE; // Not jumping
@@ -884,9 +885,9 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 	if(b_wstats && client > 0 && attacker > 0 && attacker <= MaxClients)
 	{
-		decl String:weaponlogname[MAX_WEAPON_LEN];
+		char weaponlogname[MAX_WEAPON_LEN];
 		GetEventString(event, "weapon_logclassname", weaponlogname, sizeof(weaponlogname));
-		new weapon_index = GetWeaponIndex(weaponlogname, attacker);
+		int weapon_index = GetWeaponIndex(weaponlogname, attacker);
 		if(weapon_index != -1)
 		{
 			weaponStats[attacker][weapon_index][LOG_KILLS]++;
@@ -900,12 +901,12 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	new customkill = GetEventInt(event, "customkill");
-	new inflictor = GetEventInt(event, "inflictor_entindex");
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int customkill = GetEventInt(event, "customkill");
+	int inflictor = GetEventInt(event, "inflictor_entindex");
 	if (!IsValidEdict(inflictor))
 	{
 		inflictor = 0;
@@ -926,7 +927,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 		case TF_CUSTOM_BURNING_ARROW, TF_CUSTOM_FLYINGBURN:
 			if(b_fire)
 			{
-				decl String:logweapon[64];
+				char logweapon[64];
 				GetEventString(event, "weapon_logclassname", logweapon, sizeof(logweapon));
 				if(logweapon[0] != 'd') // No changing reflects - was 'r' but it is deflects
 				{
@@ -954,7 +955,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public Event_WinPanel(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_WinPanel(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(b_actions)
 	{
@@ -966,10 +967,10 @@ public Event_WinPanel(Handle:event, const String:name[], bool:dontBroadcast)
 		DumpAllWeaponStats();
 }
 
-public Event_RocketJump(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RocketJump(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	new status = jumpStatus[client];
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int status = jumpStatus[client];
 	if(status == JUMP_ROCKET_START) // Taunt kills trigger one event, rocket jumps two
 	{
 		jumpStatus[client] = JUMP_ROCKET;
@@ -979,9 +980,9 @@ public Event_RocketJump(Handle:event, const String:name[], bool:dontBroadcast)
 		jumpStatus[client] = JUMP_ROCKET_START;
 }
 
-public Event_StickyJump(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_StickyJump(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if(jumpStatus[client] != JUMP_STICKY)
 	{
 		jumpStatus[client] = JUMP_STICKY;
@@ -989,15 +990,15 @@ public Event_StickyJump(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Event_JumpLanded(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_JumpLanded(Handle event, const char[] name, bool dontBroadcast)
 {
 	jumpStatus[GetClientOfUserId(GetEventInt(event, "userid"))] = JUMP_NONE;
 }
 
-public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_ObjectDeflected(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	new owner = GetClientOfUserId(GetEventInt(event, "ownerid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int owner = GetClientOfUserId(GetEventInt(event, "ownerid"));
 	switch(GetEventInt(event, "weaponid"))
 	{
 		case TF_WEAPON_NONE:
@@ -1009,7 +1010,7 @@ public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadca
 			LogPlyrPlyrEvent(client, owner, "triggered", "deflected_rocket", true);
 			if(b_wstats && b_sdkhookloaded)
 			{
-				new weapon_index = GetWeaponIndex("deflect_rocket");
+				int weapon_index = GetWeaponIndex("deflect_rocket");
 				if(weapon_index > -1)
 					weaponStats[client][weapon_index][LOG_SHOTS]++;
 			}
@@ -1019,7 +1020,7 @@ public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadca
 			LogPlyrPlyrEvent(client, owner, "triggered", "deflected_pipebomb", true);
 			if(b_wstats && b_sdkhookloaded)
 			{
-				new weapon_index = GetWeaponIndex("deflect_promode");
+				int weapon_index = GetWeaponIndex("deflect_promode");
 				if(weapon_index > -1)
 					weaponStats[client][weapon_index][LOG_SHOTS]++;
 			}
@@ -1029,7 +1030,7 @@ public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadca
 			LogPlyrPlyrEvent(client, owner, "triggered", "deflected_flare", true);
 			if(b_wstats && b_sdkhookloaded)
 			{
-				new weapon_index = GetWeaponIndex("deflect_flare");
+				int weapon_index = GetWeaponIndex("deflect_flare");
 				if(weapon_index > -1)
 					weaponStats[client][weapon_index][LOG_SHOTS]++;
 			}
@@ -1043,7 +1044,7 @@ public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadca
 			LogPlyrPlyrEvent(client, owner, "triggered", "deflected_arrow", true);
 			if(b_wstats && b_sdkhookloaded)
 			{
-				new weapon_index = GetWeaponIndex("deflect_arrow");
+				int weapon_index = GetWeaponIndex("deflect_arrow");
 				if(weapon_index > -1)
 					weaponStats[client][weapon_index][LOG_SHOTS]++;
 			}
@@ -1053,7 +1054,7 @@ public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadca
 			LogPlyrPlyrEvent(client, owner, "triggered", "deflected_rocket_dh", true);
 			if(b_wstats && b_sdkhookloaded)
 			{
-				new weapon_index = GetWeaponIndex("deflect_rocket");
+				int weapon_index = GetWeaponIndex("deflect_rocket");
 				if(weapon_index > -1)
 					weaponStats[client][weapon_index][LOG_SHOTS]++;
 			}
@@ -1065,23 +1066,23 @@ public Event_ObjectDeflected(Handle:event, const String:name[], bool:dontBroadca
 	}
 }
 
-public Event_PostInventoryApplication(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PostInventoryApplication(Handle event, const char[] name, bool dontBroadcast)
 {
 	CreateTimer(0.2, CheckPlayerLoadout, GetEventInt(event, "userid"));
 }
 
-public Action:CheckPlayerLoadout(Handle:timer, any:userid)
+public Action CheckPlayerLoadout(Handle timer, any userid)
 {
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if (client == 0 || !IsClientInGame(client))
 	{
 		return Plugin_Stop;
 	}
 	
-	new ent = -1;
-	new bool:newLoadout = false;
-	new TFClassType:pClass = playerClass[client];
-	for(new checkslot = 0; checkslot <=5; checkslot++)
+	int ent = -1;
+	bool newLoadout = false;
+	TFClassType pClass = playerClass[client];
+	for(int checkslot = 0; checkslot <=5; checkslot++)
 	{
 		if(playerLoadout[client][checkslot][1] != 0 && IsValidEntity(playerLoadout[client][checkslot][1]))
 		{
@@ -1103,7 +1104,7 @@ public Action:CheckPlayerLoadout(Handle:timer, any:userid)
 		}
 		else
 		{
-			new itemindex = GetEntProp(ent, Prop_Send, "m_iItemDefinitionIndex");
+			int itemindex = GetEntProp(ent, Prop_Send, "m_iItemDefinitionIndex");
 			if(playerLoadout[client][checkslot][0] != itemindex)
 			{
 				playerLoadout[client][checkslot][0] = itemindex;
@@ -1125,12 +1126,12 @@ public Action:CheckPlayerLoadout(Handle:timer, any:userid)
 	return Plugin_Stop;
 }
 
-public Action:LogWeaponLoadout(Handle:timer, any:userid)
+public Action LogWeaponLoadout(Handle timer, any userid)
 {
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if (client > 0 && IsClientInGame(client))
 	{
-		for (new i = 0; i < MAX_LOADOUT_SLOTS; i++)
+		for (int i = 0; i < MAX_LOADOUT_SLOTS; i++)
 		{
 			if(playerLoadout[client][i][0] != -1 && !IsValidEntity(playerLoadout[client][i][1]) || playerLoadout[client][i][1] == 0)
 			{
@@ -1142,7 +1143,7 @@ public Action:LogWeaponLoadout(Handle:timer, any:userid)
 			return Plugin_Stop;
 		playerLoadoutUpdated[client] = false;
 		
-		decl String:logString[255];
+		char logString[255];
 		Format(logString, sizeof(logString), " (primary \"%d\") (secondary \"%d\") (melee \"%d\") (pda \"%d\") (pda2 \"%d\") (building \"%d\") (head \"%d\") (misc \"%d\")", playerLoadout[client][0][0], playerLoadout[client][1][0], playerLoadout[client][2][0], playerLoadout[client][3][0], playerLoadout[client][4][0], playerLoadout[client][5][0], playerLoadout[client][6][0], playerLoadout[client][7][0]);
 		
 		LogPlayerEvent(client, "triggered", "player_loadout", _, logString);
@@ -1150,10 +1151,10 @@ public Action:LogWeaponLoadout(Handle:timer, any:userid)
 	return Plugin_Stop;
 }
 
-public Action:Event_PlayerJarated(UserMsg:msg_id, Handle:bf, const players[], playersNum, bool:reliable, bool:init)
+public Action Event_PlayerJarated(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new client = BfReadByte(bf);
-	new victim = BfReadByte(bf);
+	int client = BfReadByte(bf);
+	int victim = BfReadByte(bf);
 	
 	if (!victim || !IsClientInGame(victim))
 	{
@@ -1173,17 +1174,17 @@ public Action:Event_PlayerJarated(UserMsg:msg_id, Handle:bf, const players[], pl
 	return Plugin_Continue;
 }
 
-public Action:Event_PlayerShieldBlocked(UserMsg:msg_id, Handle:bf, const players[], playersNum, bool:reliable, bool:init)
+public Action Event_PlayerShieldBlocked(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new victim = BfReadByte(bf);
-	new client = BfReadByte(bf);
+	int victim = BfReadByte(bf);
+	int client = BfReadByte(bf);
 
 	LogPlyrPlyrEvent(client, victim, "triggered", "shield_blocked", true);
 	return Plugin_Continue;
 }
 
 // Modified Octo's method a bit to try and reduce checking of sound strings
-public Action:SoundHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
+public Action SoundHook(int clients[64], int &numClients, char sample[PLATFORM_MAX_PATH], int &entity, int &channel, float &volume, int &level, int &pitch, int &flags)
 {
 	if(entity <= MaxClients && clients[0] == entity && playerClass[entity] == TFClass_Heavy && StrEqual(sample,"vo/SandwichEat09.wav"))
 	{
@@ -1192,7 +1193,7 @@ public Action:SoundHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PAT
 			case LUNCHBOX_CHOCOLATE:
 			{
 				LogPlayerEvent(entity, "triggered", "dalokohs");
-				new Float:time = GetGameTime();
+				float time = GetGameTime();
 				if(time - dalokohs[entity] > 30)
 					LogPlayerEvent(entity, "triggered", "dalokohs_healthboost");
 				dalokohs[entity] = time;
@@ -1214,30 +1215,31 @@ public Action:SoundHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PAT
 	return Plugin_Continue;
 }
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
 
-PopulateWeaponTrie()
+void PopulateWeaponTrie()
 {
 	// Create a Trie
 	h_weapontrie = CreateTrie();
 	
 	// Initial populate
-	for(new i = 0; i < MAX_LOG_WEAPONS; i++)
+	for(int i = 0; i < MAX_LOG_WEAPONS; i++)
 		SetTrieValue(h_weapontrie, weaponList[i], i);
 
 	// Figure out the Bullet Weapon ids (based on the list of bullet weapons)
-	new index;
+	int index;
 	bulletWeapons = 0;
-	for(new i = 0; i < MAX_BULLET_WEAPONS; i++)
+	for(int i = 0; i < MAX_BULLET_WEAPONS; i++)
 		if(GetTrieValue(h_weapontrie, weaponBullet[i], index))
 			bulletWeapons |= (1<<index);
 	
 	// Flag unlockable enabled weapons as such
-	for(new i = 0; i < MAX_UNLOCKABLE_WEAPONS; i++)
+	for(int i = 0; i < MAX_UNLOCKABLE_WEAPONS; i++)
 		if(GetTrieValue(h_weapontrie, weaponUnlockables[i], index))
 			SetTrieValue(h_weapontrie, weaponUnlockables[i], index | UNLOCKABLE_BIT);
 
@@ -1268,11 +1270,11 @@ PopulateWeaponTrie()
 	}
 }
 
-GetWeaponIndex(const String:weaponname[], client = 0, weapon = -1)
+int GetWeaponIndex(const char[] weaponname, int client = 0, int weapon = -1)
 {
-	new index;
-	new bool:unlockable;
-	new reflectindex = -1;
+	int index;
+	bool unlockable;
+	int reflectindex = -1;
 	
 	if (strlen(weaponname) < 15)
 		return -1;
@@ -1307,10 +1309,10 @@ GetWeaponIndex(const String:weaponname[], client = 0, weapon = -1)
 			return reflectindex;
 		if(unlockable && client > 0)
 		{
-			new slot = 0;
+			int slot = 0;
 			if(playerClass[client] == TFClass_DemoMan)
 				slot = 1;
-			new itemindex = playerLoadout[client][slot][0];
+			int itemindex = playerLoadout[client][slot][0];
 			switch(itemindex) // Hell of a lot easier than a set of ifs. <_<
 			{
 				case 36, 41, 45, 61, 127, 130:
@@ -1323,50 +1325,50 @@ GetWeaponIndex(const String:weaponname[], client = 0, weapon = -1)
 		return -1;
 }
 
-DumpHeals(client, String:addProp[] = "")
+void DumpHeals(int client, char[] addProp = "")
 {
-	new curHeals = GetEntProp(client, Prop_Send, "m_iHealPoints");
-	new lifeHeals = curHeals - healPoints[client];
+	int curHeals = GetEntProp(client, Prop_Send, "m_iHealPoints");
+	int lifeHeals = curHeals - healPoints[client];
 	if(lifeHeals > 0)
 	{
-		decl String:szProperties[32];
+		char szProperties[32];
 		Format(szProperties, sizeof(szProperties), " (healing \"%d\")%s", lifeHeals, addProp);
 		LogPlayerEvent(client, "triggered", "healed", _, szProperties);
 	}
 	healPoints[client] = curHeals;
 }
 
-DumpAllWeaponStats()
+void DumpAllWeaponStats()
 {
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 		DumpWeaponStats(i);
 }
 
-DumpWeaponStats(client)
+void DumpWeaponStats(int client)
 {
 	if(IsClientInGame(client))
 	{
-		decl String:player_authid[64];
+		char player_authid[64];
 		if(!GetClientAuthId(client, AuthId_Engine, player_authid, sizeof(player_authid)))
 			strcopy(player_authid, sizeof(player_authid), "UNKNOWN");
-		new player_team = GetClientTeam(client);
-		new player_userid = GetClientUserId(client);
-		for (new i = 0; i < MAX_LOG_WEAPONS; i++)
+		int player_team = GetClientTeam(client);
+		int player_userid = GetClientUserId(client);
+		for (int i = 0; i < MAX_LOG_WEAPONS; i++)
 			if(weaponStats[client][i][LOG_SHOTS] > 0 || weaponStats[client][i][LOG_DEATHS] > 0)
 				LogToGame("\"%N<%d><%s><%s>\" triggered \"weaponstats\" (weapon \"%s\") (shots \"%d\") (hits \"%d\") (kills \"%d\") (headshots \"%d\") (tks \"%d\") (damage \"%d\") (deaths \"%d\")", client, player_userid, player_authid, g_team_list[player_team], weaponList[i], weaponStats[client][i][LOG_SHOTS], weaponStats[client][i][LOG_HITS], weaponStats[client][i][LOG_KILLS], weaponStats[client][i][LOG_HEADSHOTS], weaponStats[client][i][LOG_TEAMKILLS], weaponStats[client][i][LOG_DAMAGE], weaponStats[client][i][LOG_DEATHS]);
 	}
 	ResetWeaponStats(client);
 }
 
-ResetWeaponStats(client)
+void ResetWeaponStats(int client)
 {
-	for(new i = 0; i < MAX_LOG_WEAPONS; i++)
+	for(int i = 0; i < MAX_LOG_WEAPONS; i++)
 		weaponStats[client][i] = {0,0,0,0,0,0,0};
 }
 
-public OnConVarActionsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_actions);
+	bool newval = GetConVarBool(cvar_actions);
 	if(newval != b_actions)
 	{
 		if(newval)
@@ -1398,7 +1400,7 @@ public OnConVarActionsChange(Handle:cvar, const String:oldVal[], const String:ne
 			UnhookEvent("object_deflected", Event_ObjectDeflected);
 			UnhookUserMessage(GetUserMessageId("PlayerJarated"), Event_PlayerJarated);
 			UnhookUserMessage(GetUserMessageId("PlayerShieldBlocked"), Event_PlayerShieldBlocked);
-			for(new i = 1; i <= MaxClients; i++)
+			for(int i = 1; i <= MaxClients; i++)
 				jumpStatus[i] = 0;
 		}
 		b_actions = newval;
@@ -1406,9 +1408,9 @@ public OnConVarActionsChange(Handle:cvar, const String:oldVal[], const String:ne
 }
 
 
-public OnConVarTeleportsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarTeleportsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_teleports);
+	bool newval = GetConVarBool(cvar_teleports);
 	if(newval != b_teleports)
 	{
 		if(newval)
@@ -1419,24 +1421,24 @@ public OnConVarTeleportsChange(Handle:cvar, const String:oldVal[], const String:
 	}
 }
 
-public OnConVarTeleportsAgainChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarTeleportsAgainChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
 	b_teleports_again = GetConVarBool(cvar_teleports_again);
 }
 
-public OnConVarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
 	b_headshots = GetConVarBool(cvar_headshots);
 }
 
-public OnConVarBackstabsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarBackstabsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
 	b_backstabs = GetConVarBool(cvar_backstabs);
 }
 
-public OnConVarSandvichChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarSandvichChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_sandvich);
+	bool newval = GetConVarBool(cvar_sandvich);
 	if(newval != b_sandvich)
 	{
 		if(newval)
@@ -1447,14 +1449,14 @@ public OnConVarSandvichChange(Handle:cvar, const String:oldVal[], const String:n
 	}
 }
 
-public OnConVarFireChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarFireChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
 	b_fire = GetConVarBool(cvar_fire);
 }
 
-public OnConVarStatsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarStatsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_crits) && GetConVarBool(cvar_wstats);
+	bool newval = GetConVarBool(cvar_crits) && GetConVarBool(cvar_wstats);
 	if(newval != b_wstats)
 	{
 		if(!newval)
@@ -1465,15 +1467,15 @@ public OnConVarStatsChange(Handle:cvar, const String:oldVal[], const String:newV
 	}
 }
 
-public OnConVarHealsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarHealsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_heals);
+	bool newval = GetConVarBool(cvar_heals);
 	if(newval != b_heals)
 	{
 		if(newval)
 		{
 			HookEvent("medic_death", Event_MedicDeath);
-			for(new i = 1; i <= MaxClients; i++)
+			for(int i = 1; i <= MaxClients; i++)
 				if(IsClientInGame(i))
 					healPoints[i] = GetEntProp(i, Prop_Send, "m_iHealPoints");
 		}
@@ -1485,9 +1487,9 @@ public OnConVarHealsChange(Handle:cvar, const String:oldVal[], const String:newV
 	}
 }
 
-public OnConVarRolelogfixChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarRolelogfixChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_rolelogfix);
+	bool newval = GetConVarBool(cvar_rolelogfix);
 	if(newval != b_rolelogfix)
 	{
 		if(newval)
@@ -1498,9 +1500,9 @@ public OnConVarRolelogfixChange(Handle:cvar, const String:oldVal[], const String
 	}
 }
 
-public OnConVarObjlogfixChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnConVarObjlogfixChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:newval = GetConVarBool(cvar_objlogfix);
+	bool newval = GetConVarBool(cvar_objlogfix);
 	if(newval != b_objlogfix)
 	{
 		if(newval)

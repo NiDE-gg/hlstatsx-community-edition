@@ -269,6 +269,8 @@ public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroa
 			LogPlayerEvent(iAttacker, "triggered", "headshot");
 		}		
 	}
+
+	return Plugin_Continue;
 }
 
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
@@ -351,12 +353,14 @@ public void Event_RoundMVP(Event event, const char[] name, bool dontBroadcast)
 public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
 	OnPlayerDisconnect(GetClientOfUserId(event.GetInt("userid")));
+	return Plugin_Continue;
 }
 
 public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
 
 public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -542,7 +546,7 @@ void LoadGameItems()
 	delete kv;
 }
 
-public bool GetClientItemDefName(int client, char[] weaponName, int weaponNameSize)
+void GetClientItemDefName(int client, char[] weaponName, int weaponNameSize)
 {
 	if (!IsValidClient(client, true, false)) {
 		return;

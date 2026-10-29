@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -34,8 +35,8 @@
 
 #define INS
 
-new g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
-new const String: g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
+int g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
+char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"makarov",
 									"m9",
 									"sks",
@@ -57,30 +58,30 @@ new const String: g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"bayonet"
 								};
 								
-new Handle:g_cvar_wstats = INVALID_HANDLE;
-new Handle:g_cvar_actions = INVALID_HANDLE;
-new Handle:g_cvar_headshots = INVALID_HANDLE;
-new Handle:g_cvar_chat = INVALID_HANDLE;
-new Handle:g_cvar_captures = INVALID_HANDLE;
-new Handle:g_cvar_locations = INVALID_HANDLE;
-new Handle:g_cvar_ktraj = INVALID_HANDLE;
+Handle g_cvar_wstats = INVALID_HANDLE;
+Handle g_cvar_actions = INVALID_HANDLE;
+Handle g_cvar_headshots = INVALID_HANDLE;
+Handle g_cvar_chat = INVALID_HANDLE;
+Handle g_cvar_captures = INVALID_HANDLE;
+Handle g_cvar_locations = INVALID_HANDLE;
+Handle g_cvar_ktraj = INVALID_HANDLE;
 
-new bool:g_logwstats = true;
-new bool:g_logheadshots = true;
-new bool:g_logactions = true;
-new bool:g_logchat = true;
-new bool:g_logcaptures = true;
-new bool:g_loglocations = true;
-new bool:g_logktraj = false;
+bool g_logwstats = true;
+bool g_logheadshots = true;
+bool g_logactions = true;
+bool g_logchat = true;
+bool g_logcaptures = true;
+bool g_loglocations = true;
+bool g_logktraj = false;
 
-new g_client_last_weapon[MAXPLAYERS+1] = {-1, ...};
-new String:g_client_last_weaponstring[MAXPLAYERS+1][64];
+int g_client_last_weapon[MAXPLAYERS+1] = {-1, ...};
+char g_client_last_weaponstring[MAXPLAYERS+1][64];
 
 #include <loghelper>
 #include <wstatshelper>
 
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic",
 	description = "Advanced logging for Insurgency. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -88,35 +89,23 @@ public Plugin:myinfo = {
 	url = "http://www.hlxcommunity.com"
 };
 
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
-#else
-public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
-#endif
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	decl String:game_description[64];
+	char game_description[64];
 	GetGameDescription(game_description, sizeof(game_description), true);
 	if (StrContains(game_description, "Insurgency", false) == -1)
 	{
-		decl String:game_folder[64];
+		char game_folder[64];
 		GetGameFolderName(game_folder, sizeof(game_folder));
 		if (StrContains(game_folder, "insurgency", false) == -1)
 		{
-			#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-				return APLRes_Failure;
-			#else
-				return false;
-			#endif
+			return APLRes_Failure;
 		}
 	}
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 	return APLRes_Success;
-#else
-	return true;
-#endif
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreatePopulateWeaponTrie();
 	
@@ -160,30 +149,30 @@ public OnPluginStart()
 }
 
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams(true);
 }
 
 
-hook_wstats()
+void hook_wstats()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect, EventHookMode_Pre);
 }
 
-unhook_wstats()
+void unhook_wstats()
 {
 	UnhookEvent("player_spawn", Event_PlayerSpawn);
 	UnhookEvent("player_disconnect", Event_PlayerDisconnect, EventHookMode_Pre);
 }
 
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	reset_player_stats(client);
 }
 
-public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast)
 {
 	//  "userid"		"short"		// user ID on server
 	//  "attacker"		"short"		// CLIENT INDEX! on server of the attacker
@@ -191,22 +180,22 @@ public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 	//  "hitgroup"		"short"			// Hit groups
 	//  "weapon"		"string"		// Weapon name, like WEAPON_AK47
 
-	new attacker  = GetEventInt(event, "attacker");
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker  = GetEventInt(event, "attacker");
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 
 	if (attacker > 0 && attacker <= MaxClients && attacker != victim)
 	{
 		// ... wtf insurgency... userid is userid and attacker is client index?
 		//attacker = GetClientOfUserId(attacker);
 		
-		new hitgroup  = GetEventInt(event, "hitgroup");
+		int hitgroup  = GetEventInt(event, "hitgroup");
 		
 		if (g_logwstats)
 		{
-			decl String:weapon[MAX_WEAPON_LEN+PREFIX_LEN];
+			char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
 			GetEventString(event, "weapon", weapon, sizeof(weapon));
 
-			new weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
+			int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 
 			if (weapon_index > -1)  {
 				g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
@@ -233,22 +222,22 @@ public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogKillLoc(GetClientOfUserId(GetEventInt(event, "attacker")), GetClientOfUserId(GetEventInt(event, "userid")));
 	
 	return Plugin_Continue;
 }
 
-public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	//  "userid"	"short"   	// user ID who died
 	//  "attacker"	"short"	 	// user ID who killed
 	//  "type"		"byte"		// type of death
 	//  "nodeath"	"bool"		// true if death messages were off when player died
 
-	new victim   = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	if (attacker == 0 || victim == 0 || attacker == victim)
 	{
 		return;
@@ -256,7 +245,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (g_logwstats)
 	{
-		new weapon_index = g_client_last_weapon[attacker];
+		int weapon_index = g_client_last_weapon[attacker];
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_KILLS]++;
@@ -275,18 +264,18 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (g_logwstats)
 	{
@@ -299,19 +288,19 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
 
 
-public Action:objmsg(UserMsg:msg_id, Handle:bf, const players[], playersNum, bool:reliable, bool:init)
+public Action objmsg(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new point = BfReadByte(bf); // Objective Point: 1 = point A, 2 = point B, 3 = point C, etc.
-	new capstatus = BfReadByte(bf); // Capture Status: 1 on starting capture, 2 on finished capture
-	new team = BfReadByte(bf); // Team Index: 1 = Marines, 2 = Insurgents
+	int point = BfReadByte(bf); // Objective Point: 1 = point A, 2 = point B, 3 = point C, etc.
+	int capstatus = BfReadByte(bf); // Capture Status: 1 on starting capture, 2 on finished capture
+	int team = BfReadByte(bf); // Team Index: 1 = Marines, 2 = Insurgents
 	
 	if (capstatus == 2)
 	{
@@ -334,21 +323,21 @@ public Action:objmsg(UserMsg:msg_id, Handle:bf, const players[], playersNum, boo
 }
 
 
-public Action:Command_Chat(client, args)
+public Action Command_Chat(int client, int args)
 {
 	// method partially taken from "Insurgency Chat" by "Stevo.TVR"
 
 	if (g_logchat)
 	{
-		new String:message[192];
-		new startidx = 4;
+		char message[192];
+		int startidx = 4;
 		
 		if (GetCmdArgString(message, sizeof(message)) < 1 || client == 0)
 		{
 			return Plugin_Continue;
 		}
 		
-		new lastchar = strlen(message) - 1;
+		int lastchar = strlen(message) - 1;
 		if (message[lastchar] == '"')
 		{
 			message[lastchar] = '\0';
@@ -368,16 +357,17 @@ public Action:Command_Chat(client, args)
 }
 
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
 
 
-public OnCvarWstatsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarWstatsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logwstats;
+	bool old_value = g_logwstats;
 	g_logwstats = GetConVarBool(g_cvar_wstats);
 	
 	if (old_value != g_logwstats)
@@ -418,9 +408,9 @@ public OnCvarWstatsChange(Handle:cvar, const String:oldVal[], const String:newVa
 }
 
 
-public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logactions;
+	bool old_value = g_logactions;
 	g_logactions = GetConVarBool(g_cvar_actions);
 	
 	if (old_value != g_logactions)
@@ -437,9 +427,9 @@ public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newV
 }
 
 
-public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logheadshots;
+	bool old_value = g_logheadshots;
 	g_logheadshots = GetConVarBool(g_cvar_headshots);
 	
 	if (old_value != g_logheadshots)
@@ -456,9 +446,9 @@ public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:ne
 }
 
 
-public OnCvarCapturesChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarCapturesChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logcaptures;
+	bool old_value = g_logcaptures;
 	g_logcaptures = GetConVarBool(g_cvar_captures);
 	
 	if (old_value != g_logcaptures)
@@ -475,14 +465,14 @@ public OnCvarCapturesChange(Handle:cvar, const String:oldVal[], const String:new
 }
 
 
-public OnCvarChatChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarChatChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
 	g_logchat = GetConVarBool(g_cvar_chat);
 }
 
-public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_loglocations;
+	bool old_value = g_loglocations;
 	g_loglocations = GetConVarBool(g_cvar_locations);
 	
 	if (old_value != g_loglocations)
@@ -498,9 +488,9 @@ public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarKtrajChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarKtrajChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logktraj;
+	bool old_value = g_logktraj;
 	g_logktraj = GetConVarBool(g_cvar_ktraj);
 	
 	if (old_value != g_logktraj)

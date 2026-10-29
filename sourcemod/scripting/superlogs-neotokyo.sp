@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -27,16 +28,16 @@
 #define NAME "SuperLogs: NeoTokyo"
 #define VERSION "1.0.3"
 
-new Handle:g_cvar_headshots = INVALID_HANDLE;
-new Handle:g_cvar_locations = INVALID_HANDLE;
+Handle g_cvar_headshots = INVALID_HANDLE;
+Handle g_cvar_locations = INVALID_HANDLE;
 
-new bool:g_logheadshots = true;
-new bool:g_loglocations = true;
+bool g_logheadshots = true;
+bool g_loglocations = true;
 
 #include <loghelper>
 
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic",
 	description = "Advanced logging for NeoTokyo. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -45,7 +46,7 @@ public Plugin:myinfo = {
 };
 
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	g_cvar_headshots = CreateConVar("superlogs_headshots", "1", "Enable logging of headshot player action (default off)", 0, true, 0.0, true, 1.0);
 	g_cvar_locations = CreateConVar("superlogs_locations", "1", "Enable logging of location on player death (default on)", 0, true, 0.0, true, 1.0);
@@ -66,15 +67,15 @@ public OnPluginStart()
 	OnCvarLocationsChange(g_cvar_locations, "", "");
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams();
 }
 
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
-	new attacker = GetEventInt(event, "attacker");
+	int attacker = GetEventInt(event, "attacker");
 	if (attacker > 0)
 	{
 		if (g_loglocations)
@@ -90,9 +91,9 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logheadshots;
+	bool old_value = g_logheadshots;
 	g_logheadshots = GetConVarBool(g_cvar_headshots);
 	
 	if (old_value != g_logheadshots)
@@ -108,9 +109,9 @@ public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_loglocations;
+	bool old_value = g_loglocations;
 	g_loglocations = GetConVarBool(g_cvar_locations);
 	
 	if (old_value != g_loglocations)
@@ -126,8 +127,9 @@ public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
