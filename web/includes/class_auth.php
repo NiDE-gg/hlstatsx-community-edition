@@ -41,12 +41,24 @@ class Auth
 	// hlstats_Users.password holds more than 32 characters from this dbversion on
 	const HASH_DBVERSION = 110;
 
+	// Password of the "admin" account created by sql/install.sql
+	const DEFAULT_PASSWORD = '123456';
+
+	// Failed logins allowed within LOCKOUT_WINDOW seconds before logins are refused.
+	// The per-IP limit stops a single host; the higher per-username limit slows a
+	// spread-out attack without letting a few failures lock the real admin out.
+	const LOCKOUT_WINDOW = 900;
+	const MAX_FAILURES_PER_IP = 5;
+	const MAX_FAILURES_PER_USER = 20;
+
 	public $ok = false;
 	public $error = false;
 	public $username = '';
 	public $userdata = array();
 	// True when a POST was dropped because its CSRF token was missing or wrong
 	public $csrfRejected = false;
+	// True when the logged-in user signed in with DEFAULT_PASSWORD
+	public $usesDefaultPassword = false;
 
 	function __construct()
 	{
@@ -68,13 +80,26 @@ class Auth
 	{
 		$this->username = $username;
 
+		$failureKeys = self::failureKeys($username);
+		$lockedFor = self::lockedFor($failureKeys);
+		if ($lockedFor > 0) {
+			// Checked before the password, so guesses made while locked tell nothing
+			$this->error = 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+			$this->printAuth();
+			return;
+		}
+
 		$user = self::fetchUser($username);
 		if ($user === null || !self::verifyPassword($password, $user['password'])) {
+			// Counted for unknown usernames too, so a lockout doesn't reveal which ones exist
+			self::loginFailures()->record(array_keys($failureKeys), time(), time() - self::LOCKOUT_WINDOW);
 			// Same message for both cases, so valid usernames can't be guessed
 			$this->error = 'The username or password you supplied is incorrect.';
 			$this->printAuth();
 			return;
 		}
+
+		self::loginFailures()->clear(array_keys($failureKeys));
 
 		if (self::needsRehash($user['password'])) {
 			$user['password'] = self::upgradeHash($user['username'], $password, $user['password']);
@@ -88,8 +113,10 @@ class Auth
 		$_SESSION['authsessionStart'] = time();
 		$_SESSION['authhash'] = self::fingerprint($user['password']);
 		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+		$_SESSION['authdefaultpassword'] = ($password === self::DEFAULT_PASSWORD);
 
 		$this->userdata = $user;
+		$this->usesDefaultPassword = $_SESSION['authdefaultpassword'];
 		$this->ok = true;
 	}
 
@@ -126,7 +153,69 @@ class Auth
 
 		$this->username = $user['username'];
 		$this->userdata = $user;
+		$this->usesDefaultPassword = !empty($_SESSION['authdefaultpassword']);
 		$this->ok = true;
+	}
+
+	// hlstats_LoginFailures keys for this request and username, with their limits.
+	// Behind a reverse proxy, REMOTE_ADDR must be the client's address (Caddy's
+	// php_fastcgi does this; Apache needs mod_remoteip, nginx real_ip), or every
+	// visitor shares the proxy's IP limit.
+	static function failureKeys($username)
+	{
+		return array(
+			'ip:' . (string) ($_SERVER['REMOTE_ADDR'] ?? '') => self::MAX_FAILURES_PER_IP,
+			'user:' . mb_strtolower(mb_substr($username, 0, 64)) => self::MAX_FAILURES_PER_USER,
+		);
+	}
+
+	// Seconds until a login is allowed again, 0 when it is allowed now
+	static function lockedFor(array $failureKeys)
+	{
+		$now = time();
+		$wait = 0;
+
+		foreach ($failureKeys as $key => $limit) {
+			$row = self::loginFailures()->find($key, $now - self::LOCKOUT_WINDOW);
+			if ($row !== null && $row['failures'] >= $limit) {
+				$wait = max($wait, $row['last_failure'] + self::LOCKOUT_WINDOW - $now);
+			}
+		}
+
+		return $wait;
+	}
+
+	static function loginFailures()
+	{
+		global $container;
+
+		return $container->get(\Repository\LoginFailureRepository::class);
+	}
+
+	// Accounts still stored with the legacy hash of DEFAULT_PASSWORD (never
+	// logged in since install). Accounts already rehashed are caught at login.
+	static function usersWithDefaultPassword()
+	{
+		global $db;
+
+		$result = $db->query("
+			SELECT
+				username
+			FROM
+				hlstats_Users
+			WHERE
+				password = '" . md5(self::DEFAULT_PASSWORD) . "'
+			ORDER BY
+				username
+		");
+
+		$users = array();
+		while ($row = $db->fetch_array($result)) {
+			$users[] = $row['username'];
+		}
+		$db->free_result($result);
+
+		return $users;
 	}
 
 	static function csrfToken()
@@ -170,7 +259,8 @@ class Auth
 			$_SESSION['acclevel'],
 			$_SESSION['authsessionStart'],
 			$_SESSION['authhash'],
-			$_SESSION['csrf_token']
+			$_SESSION['csrf_token'],
+			$_SESSION['authdefaultpassword']
 		);
 	}
 

@@ -8,6 +8,7 @@
     use Utils\Logger;
     use Repository\OptionsRepository;
     use Repository\GameRepository;
+    use Repository\LoginFailureRepository;
     use Repository\PlayerRepository;
     use Repository\ServerLoadRepository;
     use Repository\SteamProfileRepository;
@@ -91,6 +92,10 @@
 
     $container->set(TrendRepository::class, function($c) {
         return new TrendRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(LoginFailureRepository::class, function($c) {
+        return new LoginFailureRepository($c->get('pdo'), $c->get('logger'));
     });
 
     $container->set(SteamProfileService::class, function($c) {

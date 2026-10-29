@@ -827,6 +827,18 @@ if ($auth->csrfRejected) {
 	message('warning', 'The form was not sent from this admin page, or has expired. Nothing was changed: please submit it again.');
 }
 
+$defaultPasswordUsers = Auth::usersWithDefaultPassword();
+if ($auth->usesDefaultPassword && !in_array($auth->username, $defaultPasswordUsers, true)) {
+	$defaultPasswordUsers[] = $auth->username;
+}
+if ($defaultPasswordUsers) {
+	$changeIt = ($auth->userdata['acclevel'] >= 100)
+		? "Change it in <a href=\"{$g_options['scripturl']}?mode=admin&amp;task=adminusers\">Admin Users</a>."
+		: 'Ask an administrator to change it.';
+	message('warning', 'Still using the default password (' . Auth::DEFAULT_PASSWORD . '): '
+		. eHtml(implode(', ', $defaultPasswordUsers)) . ". Anyone can log in to these accounts. $changeIt");
+}
+
 $selTask = isset($_GET['task']) ? valid_request($_GET['task'], false) : '';
 $selGame = valid_game_code($_GET['game'] ?? '');
 ?>
