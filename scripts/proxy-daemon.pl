@@ -374,7 +374,7 @@ while ($server->recv($datagram,1024,$flags)) {
 		
 
 
-	if ($datagram =~ /PROXY Key=(.+) (.*)PROXY (.+)/) {
+	if ($datagram =~ /^PROXY Key=(.+?) (\S*)PROXY (.+)/s) {
 		if ($proxy_key eq $1) {
 			if ($3 =~ /C;HEARTBEAT;/) {
 				$msg = '';

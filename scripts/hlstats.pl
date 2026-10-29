@@ -38,8 +38,8 @@ use strict;
 no strict 'vars';
 
 $SIG{HUP} = 'HUP_handler';
-$SIG{INT} = 'INT_handler';  # unix
-$SIG{INT2} = 'INT_handler';  # windows
+$SIG{INT} = 'INT_handler';
+$SIG{TERM} = 'INT_handler';  # docker stop, systemd, kill
 
 ##
 ## Settings
@@ -2045,9 +2045,12 @@ while ($loop = &getLine()) {
 			}    
 		}
 
-		if (($s_output =~ /^.*PROXY Key=(.+) (.*)PROXY.+/) && $proxy_key ne "") {
+		# "PROXY Key=<key> <ip:port>PROXY <line>": match lazily up to the first "PROXY ",
+		# so a log line containing "PROXY" (player name, chat) does not end up in the key
+		if (($s_output =~ /^PROXY Key=(.+?) (\S*)PROXY (.*)$/s) && $proxy_key ne "") {
 			$rproxy_key = $1;
 			$s_addr = $2;
+			my $proxied_line = $3;
 
 			if ($s_addr ne "") {
 				($s_peerhost, $s_peerport) = split(/:/, $s_addr);
@@ -2059,7 +2062,7 @@ while ($loop = &getLine()) {
 
 
 			if ($proxy_key eq $rproxy_key) {
-				$s_output =~ s/PROXY.*PROXY //;
+				$s_output = $proxied_line;
 				if ($s_output =~ /^C;HEARTBEAT;/) {
 					&printEvent("PROXY, Heartbeat request from $proxy_s_peerhost:$proxy_s_peerport");
 				} elsif ($s_output =~ /^C;RELOAD;/) {
@@ -2122,7 +2125,7 @@ while ($loop = &getLine()) {
 
 			if ($data[1] eq "KILL") {
 				&printEvent("CONTROL", "SHUTTING DOWN SCRIPT", 1);
-				&flushAll;
+				&flushAll(1);
 				die "Exit script by request";
 			} 
 			
@@ -3712,7 +3715,8 @@ if ($g_stdin) {
 
 sub INT_handler
 {
-	print "SIGINT received. Flushing data and shutting down...\n";
+	my ($signal) = @_;
+	print "SIG$signal received. Flushing data and shutting down...\n";
 	flushAll(1);
 	exit(0);
 }

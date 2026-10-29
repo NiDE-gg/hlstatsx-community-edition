@@ -33,3 +33,6 @@ jobs:
         build-args: |
           BUILD_COMMIT=${{ github.sha }}
           BUILD_DATE=${{ steps.meta.outputs.date }}
+        # Optional: when set, the image gets the current GeoLite2-City database
+        secrets: |
+          maxmind_license_key=${{ secrets.MAXMIND_LICENSE_KEY }}
