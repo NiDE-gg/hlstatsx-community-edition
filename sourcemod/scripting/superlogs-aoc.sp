@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -27,21 +28,21 @@
 #define NAME "SuperLogs: Age of Chivalry"
 #define VERSION "1.0.3"
 
-new Handle:g_cvar_headshots = INVALID_HANDLE;
-new Handle:g_cvar_locations = INVALID_HANDLE;
-new Handle:g_cvar_classchanges = INVALID_HANDLE;
-new Handle:g_cvar_actions = INVALID_HANDLE;
+Handle g_cvar_headshots = INVALID_HANDLE;
+Handle g_cvar_locations = INVALID_HANDLE;
+Handle g_cvar_classchanges = INVALID_HANDLE;
+Handle g_cvar_actions = INVALID_HANDLE;
 
-new bool:g_logheadshots = true;
-new bool:g_loglocations = true;
-new bool:g_logclasschanges = true;
-new bool:g_logactions = true;
+bool g_logheadshots = true;
+bool g_loglocations = true;
+bool g_logclasschanges = true;
+bool g_logactions = true;
 
-new bool:g_bLogClassNextSpawn[MAXPLAYERS+1];
+bool g_bLogClassNextSpawn[MAXPLAYERS+1];
 
 #include <loghelper>
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic",
 	description = "Advanced logging for Age of Chivalry. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -50,7 +51,7 @@ public Plugin:myinfo = {
 };
 
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	g_cvar_locations = CreateConVar("superlogs_locations", "1", "Enable logging of kill coordinates (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_headshots = CreateConVar("superlogs_headshots", "1", "Enable logging of headshot and decapitation actions (default on)", 0, true, 0.0, true, 1.0);
@@ -79,38 +80,38 @@ public OnPluginStart()
 	OnCvarActionsChange(g_cvar_actions, "", "");
 }
 
-hook_classchanges()
+void hook_classchanges()
 {
 	HookUserMessage(GetUserMessageId("ClassChanged"), Event_ClassChanged);
 	HookEvent("player_spawn", Event_Spawn, EventHookMode_Pre);
 	
-	for (new i = 1; i <= MAXPLAYERS; i++)
+	for (int i = 1; i <= MAXPLAYERS; i++)
 	{
 		g_bLogClassNextSpawn[i] = false;
 	}
 }
 
-unhook_classchanges()
+void unhook_classchanges()
 {
 	UnhookUserMessage(GetUserMessageId("ClassChanged"), Event_ClassChanged);
 	UnhookEvent("player_spawn", Event_Spawn, EventHookMode_Pre);
 }
 
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams();
 }
 
-public Action:Event_ClassChanged(UserMsg:msg_id, Handle:bf, const players[], playersNum, bool:reliable, bool:init)
+public Action Event_ClassChanged(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
 {
 	g_bLogClassNextSpawn[players[0]] = true;
 	return Plugin_Continue;
 }
 
-public Action:Event_Spawn(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_Spawn(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0 && g_bLogClassNextSpawn[client])
 	{
 		switch (GetEntProp(client, Prop_Send, "m_iClass"))
@@ -141,7 +142,7 @@ public Action:Event_Spawn(Handle:event, const String:name[], bool:dontBroadcast)
 }
 
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	//	"userid"	"short"   	// user ID who died				
 	//	"attacker"	"short"	 	// user ID who killed
@@ -152,8 +153,8 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	//	"weaponid"	"short"		// Weapon ID
 	//	"team"		"short"		// victim's team
 	
-	new attacker = GetEventInt(event, "attacker");
-	new victim = GetEventInt(event, "userid");
+	int attacker = GetEventInt(event, "attacker");
+	int victim = GetEventInt(event, "userid");
 	
 	if (attacker > 0 && victim > 0)
 	{
@@ -164,9 +165,9 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 		
 		if (g_logheadshots)
 		{
-			new bool:headshot = GetEventBool(event, "headshot");
-			new bool:decapped = GetEventBool(event, "decapped");
-			new bool:headexplodie = GetEventBool(event, "headexplodie");
+			bool headshot = GetEventBool(event, "headshot");
+			bool decapped = GetEventBool(event, "decapped");
+			bool headexplodie = GetEventBool(event, "headexplodie");
 			if (decapped)
 			{
 				//decapitation
@@ -188,19 +189,19 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	g_bLogClassNextSpawn[client] = false;
 }
 
-public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogTeamEvent(GetEventInt(event, "winner"), "triggered", "Round_Win");
 }
 
-public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_loglocations;
+	bool old_value = g_loglocations;
 	g_loglocations = GetConVarBool(g_cvar_locations);
 	
 	if (old_value != g_loglocations)
@@ -216,9 +217,9 @@ public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logactions;
+	bool old_value = g_logactions;
 	g_logactions = GetConVarBool(g_cvar_actions);
 	
 	if (old_value != g_logactions)
@@ -234,9 +235,9 @@ public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newV
 	}
 }
 
-public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logheadshots;
+	bool old_value = g_logheadshots;
 	g_logheadshots = GetConVarBool(g_cvar_headshots);
 	
 	if (old_value != g_logheadshots)
@@ -252,9 +253,9 @@ public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarClasschangesChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarClasschangesChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logclasschanges;
+	bool old_value = g_logclasschanges;
 	g_logclasschanges = GetConVarBool(g_cvar_classchanges);
 	
 	if (old_value != g_logclasschanges)
@@ -270,8 +271,9 @@ public OnCvarClasschangesChange(Handle:cvar, const String:oldVal[], const String
 	}
 }
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }

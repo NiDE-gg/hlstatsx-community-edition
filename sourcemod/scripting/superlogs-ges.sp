@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -34,8 +35,8 @@
 #define GES
 
 
-new g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][20];
-new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
+int g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][20];
+char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"pp7",
 									"pp7_silenced",
 									"dd44",
@@ -77,23 +78,23 @@ new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"#GE_GoldPP7"
 								};
 */								
-new Handle:g_cvar_wstats = INVALID_HANDLE;
-new Handle:g_cvar_headshots = INVALID_HANDLE;
-new Handle:g_cvar_locations = INVALID_HANDLE;
-new Handle:g_cvar_actions = INVALID_HANDLE;
-new Handle:g_cvar_classchanges = INVALID_HANDLE;
+Handle g_cvar_wstats = INVALID_HANDLE;
+Handle g_cvar_headshots = INVALID_HANDLE;
+Handle g_cvar_locations = INVALID_HANDLE;
+Handle g_cvar_actions = INVALID_HANDLE;
+Handle g_cvar_classchanges = INVALID_HANDLE;
 
-new bool:g_logwstats = true;
-new bool:g_logheadshots = true;
-new bool:g_loglocations = true;
-new bool:g_logactions = true;
-new bool:g_logclasschanges = true;
+bool g_logwstats = true;
+bool g_logheadshots = true;
+bool g_loglocations = true;
+bool g_logactions = true;
+bool g_logclasschanges = true;
 
 #include <loghelper>
 #include <wstatshelper>
 
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic",
 	description = "Advanced logging for GoldenEye: Source. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -102,7 +103,7 @@ public Plugin:myinfo = {
 };
 
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreatePopulateWeaponTrie();
 	
@@ -137,12 +138,12 @@ public OnPluginStart()
 }
 
 
-public OnMapStart()
+public void OnMapStart()
 {
 	GetTeams();
 }
 
-hook_wstats()
+void hook_wstats()
 {
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("player_shoot",  Event_PlayerShoot);
@@ -150,7 +151,7 @@ hook_wstats()
 	HookEvent("player_disconnect", Event_PlayerDisconnect, EventHookMode_Pre);
 }
 
-unhook_wstats()
+void unhook_wstats()
 {
 	UnhookEvent("player_death", Event_PlayerDeath);
 	UnhookEvent("player_shoot",  Event_PlayerShoot);
@@ -158,24 +159,24 @@ unhook_wstats()
 	UnhookEvent("player_disconnect", Event_PlayerDisconnect, EventHookMode_Pre);
 }
 
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	reset_player_stats(client);
 }
 
 
-public Event_PlayerShoot(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerShoot(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"		"local" 	// user ID on server
 	// "weapon"	"local" 	// weapon name
 	// "mode"		"local" 	// weapon mode [0 normal, 1 aimed]
 
-	new attacker = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (g_logwstats && attacker > 0)
 	{
-		decl String:weapon[MAX_WEAPON_LEN+PREFIX_LEN];
+		char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
 		GetEventString(event, "weapon", weapon, sizeof(weapon));
-		new weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
+		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_SHOTS]++;
@@ -184,7 +185,7 @@ public Event_PlayerShoot(Handle:event, const String:name[], bool:dontBroadcast)
 }
 
 
-public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"		"local" 	// user ID who was hurt
 	// "attacker"	"local" 	// user ID who attacked
@@ -194,16 +195,16 @@ public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 	// "damage"	"local" 	// how much damage in this attack
 	// "hitgroup"	"local" 	// what hitgroup was hit
 
-	new attacker  = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new hitgroup  = GetEventInt(event, "hitgroup");
-	new bool:headshot = (GetEventInt(event, "health") <= 0 && hitgroup == HITGROUP_HEAD);
+	int attacker  = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int hitgroup  = GetEventInt(event, "hitgroup");
+	bool headshot = (GetEventInt(event, "health") <= 0 && hitgroup == HITGROUP_HEAD);
 	
 	if (g_logwstats && attacker > 0)
 	{
-		decl String: weapon[MAX_WEAPON_LEN+PREFIX_LEN];
+		char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
 		GetEventString(event, "weapon", weapon, sizeof(weapon));
 
-		new weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
+		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
@@ -224,7 +225,7 @@ public Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	LogKillLoc(GetClientOfUserId(GetEventInt(event, "attacker")), GetClientOfUserId(GetEventInt(event, "userid")));
 	
@@ -232,7 +233,7 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 }
 
 
-public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"		"short"	// user ID who died
 	// "attacker"	"short"	// user ID who killed
@@ -240,13 +241,13 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	// "weaponid"	"short"	// GE Weapon ID (for easy comparison)
 	// "custom"		"byte"	// Used for achievements
 
-	new victim   = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	if (g_logwstats && (victim > 0) && (attacker > 0))
 	{
-		decl String: weapon[MAX_WEAPON_LEN+PREFIX_LEN];
+		char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
 		GetEventString(event, "weapon", weapon, sizeof(weapon));
-		new weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
+		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_KILLS]++;
@@ -260,18 +261,18 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (g_logwstats)
 	{
@@ -279,7 +280,7 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 	if (g_logactions)
 	{
-		new winner = GetEventInt(event, "winnerid");
+		int winner = GetEventInt(event, "winnerid");
 		if (winner > 0)
 		{
 			LogPlayerEvent(winner, "triggered", "Round_Win", true);
@@ -292,7 +293,7 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 				LogTeamEvent(winner, "triggered", "Round_Win_Team");
 			}
 		}
-		new awards[6];
+		int awards[6];
 		awards[0] = GetEventInt(event, "award1_id");
 		awards[1] = GetEventInt(event, "award2_id");
 		awards[2] = GetEventInt(event, "award3_id");
@@ -300,7 +301,7 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 		awards[4] = GetEventInt(event, "award5_id");
 		awards[5] = GetEventInt(event, "award6_id");
 
-		new winners[6];
+		int winners[6];
 		winners[0] = GetEventInt(event, "award1_winner");
 		winners[1] = GetEventInt(event, "award2_winner");
 		winners[2] = GetEventInt(event, "award3_winner");
@@ -308,7 +309,7 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 		winners[4] = GetEventInt(event, "award5_winner");
 		winners[5] = GetEventInt(event, "award6_winner");
 
-		for (new i = 0; i < 6; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			if (winners[i] > 0)
 			{
@@ -347,38 +348,39 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 }
 
 
-public Event_RoleChange(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoleChange(Handle event, const char[] name, bool dontBroadcast)
 {
 	// "playerid"	"short"
 	// "ident"		"string"
 	
-	new client = GetEventInt(event, "playerid");
+	int client = GetEventInt(event, "playerid");
 
 	if (client > 0)
 	{
-		decl String:ident[32];
+		char ident[32];
 		GetEventString(event, "ident", ident, sizeof(ident));
 		LogRoleChange(client, ident);
 	}	
 }
 
-public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
 
-public Action:LogMap(Handle:timer)
+public Action LogMap(Handle timer)
 {
 	// Called 1 second after OnPluginStart since srcds does not log the first map loaded. Idea from Stormtrooper's "mapfix.sp" for psychostats
 	LogMapLoad();
+	return Plugin_Stop;
 }
 
 
-public OnCvarWstatsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarWstatsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logwstats;
+	bool old_value = g_logwstats;
 	g_logwstats = GetConVarBool(g_cvar_wstats);
 	
 	if (old_value != g_logwstats)
@@ -412,9 +414,9 @@ public OnCvarWstatsChange(Handle:cvar, const String:oldVal[], const String:newVa
 
 
 
-public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logheadshots;
+	bool old_value = g_logheadshots;
 	g_logheadshots = GetConVarBool(g_cvar_headshots);
 	
 	if (old_value != g_logheadshots)
@@ -430,9 +432,9 @@ public OnCvarHeadshotsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_loglocations;
+	bool old_value = g_loglocations;
 	g_loglocations = GetConVarBool(g_cvar_locations);
 	
 	if (old_value != g_loglocations)
@@ -448,9 +450,9 @@ public OnCvarLocationsChange(Handle:cvar, const String:oldVal[], const String:ne
 	}
 }
 
-public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logactions;
+	bool old_value = g_logactions;
 	g_logactions = GetConVarBool(g_cvar_actions);
 	
 	if (old_value != g_logactions)
@@ -467,9 +469,9 @@ public OnCvarActionsChange(Handle:cvar, const String:oldVal[], const String:newV
 	}
 }
 
-public OnCvarClasschangesChange(Handle:cvar, const String:oldVal[], const String:newVal[])
+public void OnCvarClasschangesChange(Handle cvar, const char[] oldVal, const char[] newVal)
 {
-	new bool:old_value = g_logclasschanges;
+	bool old_value = g_logclasschanges;
 	g_logclasschanges = GetConVarBool(g_cvar_classchanges);
 	
 	if (old_value != g_logclasschanges)

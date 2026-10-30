@@ -20,6 +20,7 @@
  */
 
 #pragma semicolon 1
+#pragma newdecls required
  
 #include <sourcemod>
 #include <sdktools>
@@ -42,8 +43,8 @@
 #define DDD_TEAM_ALLIES	2
 #define DDD_TEAM_AXIS	3
 
-new g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
-new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = { 
+int g_weapon_stats[MAXPLAYERS+1][MAX_LOG_WEAPONS][15];
+char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = { 
 									"",
 									"mp40",
 									"thompson",
@@ -93,23 +94,23 @@ new const String:g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"greasegun"
 								};
 
-new g_iNextHitgroup[MAXPLAYERS+1];
-new bool:g_DiloGoatBite[MAXPLAYERS+1];
+int g_iNextHitgroup[MAXPLAYERS+1];
+bool g_DiloGoatBite[MAXPLAYERS+1];
 
-new g_LastClass[MAXPLAYERS+1] = { -1, ... };
-new g_LastTeam[MAXPLAYERS+1] = { -1, ... };
+int g_LastClass[MAXPLAYERS+1] = { -1, ... };
+int g_LastTeam[MAXPLAYERS+1] = { -1, ... };
 
-new bool:g_bLate;
-new bool:g_bIgnoreLog;
+bool g_bLate;
+bool g_bIgnoreLog;
 
-PauseLogging() { g_bIgnoreLog = true; }
-ResumeLogging() { g_bIgnoreLog = false; }
+void PauseLogging() { g_bIgnoreLog = true; }
+void ResumeLogging() { g_bIgnoreLog = false; }
 
 #include <loghelper>
 #include <wstatshelper>
 
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = NAME,
 	author = "psychonic and FeuerSturm",
 	description = "Advanced logging for Dino D-Day. Generates auxilary logging for use with log parsers such as HLstatsX and Psychostats",
@@ -117,9 +118,9 @@ public Plugin:myinfo = {
 	url = "http://www.hlxce.com"
 };
 
-public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max )
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	decl String:szGameDir[64];
+	char szGameDir[64];
 	GetGameFolderName( szGameDir, sizeof(szGameDir) );
 	if ( !!strcmp( szGameDir, "dinodday" ) )
 	{
@@ -132,10 +133,10 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreatePopulateWeaponTrie();
-	new Handle:hVersion = CreateConVar( "superlogs_dinodday_version", VERSION, NAME, FCVAR_NOTIFY|FCVAR_DONTRECORD );
+	Handle hVersion = CreateConVar( "superlogs_dinodday_version", VERSION, NAME, FCVAR_NOTIFY|FCVAR_DONTRECORD );
 	SetConVarString(hVersion, VERSION, false, true);
 	
 	HookEvent( "player_death",       Event_PlayerDeathPre,       EventHookMode_Pre        );
@@ -150,9 +151,9 @@ public OnPluginStart()
 	AddTempEntHook( "Shotgun Shot", OnFireBullets );
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
-	for ( new i = 1; i <= MaxClients; i++ )
+	for ( int i = 1; i <= MaxClients; i++ )
 	{
 		if ( IsClientInGame( i ) )
 		{
@@ -161,9 +162,9 @@ public OnAllPluginsLoaded()
 	}
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
-	static bool:bLoggedMap = false;
+	static bool bLoggedMap = false;
 	if( g_bLate && !bLoggedMap )
 	{
 		LogMapLoad();
@@ -174,7 +175,7 @@ public OnMapStart()
 	GetTeams();
 }
 
-public OnClientPutInServer( client )
+public void OnClientPutInServer(int client)
 {
 	SDKHook( client, SDKHook_TraceAttackPost, OnTraceAttack );
 	SDKHook( client, SDKHook_OnTakeDamagePost, OnTakeDamage );
@@ -185,10 +186,10 @@ public OnClientPutInServer( client )
 	g_DiloGoatBite[client] = false;
 }
 
-public Action:OnFireBullets( const String:szName[], const clients[], clientCount, Float:flDelay )
+public Action OnFireBullets(const char[] szName, const int[] clients, int clientCount, float flDelay)
 {
-	new client = TE_ReadNum( "m_iPlayer" ) + 1;
-	new weapon_index = TE_ReadNum( "m_iWeaponID" );
+	int client = TE_ReadNum( "m_iPlayer" ) + 1;
+	int weapon_index = TE_ReadNum( "m_iWeaponID" );
 	
 	if( client < 1 || client > MaxClients || !IsClientInGame( client ) )
 		return Plugin_Continue;
@@ -205,7 +206,7 @@ public Action:OnFireBullets( const String:szName[], const clients[], clientCount
 	return Plugin_Continue;
 }
 
-public OnTraceAttack( victim, attacker, inflictor, Float:damage, damagetype, ammotype, hitbox, hitgroup )
+public void OnTraceAttack(int victim, int attacker, int inflictor, float damage, int damagetype, int ammotype, int hitbox, int hitgroup)
 {
 	if ( hitgroup > 0 && attacker > 0 && attacker <= MaxClients && victim > 0 && victim <= MaxClients )
 	{
@@ -213,17 +214,17 @@ public OnTraceAttack( victim, attacker, inflictor, Float:damage, damagetype, amm
 	}
 }
 
-public OnTakeDamage( victim, attacker, inflictor, Float:damage, damagetype )
+public void OnTakeDamage(int victim, int attacker, int inflictor, float damage, int damagetype)
 {	
 	if ( attacker > 0 && attacker <= MaxClients && victim > 0 && victim <= MaxClients )
 	{
-		decl String: weapon[MAX_WEAPON_LEN + PREFIX_LEN];
+		char weapon[MAX_WEAPON_LEN + PREFIX_LEN];
 		GetClientWeapon( attacker, weapon, sizeof(weapon) );
 		
-		new weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
-		new hitgroup = g_iNextHitgroup[victim];
+		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
+		int hitgroup = g_iNextHitgroup[victim];
 		
-		new bool:headshot = ( !IsPlayerAlive( victim ) && hitgroup == HITGROUP_HEAD );
+		bool headshot = ( !IsPlayerAlive( victim ) && hitgroup == HITGROUP_HEAD );
 		if ( weapon_index > -1 )
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
@@ -244,7 +245,7 @@ public OnTakeDamage( victim, attacker, inflictor, Float:damage, damagetype )
 	}
 }
 
-public OnEntityCreated(entity, const String:classname[])
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if(entity > MaxClients && IsValidEdict(entity) && StrEqual(classname, "npc_goat", true))
 	{
@@ -252,11 +253,11 @@ public OnEntityCreated(entity, const String:classname[])
 	}
 }
 
-public OnGoatThinkPost(npc_goat)
+public void OnGoatThinkPost(int npc_goat)
 {
 	if(npc_goat > MaxClients && IsValidEdict(npc_goat))
 	{
-		new client = GetEntPropEnt(npc_goat, Prop_Send, "moveparent");
+		int client = GetEntPropEnt(npc_goat, Prop_Send, "moveparent");
 		if(client >= 1 && client <= MaxClients && IsClientInGame(client) && IsPlayerAlive(client) && GetClientTeam(client) == DDD_TEAM_AXIS && GetEntProp(client, Prop_Send, "m_iPlayerClass") == PLAYERCLASS_DILOPHOSAURUS)
 		{
 			if(GetEntProp(client, Prop_Send, "m_nSequence") == GOAT_BITE)
@@ -267,7 +268,7 @@ public OnGoatThinkPost(npc_goat)
 	}	
 }
 
-public Action:OnGameLog( const String:szMessage[] )
+public Action OnGameLog(const char[] szMessage)
 {
 	if( g_bIgnoreLog )
 		return Plugin_Handled;
@@ -275,12 +276,12 @@ public Action:OnGameLog( const String:szMessage[] )
 	return Plugin_Continue;
 }
 
-public Action:Event_PointCaptured( Handle:event, const String:name[], bool:dontBroadcast )
+public Action Event_PointCaptured(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client;
-	decl String:cappers[256];
+	int client;
+	char cappers[256];
 	GetEventString(event, "cappers", cappers, sizeof(cappers));
-	for (new i = 0 ; i < strlen(cappers); i++)
+	for (int i = 0 ; i < strlen(cappers); i++)
 	{
 		client = cappers[i];
 		if(client > 0 && client <= MaxClients && IsClientInGame(client))
@@ -292,27 +293,27 @@ public Action:Event_PointCaptured( Handle:event, const String:name[], bool:dontB
 	return Plugin_Continue;
 }
 
-public Action:Event_PlayerChangeClassPre( Handle:event, const String:name[], bool:dontBroadcast )
+public Action Event_PlayerChangeClassPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	PauseLogging();
 	
 	return Plugin_Continue;
 }
 
-public Event_PlayerChangeClass( Handle:event, const String:name[], bool:dontBroadcast )
+public void Event_PlayerChangeClass(Handle event, const char[] name, bool dontBroadcast)
 {
 	ResumeLogging();
 }
 
-public Action:Event_PlayerDeathPre( Handle:event, const String:name[], bool:dontBroadcast )
+public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
 {
 	PauseLogging();
 	
-	new customkill = GetEventInt(event, "customkill");
+	int customkill = GetEventInt(event, "customkill");
 	if( customkill == CUSTOMKILL_GOAT )
 	{
-		new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
-		new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+		int attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
+		int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 		if(attacker == victim && g_DiloGoatBite[attacker])
 		{
 			SetEventBroadcast(event, true);
@@ -323,21 +324,21 @@ public Action:Event_PlayerDeathPre( Handle:event, const String:name[], bool:dont
 	return Plugin_Continue;
 }
 
-public Event_PlayerDeath( Handle:event, const String:name[], bool:dontBroadcast )
+public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	ResumeLogging();
 	
-	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	
 	if ( victim > 0 )
 	{
-		new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
+		int attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 
-		decl String:weapon[32];
+		char weapon[32];
 		GetEventString( event, "weapon", weapon, sizeof(weapon) );
 		if( attacker > 0 && attacker != victim )
 		{
-			new weapon_index = get_weapon_index( weapon );
+			int weapon_index = get_weapon_index( weapon );
 			if ( weapon_index > -1 )
 			{
 				g_weapon_stats[attacker][weapon_index][LOG_HIT_KILLS]++;		
@@ -350,8 +351,8 @@ public Event_PlayerDeath( Handle:event, const String:name[], bool:dontBroadcast 
 			
 			LogKill( attacker, victim, weapon, true );
 			
-			new dominated = GetEventInt(event, "dominated");
-			new revenge = GetEventInt(event, "revenge");
+			int dominated = GetEventInt(event, "dominated");
+			int revenge = GetEventInt(event, "revenge");
 			if(dominated == 1)
 			{
 				LogPlyrPlyrEvent(attacker, victim, "triggered", "dominated");
@@ -361,10 +362,10 @@ public Event_PlayerDeath( Handle:event, const String:name[], bool:dontBroadcast 
 				LogPlyrPlyrEvent(attacker, victim, "triggered", "revenge");
 			}
 
-			new assisteruid = GetEventInt(event, "assister");
+			int assisteruid = GetEventInt(event, "assister");
 			if(assisteruid != -1)
 			{
-				new assister = GetClientOfUserId(assisteruid);
+				int assister = GetClientOfUserId(assisteruid);
 				if(assister > 0 && attacker != assister)
 				{
 					LogPlayerEvent(assister, "triggered", "assister");
@@ -382,7 +383,7 @@ public Event_PlayerDeath( Handle:event, const String:name[], bool:dontBroadcast 
 		}
 		else
 		{
-			new customkill = GetEventInt(event, "customkill");
+			int customkill = GetEventInt(event, "customkill");
 			if( customkill == CUSTOMKILL_GOAT )
 			{
 				if(g_DiloGoatBite[attacker])
@@ -401,22 +402,22 @@ public Event_PlayerDeath( Handle:event, const String:name[], bool:dontBroadcast 
 	}
 }
 
-public Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast )
+public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	if( client == 0 || !IsClientInGame(client) )
 		return;
 	
 	reset_player_stats( client );
 	
-	new currentTeam = GetClientTeam( client );
+	int currentTeam = GetClientTeam( client );
 	if( currentTeam != DDD_TEAM_ALLIES && currentTeam != DDD_TEAM_AXIS )
 		return;
 	
-	new currentClass = GetEntProp( client, Prop_Send, "m_iPlayerClass" );
+	int currentClass = GetEntProp( client, Prop_Send, "m_iPlayerClass" );
 	if( g_LastClass[client] != currentClass || g_LastTeam[client] != currentTeam )
 	{
-		decl String:szRoleString[32];
+		char szRoleString[32];
 		if( currentTeam == DDD_TEAM_ALLIES )
 			Format( szRoleString, sizeof(szRoleString), "#class_blue_class%d", currentClass+1 );
 		else // == DDD_TEAM_AXIS
@@ -429,19 +430,19 @@ public Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast 
 	g_DiloGoatBite[client] = false;
 }
 
-public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast )
+public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
-	new winner = GetEventInt( event, "team_that_won" );
+	int winner = GetEventInt( event, "team_that_won" );
 	if( winner == DDD_TEAM_ALLIES || winner == DDD_TEAM_AXIS )
 	{
-		decl String:round_win[32];
+		char round_win[32];
 		Format(round_win, sizeof(round_win), "%s", winner == DDD_TEAM_ALLIES ? "roundwin_allies" : "roundwin_axis");
 		LogTeamEvent(winner, "triggered", round_win);
 		WstatsDumpAll();
 	}
 }
 
-public OnClientDisconnect( client )
+public void OnClientDisconnect(int client)
 {
 	OnPlayerDisconnect( client );
 }
