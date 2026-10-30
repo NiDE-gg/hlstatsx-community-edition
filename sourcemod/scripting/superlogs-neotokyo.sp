@@ -25,7 +25,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: NeoTokyo"
-#define VERSION "1.0.2"
+#define VERSION "1.0.3"
 
 new Handle:g_cvar_headshots = INVALID_HANDLE;
 new Handle:g_cvar_locations = INVALID_HANDLE;
@@ -56,8 +56,19 @@ public OnPluginStart()
 	CreateConVar("superlogs_nts_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
 	HookEvent("player_death", Event_PlayerDeathPre, EventHookMode_Pre);
-	
+
 	CreateTimer(1.0, LogMap);
+
+	GetTeams();
+
+	// apply the cvar values they kept if the plugin was reloaded
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarLocationsChange(g_cvar_locations, "", "");
+}
+
+public OnMapStart()
+{
+	GetTeams();
 }
 
 

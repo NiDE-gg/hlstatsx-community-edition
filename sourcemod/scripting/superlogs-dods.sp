@@ -25,7 +25,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: DOD:S"
-#define VERSION "1.1.3"
+#define VERSION "1.1.4"
 
 #define MAX_LOG_WEAPONS    27
 #define IGNORE_SHOTS_START	20
@@ -137,8 +137,15 @@ public OnPluginStart()
 	HookEvent("player_death", Event_PlayerDeath);
 		
 	CreateTimer(1.0, LogMap);
-	
+
 	GetTeams();
+
+	// Everything above is hooked as if all options were on: apply the real cvar values
+	// (they keep theirs when the plugin is reloaded, and superlogs_ktraj defaults to 0)
+	OnCvarWstatsChange(g_cvar_wstats, "", "");
+	OnCvarHeadshotsChange(g_cvar_headshots, "", "");
+	OnCvarLocationsChange(g_cvar_locations, "", "");
+	OnCvarKtrajChange(g_cvar_ktraj, "", "");
 }
 
 

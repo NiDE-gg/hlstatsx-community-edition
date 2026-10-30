@@ -28,7 +28,7 @@
 
 #define PLUGIN_NAME "SuperLogs: CS:GO"
 #define PLUGIN_AUTHOR "psychonic, NomisCZ (-N-)"
-#define PLUGIN_VERSION "1.7.2"
+#define PLUGIN_VERSION "1.7.3"
 
 #define CSGO_ITEMS_GAME "scripts/items/items_game.txt"
 #define MAX_LOG_WEAPONS 63
@@ -124,6 +124,14 @@ public void OnPluginStart()
 	GetTeams();
 
 	if (g_bLate) for (int i = 1; i <= MaxClients; i++) if (IsClientInGame(i)) OnClientPostAdminCheck(i);
+
+	// Everything above is hooked for the default values. The cvars keep theirs when the
+	// plugin is reloaded: apply them.
+	OnConVarChanged(g_cvar_wstats, "", "");
+	OnConVarChanged(g_cvar_headshots, "", "");
+	OnConVarChanged(g_cvar_actions, "", "");
+	OnConVarChanged(g_cvar_locations, "", "");
+	OnConVarChanged(g_cvar_ktraj, "", "");
 }
 
 public void OnMapStart()
@@ -353,12 +361,13 @@ public Action LogMap(Handle timer)
 
 public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (StrEqual(oldValue, newValue)) {
-		return; 
-	}
-
+	// Act only when an option flips: comparing the strings missed "1" -> "1.0", which
+	// hooked the events a second time.
 	if (convar == g_cvar_wstats) {
 
+		if (g_logwstats == g_cvar_wstats.BoolValue) {
+			return;
+		}
 		g_logwstats = g_cvar_wstats.BoolValue;
 
 		if (g_logwstats) {
@@ -380,6 +389,9 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 
 	} else if (convar == g_cvar_headshots) {
 
+		if (g_logheadshots == g_cvar_headshots.BoolValue) {
+			return;
+		}
 		g_logheadshots = g_cvar_headshots.BoolValue;
 
 		if (g_logheadshots && !g_loglocations) {
@@ -390,6 +402,9 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 
 	} else if (convar == g_cvar_actions) {
 
+		if (g_logactions == g_cvar_actions.BoolValue) {
+			return;
+		}
 		g_logactions = g_cvar_actions.BoolValue;
 		
 		if (g_logactions) {
@@ -411,6 +426,9 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 
 	} else if (convar == g_cvar_locations) {
 
+		if (g_loglocations == g_cvar_locations.BoolValue) {
+			return;
+		}
 		g_loglocations = g_cvar_locations.BoolValue;
 
 		if (g_loglocations && !g_logheadshots) {
@@ -421,6 +439,9 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 
 	} else if (convar == g_cvar_ktraj) {
 
+		if (g_logktraj == g_cvar_ktraj.BoolValue) {
+			return;
+		}
 		g_logktraj = g_cvar_ktraj.BoolValue;
 
 		if (g_logktraj && !g_logwstats && !g_logactions) {

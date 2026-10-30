@@ -26,7 +26,7 @@
 #include <sdkhooks>
 
 #define NAME "SuperLogs: Nuclear Dawn"
-#define VERSION "1.0"
+#define VERSION "1.0.1"
 
 
 #define MAX_LOG_WEAPONS 28
@@ -351,7 +351,6 @@ public Event_StructureDeath(Handle:event, const String:name[], bool:dontBroadcas
 	{
 		decl String:sBuffer[32];
 		GetEdictClassname(iEnt, sBuffer, sizeof(sBuffer));
-		PrintToChatAll("%N destroyed %s", iAttacker, sBuffer);
 		
 		if(StrEqual(sBuffer, "struct_armoury"))
 		{
