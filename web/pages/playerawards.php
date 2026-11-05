@@ -60,11 +60,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$playerdata = $db->fetch_array();
 	$pl_name = $playerdata['lastName'];
 
-	if (strlen($pl_name) > 10) {
-		$pl_shortname = substr($pl_name, 0, 8) . "...";
-	} else {
-		$pl_shortname = $pl_name;
-	}
+	$pl_shortname = shortName($pl_name);
 
 	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT);
 	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT);

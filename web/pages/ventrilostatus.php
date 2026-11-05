@@ -345,10 +345,15 @@ class CVentriloStatus
 	{
 		$ventserv = new Vent;
 		$ventserv->setTimeout( 100000 );		// 100 ms timeout
-		if ( $ventserv->makeRequest( $this->m_cmdcode, $this->m_cmdhost, $this->m_cmdport )) {
-			$res = explode("[\n\r\t]+", $ventserv->getResponse());
+		if ( !$ventserv->makeRequest( $this->m_cmdcode, $this->m_cmdhost, $this->m_cmdport )) {
+			$this->m_error = 'No response from the server';
+			return 1;
 		}
-		
+
+		// explode() took "[\n\r\t]+" as a literal separator, so the whole reply was parsed
+		// as one line and only its first key was ever read.
+		$res = preg_split("/[\n\r\t]+/", (string)$ventserv->getResponse(), -1, PREG_SPLIT_NO_EMPTY);
+
 		foreach($res as $line)
 		{
 			$this->Parse($line);

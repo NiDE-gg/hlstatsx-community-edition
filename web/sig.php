@@ -54,7 +54,9 @@ foreach ($_SERVER as $key => $entry) {
 				(strrchr($entry, '/') !== '/config.php') &&
 				(strrchr($entry, '/') !== '/') &&
 				($entry !== '')) {
-				header('Location: http://'.$_SERVER['HTTP_HOST'].'/hlstats.php');    
+				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
+				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+				header('Location: ' . $scheme . $_SERVER['HTTP_HOST'] . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			}    
 		}
@@ -236,12 +238,10 @@ if ($player_id > 0) {
 	$pl_name = $playerdata['lastName'];
     
 	if(function_exists('imagettftext')) {
-		if (strlen($pl_name) > 30) {
-			$pl_name = substr($pl_name, 0, 27) . '...';
-		}
+		$pl_name = shortName($pl_name, 30, 27);
 	} else {
-		if (strlen($pl_name) > 30) {
-			$pl_shortname =	substr($pl_name, 0, 27) . '...';
+		if (mb_strlen($pl_name, 'UTF-8') > 30) {
+			$pl_shortname =	shortName($pl_name, 30, 27);
 		} else {
 			$pl_shortname	= $pl_name;
 			$pl_name		= htmlspecialchars($pl_name, ENT_COMPAT);

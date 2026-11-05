@@ -650,30 +650,76 @@ sub updatePlayerProfile
 		return 0;
 	}
 
-	$value = &quoteSQL($value);
-	if ($value eq "none" || $value eq " ") {
-		$value = "";
-	}
-	
 	my $playerName = &abbreviate($player->{name});
 	my $playerId   = $player->{playerid};
+
+	my $tellPlayer = sub {
+		my ($message) = @_;
+		return unless ($g_servers{$s_addr}->{player_events} == 1);
+		my $p_userid  = $g_servers{$s_addr}->format_userid($player->{userid});
+		$cmd_str = $rcmd." $p_userid ".$g_servers{$s_addr}->quoteparam($message);
+		$g_servers{$s_addr}->dorcon($cmd_str);
+	};
+
+	$value = "" if ($value eq "none" || $value eq " ");
+
+	# The values are shown on the player's page and must fit their column: a value the
+	# column rejects (strict SQL mode) used to fail silently after "SET command successful".
+	my $error = &checkPlayerProfileValue($field, \$value);
+	if ($error ne "") {
+		&$tellPlayer("SET failed for '$playerName': $error.");
+		return 0;
+	}
+
+	my $sqlValue = ($value eq "" && ($field eq "icq" || $field eq "mmrank")) ? "NULL" : "'" . &quoteSQL($value) . "'";
 
 	&execNonQuery("
 		UPDATE
 			hlstats_Players
 		SET
-			$field='$value'
+			$field=$sqlValue
 		WHERE
 			playerId=$playerId
 	");
-	
-	if ($g_servers{$s_addr}->{player_events} == 1) {
-		my $p_userid  = $g_servers{$s_addr}->format_userid($player->{userid});
-		my $p_is_bot  = $player->{is_bot};
-		$cmd_str = $rcmd." $p_userid ".$g_servers{$s_addr}->quoteparam("SET command successful for '$playerName'.");
-		$g_servers{$s_addr}->dorcon($cmd_str);
-	}
+
+	&$tellPlayer("SET command successful for '$playerName'.");
 	return 1;
+}
+
+#
+# string checkPlayerProfileValue (string field, scalar ref value)
+#
+# Checks (and normalizes) a value set with hlx_set. Returns "" when the value can be
+# stored, or the reason it was refused.
+#
+
+sub checkPlayerProfileValue
+{
+	my ($field, $valueRef) = @_;
+	my %maxLength = (fullName => 128, email => 64, homepage => 64);
+
+	return "" if ($$valueRef eq "");
+
+	if ($field eq "homepage") {
+		$$valueRef = "http://" . $$valueRef if ($$valueRef !~ m{^[a-z][a-z0-9+.\-]*://}i);
+		return "the homepage must be an http:// or https:// address" unless ($$valueRef =~ m{^https?://[^\s"'<>/:\@?#]+(?::\d{1,5})?(?:[/?#][^\s"'<>]*)?$}i);
+	} elsif ($field eq "email") {
+		return "that is not an e-mail address" unless ($$valueRef =~ /^[^\s\@"'<>]+\@[^\s\@"'<>]+\.[^\s\@"'<>]+$/);
+	} elsif ($field eq "icq") {
+		return "the ICQ number must be a number" unless ($$valueRef =~ /^\d{1,10}$/ && $$valueRef <= 4294967295);
+	} elsif ($field eq "mmrank") {
+		return "the rank must be a number from 0 to 18" unless ($$valueRef =~ /^\d{1,2}$/ && $$valueRef <= 18);
+	}
+
+	if ($maxLength{$field}) {
+		# Columns count characters; the value arrives as UTF-8 bytes (and the file has "use bytes").
+		no bytes;
+		my $chars = $$valueRef;
+		utf8::decode($chars);
+		return "it is longer than $maxLength{$field} characters" if (length($chars) > $maxLength{$field});
+	}
+
+	return "";
 }
 
 #

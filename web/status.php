@@ -54,7 +54,9 @@ foreach ($_SERVER as $key => $entry) {
 				(strrchr($entry, '/') !== '/config.php') &&
 				(strrchr($entry, '/') !== '/') &&
 				($entry !== '')) {
-				header('Location: http://'.$_SERVER['HTTP_HOST'].'/hlstats.php');    
+				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
+				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+				header('Location: ' . $scheme . $_SERVER['HTTP_HOST'] . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			} 
 		}

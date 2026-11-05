@@ -2,8 +2,11 @@
 	// VOICECOMM MODULE
 	global $db;
 	
-	define('TS', 0);
-	define('VENT', 1);
+	// game.php and contents.php both include this file
+	if (!defined('TS')) {
+		define('TS', 0);
+		define('VENT', 1);
+	}
 	
 	$result = $db->query("
 		SELECT
@@ -79,19 +82,19 @@
 				&nbsp;<a href="<?php echo $g_options['scripturl'] . "?mode=teamspeak&amp;game=$game&amp;tsId=".$ts_server['serverId']; ?>"><?php echo eHtml(trim($ts_server['name'])); ?></a>
 			</td>
 			<td>
-				<a href="teamspeak://<?php echo $ts_server['addr'].':'.$ts_server['UDPPort'] ?>/?channel=?password=<?php echo $ts_server['password']; ?>"><?php echo $ts_server['addr'].':'.$ts_server['UDPPort']; ?></a>
+				<a href="<?php echo eHtml('teamspeak://' . $ts_server['addr'] . ':' . $ts_server['UDPPort'] . '/?channel=?password=' . rawurlencode((string)$ts_server['password'])); ?>"><?php echo eHtml($ts_server['addr'] . ':' . $ts_server['UDPPort']); ?></a>
 			</td>
 			<td>
-				<?php echo $ts_server['password']; ?>
+				<?php echo eHtml($ts_server['password']); ?>
 			</td>
 			<td style="text-align:right;">
-				<?php echo $ts_channels; ?>
+				<?php echo eHtml($ts_channels); ?>
 			</td>
 			<td style="text-align:right;">
-				<?php echo $ts_slots; ?>
+				<?php echo eHtml($ts_slots); ?>
 			</td>
 			<td>
-				<?php echo $ts_server['descr']; ?>
+				<?php echo eHtml($ts_server['descr']); ?>
 			</td>
 		</tr>
 <?php
@@ -108,12 +111,14 @@
 				$ve_info->m_cmdport = $vent_server['queryPort'];
 				/////////
 				$rc = $ve_info->Request();
-			//	if ($rc) {
-			//		echo "CVentriloStatus->Request() failed. <strong>$ve_info->m_error</strong><br /><br />\n";
-			//	} else {
+				if ($rc) {
+					// Same display as an unreachable TeamSpeak server
+					$ve_channels = 'err';
+					$ve_slots = $rc;
+				} else {
 					$ve_channels = $ve_info->m_channelcount;
 					$ve_slots = $ve_info->m_clientcount.'/'.$ve_info->m_maxclients;
-			//	}
+				}
 		?>  
 			<tr class="bg1">
 				<td class="fHeading">
@@ -121,20 +126,20 @@
 					&nbsp;<a href="<?php echo $g_options['scripturl'] . "?mode=ventrilo&amp;game=$game&amp;veId=".$vent_server['serverId']; ?>"><?php echo eHtml($vent_server['name']); ?></a>
 				</td>
 				<td>
-					<a href="ventrilo://<?php echo $vent_server['addr'].':'.$vent_server['queryPort'] ?>/servername=<?php echo $ve_info->m_name; ?>">
-					<?php echo $vent_server['addr'].':'.$vent_server['queryPort']; ?>
+					<a href="<?php echo eHtml('ventrilo://' . $vent_server['addr'] . ':' . $vent_server['queryPort'] . '/servername=' . rawurlencode((string)$ve_info->m_name)); ?>">
+					<?php echo eHtml($vent_server['addr'] . ':' . $vent_server['queryPort']); ?>
 					</a></td>
 				<td>
-					<?php echo $vent_server['password']; ?>
+					<?php echo eHtml($vent_server['password']); ?>
 				</td>
 				<td style="text-align:right;">
-					<?php echo $ve_channels; ?>
+					<?php echo eHtml($ve_channels); ?>
 				</td>
 				<td style="text-align:right;">
-					<?php echo $ve_slots; ?>
+					<?php echo eHtml($ve_slots); ?>
 				</td>
 				<td>
-					<?php echo $vent_server['descr']; ?>
+					<?php echo eHtml($vent_server['descr']); ?>
 				</td>
 			</tr>
 <?php

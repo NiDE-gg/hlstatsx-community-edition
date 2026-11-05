@@ -198,12 +198,12 @@ For support and installation notes visit http://www.hlxcommunity.com
                                         <td>MM Rank:</td>
                                         <td>
                                                 <?php
-                                                        if ($playerdata['mmrank'])
-                                                        {
-                                                                echo '<img src=hlstatsimg/mmranks/' . $playerdata['mmrank'] . '.png alt="rank" style=\"height:20px;width:50px; />';
-                                                        }
-                                                        else
-								echo '<img src=hlstatsimg/mmranks/0.png alt="rank" style=\"height:20px;width:50px; />';
+							// Players pick any number with hlx_set rank; only 0-18 have an image.
+							$mmrank = (int)$playerdata['mmrank'];
+							if ($mmrank < 0 || $mmrank > 18) {
+								$mmrank = 0;
+							}
+							echo '<img src="' . IMAGE_PATH . '/mmranks/' . $mmrank . '.png" alt="rank" style="height:20px;width:50px;" />';
                                                 ?>
                                         </td>
                                 </tr>
@@ -287,7 +287,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 									1
 							");
 							list($favServerId, $favServerName) = $db->fetch_row();
-							echo "<a href='hlstats.php?game=$game&amp;mode=servers&amp;server_id=$favServerId'> $favServerName </a>";
+							if ($favServerId) {
+								echo "<a href='hlstats.php?game=$game&amp;mode=servers&amp;server_id=" . (int)$favServerId . "'> " . eHtml($favServerName) . " </a>";
+							} else {
+								echo '(Unknown)';
+							}
 						?>
 					</td>
 				</tr>
@@ -312,7 +316,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 									1
 							");
 							list($favMap) = $db->fetch_row();
-							echo "<a href=\"hlstats.php?game=$game&amp;mode=mapinfo&amp;map=$favMap\"> $favMap </a>";
+							if ($favMap !== null && $favMap !== '') {
+								echo "<a href=\"hlstats.php?game=$game&amp;mode=mapinfo&amp;map=" . urlencode($favMap) . "\"> " . eHtml($favMap) . " </a>";
+							} else {
+								echo '(Unknown)';
+							}
 						?>
 					</td>
 				</tr>
@@ -331,6 +339,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 									hlstats_Weapons
 								ON
 									hlstats_Weapons.code = hlstats_Events_Frags.weapon
+									AND hlstats_Weapons.game = '$game'
 								WHERE
 									hlstats_Events_Frags.killerId=$player
 								GROUP BY

@@ -65,30 +65,28 @@ For support and installation notes visit http://www.hlxcommunity.com
 	global $game,$mode;
 
 	// see if they have a defined style or a new style they'd like
-	$selectedStyle = (isset($_COOKIE['style']) && $_COOKIE['style']) ? $_COOKIE['style'] : "";
-	$selectedStyle = isset($_POST['stylesheet']) ? $_POST['stylesheet'] : $selectedStyle; 
+	$selectedStyle = $_POST['stylesheet'] ?? ($_COOKIE['style'] ?? '');
 
-	// if they do make sure it exists
-	if(!empty($selectedStyle))
+	// The cookie and the POST value are visitor input: only accept the name of a .css
+	// file in styles/ (file_exists() alone also let directories and ../ paths through).
+	// this assumes that styles is up a directory from page_path, this might be a bad assumption
+	if (!is_string($selectedStyle)
+		|| !preg_match('/^[A-Za-z0-9_. -]+\.css$/', $selectedStyle)
+		|| !is_file(PAGE_PATH . '/../styles/' . $selectedStyle))
 	{
-		// this assumes that styles is up a directory from page_path, this might be a bad assumption
-		$testfile=sprintf("%s/%s/%s", PAGE_PATH, '../styles', $selectedStyle);
-		if(!file_exists($testfile))
-		{
-			$selectedStyle = "";
-		}
+		$selectedStyle = '';
 	}
-	
-	// if they don't have one defined or the defined was is invalid use the default	
+
+	// if they don't have one defined or the defined was is invalid use the default
 	if(empty($selectedStyle))
 	{
 		$selectedStyle=$g_options['style'];
-	}	
+	}
 
 	// if they had one, or tried to have one, set it to whatever we resolved it to
 	if (isset($_POST['stylesheet']) || isset($_COOKIE['style']))
 	{
-		setcookie('style', $selectedStyle, time()+60*60*24*30);
+		setcookie('style', $selectedStyle, array('expires' => time() + 60*60*24*30, 'samesite' => 'Lax'));
 	}
 
 // this code here assumes that styles end with .css (the selector box for users and for admin does NOT check), someone may want to change this -octo
@@ -105,7 +103,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 ?>
 <!DOCTYPE html>
+<html lang="en">
 <head>
+	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="stylesheet" type="text/css" href="<?php echo asset_url('hlstats.css'); ?>" />
 	<link rel="stylesheet" type="text/css" href="<?php echo asset_url('styles/' . $selectedStyle); ?>" />
@@ -202,7 +202,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>">Contents</a></li>
 				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=search">Search</a></li>
 				<?php if ($extratabs) { print $extratabs; } ?>				
-				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=help">Help</li>
+				<li class="header_tabs"><a href="<?php echo $g_options['scripturl'] ?>?mode=help">Help</a></li>
 			</ul>
 
 		</div>
@@ -212,9 +212,16 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 			if ($g_options['sitename'] && $g_options['siteurl'])
 			{
-				echo '<li><a href="http://' . preg_replace('/http:\/\//', '', $g_options['siteurl']) . '">'. $g_options['sitename'] . '</a> <span class="arrow">&raquo;</span></li>';
+				// Keep the scheme the admin typed (https:// became http://https://...);
+				// without one, follow the scheme of the current page.
+				$siteLink = $g_options['siteurl'];
+				if (!preg_match('#^https?://#i', $siteLink)) {
+					$siteLink = '//' . ltrim($siteLink, '/');
+				}
+				echo '<li><a href="' . eHtml($siteLink) . '">'. $g_options['sitename'] . '</a> <span class="arrow">&raquo;</span></li>';
 			}
-			echo '<li><a href="http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'] . '">HLstatsX</a>';
+			// Relative link: an absolute http:// one sent HTTPS visitors back to plain HTTP.
+			echo '<li><a href="' . eHtml($g_options['scripturl']) . '">HLstatsX</a>';
 
 
 			$i=0;
@@ -240,15 +247,16 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<form name="style_selection" id="style_selection" action="" method="post"> Style: <?php echo $csrfField; ?>
 				<select name="stylesheet" onchange="document.style_selection.submit()"> 
 				<?php 
-					$d = dir('styles'); 
-					while (false !== ($e = $d->read())) { 
-						if (is_file("styles/$e") && ($e != '.') && ($e != '..') && $e != $g_options['style']) { 
-							$ename = ucwords(strtolower(str_replace(array('_','.css'), array(' ',''), $e))); 
-							$styles[$e] = $ename; 
-						} 
+					// Starts as an array: with only the default style installed, asort(null) was a fatal error.
+					$styles = array();
+					foreach (glob(PAGE_PATH . '/../styles/*.css') ?: array() as $file) {
+						$e = basename($file);
+						if ($e != $g_options['style']) {
+							$ename = ucwords(strtolower(str_replace(array('_','.css'), array(' ',''), $e)));
+							$styles[$e] = $ename;
+						}
 					}
-					$d->close(); 
-					asort($styles); 
+					asort($styles);
 					$styles = array_merge(array($g_options['style'] => 'Default'),$styles);
 					foreach ($styles as $e => $ename) { 
 						$sel = ''; 
