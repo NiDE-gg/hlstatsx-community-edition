@@ -41,9 +41,9 @@
         die('Do not access this file directly.');
     }
 
-    $container = require __DIR__ . '/../bootstrap.php';
+    // hlstats.php already built the container; requiring bootstrap.php again opened a second PDO connection
+    $container = $container ?? require __DIR__ . '/../bootstrap.php';
     $gameRepo = $container->get(\Repository\GameRepository::class);
-    $optionService = $container->get(\Service\OptionService::class);
 
     $game = filter_input(INPUT_GET, 'game', FILTER_UNSAFE_RAW) ?? '';
 
@@ -82,10 +82,11 @@
         $defaultTab = $tab;
     }
 
-    $options = $optionService->getAllOptions();
+    // $g_options, not a fresh copy from the database: header.php turns tabs off for
+    // visitors without JavaScript, who got empty tabs here.
 ?>
 
-    <?php if ($options['playerinfo_tabs'] == '1') : ?>
+    <?php if ($g_options['playerinfo_tabs'] == '1') : ?>
         <div id="main">
             <ul class="subsection_tabs" id="tabs_submenu">
                 <li>
@@ -103,16 +104,12 @@
             </ul>
             <br>
 
-            <div id="main_content"></div>
-
-            <script type="text/javascript">
-                new Tabs(document.getElementById('main_content'), document.querySelectorAll('#main ul.subsection_tabs a'), {
-                    'mode': 'awards',
-                    'game': '<?=eHtml($game);?>',
-                    'loadingImage': '<?=IMAGE_PATH;?>/ajax.gif',
-                    'defaultTab': '<?=eHtml($defaultTab);?>'
-                });
-            </script>
+            <div id="main_content" data-tabs="<?= eHtml(json_encode([
+                'mode' => 'awards',
+                'game' => $game,
+                'loadingImage' => IMAGE_PATH . '/ajax.gif',
+                'defaultTab' => $defaultTab,
+            ])); ?>"></div>
         </div>
     <?php else : ?>
         <div id="daily">

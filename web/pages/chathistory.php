@@ -211,7 +211,7 @@
 				<strong>&#8226;</strong>
 				Filter: <input type="text" name="filter" id="filter_input" value="<?=eHtml($filter);?>" />
 				<input type="submit" value="View" class="smallsubmit" />
-				<input type="button" value="Clear" class="smallsubmit" onclick="document.getElementById('filter_input').value=''; this.form.submit();">
+				<input type="button" value="Clear" class="smallsubmit" data-clear-field="filter_input">
 			</form>
 			</span>
 		</div>

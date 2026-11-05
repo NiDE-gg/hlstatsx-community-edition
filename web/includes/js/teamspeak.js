@@ -18,7 +18,7 @@
 	'use strict';
 
 	function readSettings(id) {
-		var el = document.getElementById(id);
+		const el = document.getElementById(id);
 		if (!el) {
 			return null;
 		}
@@ -31,7 +31,7 @@
 	}
 
 	function stringOk(string, forbiddenChars) {
-		for (var i = 0; i < string.length; i++) {
+		for (let i = 0; i < string.length; i++) {
 			if (forbiddenChars.indexOf(string.charAt(i)) > -1) {
 				return false;
 			}
@@ -43,9 +43,9 @@
 	// subChannelName) function; enterServer()/enterChannel() just called this
 	// with some arguments forced to null/false.
 	function enterSubChannel(settings, channelName, channelPassworded, subChannelName) {
-		var serveraddress = 'teamspeak://' + settings.serveraddress + ':' + settings.serverudpport;
+		let serveraddress = 'teamspeak://' + settings.serveraddress + ':' + settings.serverudpport;
 
-		var nickname = window.prompt('Enter your nickname', '');
+		const nickname = window.prompt('Enter your nickname', '');
 		if (nickname === null) {
 			return;
 		} else if (!stringOk(nickname, settings.forbiddennicknamechars)) {
@@ -59,7 +59,7 @@
 		serveraddress = serveraddress + '/nickname=' + encodeURIComponent(nickname);
 
 		if (settings.serverPasswordRequired) {
-			var password = window.prompt('Enter the teamspeak server password for ' + settings.serverName, '');
+			const password = window.prompt('Enter the teamspeak server password for ' + settings.serverName, '');
 			if (password === null) {
 				return;
 			} else if (password === '') {
@@ -74,7 +74,7 @@
 		}
 
 		if (channelPassworded) {
-			var channelpassword = window.prompt('Enter the channel password for channel ' + channelName, '');
+			const channelpassword = window.prompt('Enter the channel password for channel ' + channelName, '');
 			if (channelpassword === null) {
 				return;
 			} else if (channelpassword === '') {
@@ -92,22 +92,22 @@
 	}
 
 	document.addEventListener('click', function (e) {
-		var link = e.target.closest ? e.target.closest('[data-ts-action]') : null;
+		const link = e.target.closest('[data-ts-action]');
 		if (!link) {
 			return;
 		}
 
 		e.preventDefault();
 
-		var settings = readSettings(link.getAttribute('data-ts-settings'));
+		const settings = readSettings(link.getAttribute('data-ts-settings'));
 		if (!settings) {
 			return;
 		}
 
-		var action = link.getAttribute('data-ts-action');
-		var channelName = link.hasAttribute('data-ts-channel') ? link.getAttribute('data-ts-channel') : null;
-		var channelPassworded = link.getAttribute('data-ts-channel-passworded') === 'true';
-		var subChannelName = link.hasAttribute('data-ts-subchannel') ? link.getAttribute('data-ts-subchannel') : null;
+		const action = link.getAttribute('data-ts-action');
+		const channelName = link.hasAttribute('data-ts-channel') ? link.getAttribute('data-ts-channel') : null;
+		const channelPassworded = link.getAttribute('data-ts-channel-passworded') === 'true';
+		const subChannelName = link.hasAttribute('data-ts-subchannel') ? link.getAttribute('data-ts-subchannel') : null;
 
 		if (action === 'server') {
 			enterSubChannel(settings, null, false, null);

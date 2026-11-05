@@ -147,7 +147,7 @@
 ?>
 	<ul class="subsection_tabs" id="tabs_claninfo">
 		<li>
-			<a href="#" id="tab_general" id="general">General</a>
+			<a href="#" id="tab_general">General</a>
 		</li>
 		<li>
 			<a href="#" id="tab_actions|teams">Teams &amp; Actions</a>
@@ -159,19 +159,16 @@
 			<a href="#" id="tab_mapperformance">Maps</a>
 		</li>
 	</ul><br />
-	<div id="main_content"></div>
-	<script type="text/javascript">
-	var Tabs = new Tabs(document.getElementById('main_content'), document.querySelectorAll('#main ul.subsection_tabs a'), {
-		'mode': 'claninfo',
-		'game': '<?=$game;?>',
-		'loadingImage': '<?=IMAGE_PATH;?>/ajax.gif',
-		'defaultTab': 'general',
-		'extra': {
-            'clan': '<?=$clan;?>',
-            'members_page': '<?=$members_page;?>'
-        }
-	});
-	</script>
+	<div id="main_content" data-tabs="<?= eHtml(json_encode([
+		'mode' => 'claninfo',
+		'game' => $game,
+		'loadingImage' => IMAGE_PATH . '/ajax.gif',
+		'defaultTab' => 'general',
+		'extra' => [
+			'clan' => (string)$clan,
+			'members_page' => (string)$members_page,
+		],
+	])); ?>"></div>
 <?php
 	} else {
 		echo "\n<div id=\"tabgeneral\">\n";

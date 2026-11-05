@@ -1,28 +1,31 @@
 /*
- * JS for web/pages/playerinfo_general.php's forum-signature BBCode snippets.
+ * Forum signature snippets on web/pages/playerinfo_general.php.
  *
- * Extracted from an inline PHP-generated <script> block (GitHub issue #45).
- * The pre-built, jsEscape()'d snippet text is bootstrapped as JSON
- * (#playerinfo-forum-text-data) instead of being interpolated into JS
- * source.
- *
- * setForumText() is declared on the global scope on purpose: the markup
- * still invokes it via inline onclick="setForumText(...)" attributes, so it
- * must stay callable by name.
+ * The snippet texts are bootstrapped as JSON (#playerinfo-forum-text-data);
+ * links with data-forum-text="<index>" put one of them in #siglink. The data
+ * is read on each click, since the General tab can be reloaded by tabs.js.
  */
-(function() {
-	const dataEl = document.getElementById('playerinfo-forum-text-data');
-	if (!dataEl) {
-		return;
-	}
+(() => {
+	'use strict';
 
-	const forumTexts = JSON.parse(dataEl.textContent);
-
-	window.setForumText = function(val) {
-		const txtArea = document.getElementById('siglink');
-		if (!txtArea) {
+	document.addEventListener('click', (e) => {
+		const link = e.target.closest('[data-forum-text]');
+		if (!link) {
 			return;
 		}
-		txtArea.value = forumTexts[val];
-	};
+		e.preventDefault();
+
+		const dataEl = document.getElementById('playerinfo-forum-text-data');
+		const txtArea = document.getElementById('siglink');
+		if (!dataEl || !txtArea) {
+			return;
+		}
+
+		try {
+			const forumTexts = JSON.parse(dataEl.textContent);
+			txtArea.value = forumTexts[link.dataset.forumText] ?? '';
+		} catch (err) {
+			console.error('playerinfo: invalid forum text data', err);
+		}
+	});
 })();

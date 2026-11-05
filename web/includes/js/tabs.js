@@ -1,46 +1,42 @@
 /**
  * Tabs
  *
- * Vanilla ES6+ reimplementation of the former MooTools `Tabs` class, used for
  * AJAX-loaded "sub-section" tabs on awards.php, claninfo.php and
- * playerinfo.php (see pages/*.php where `playerinfo_tabs` is enabled).
+ * playerinfo.php (when the playerinfo_tabs option is on).
  *
- * Markup/CSS contract (unchanged from the MooTools version, do not rename):
- *   - `container`: the element the loaded tab content is injected into
- *     (e.g. `#main_content`).
- *   - `togglers`: a list of `<a id="tab_<name>">` elements (e.g.
- *     `#main ul.subsection_tabs a`). The leading `tab_` prefix is stripped to
- *     get the `tab` value sent to the server; the currently active toggler
- *     gets `class="active"` and every other toggler's `class` attribute is
- *     cleared.
- *   - Clicking a toggler (or auto-loading `options.defaultTab` on init) GETs
- *     `hlstats.php?mode=<options.mode>&type=ajax&game=<options.game>&tab=<name>&<options.extra as querystring>`
- *     and injects the raw HTML response into a new child of `container`,
- *     hiding any previously loaded tab panels (they're cached, not removed,
- *     so switching back to a tab already loaded doesn't re-fetch it).
- *   - Any `<script>` tags in the AJAX response are re-executed (as the old
- *     MooTools `stripScripts(true)` call did), since e.g.
- *     playerinfo_weapons.php / claninfo_weapons.php define a global
- *     `switch_weapon()` function this way.
+ * Markup contract (the CSS depends on it, do not rename):
+ *   - The container the tab content goes into carries the options as JSON:
+ *       <div id="main_content" data-tabs='{"mode":"playerinfo","game":"css",
+ *            "defaultTab":"general_aliases","loadingImage":"...",
+ *            "extra":{"player":"1"}}'></div>
+ *     `togglers` (optional) is the CSS selector of the tab links, default
+ *     "#main ul.subsection_tabs a".
+ *   - Each tab link is an <a id="tab_<name>">. The "tab_" prefix is stripped
+ *     to get the `tab` value sent to the server; the active link gets
+ *     class="active", the others lose their class.
+ *   - Clicking a link (or loading the page) GETs
+ *     hlstats.php?mode=<mode>&type=ajax&game=<game>&tab=<name>&<extra>
+ *     and inserts the HTML in a new child of the container. Loaded panels are
+ *     kept (hidden), so switching back does not fetch again.
+ *   - The open tab is kept in the URL hash (#tab=<name>), so a reload or a
+ *     shared link opens the same tab.
+ *   - Elements inside a tab can reload it with other parameters:
+ *       <a href="..." data-tab-refresh='{"sort":"kills","sortorder":"asc"}'>
+ *       <select data-tab-refresh-param="killLimit"
+ *               data-tab-refresh='{"playerkills_page":1}'>
+ *     (sort arrows, pagination and the kill-limit select). The href stays a
+ *     normal link for pages without tabs.
+ *   - <script> tags in a response are executed in document order; add
+ *     data-once to a library <script src> to load it only once per page.
  *
- * Public API kept identical on purpose so no PHP template needs to change:
- *   - `new Tabs(container, togglers, options)`
- *   - `instance.refreshTab(extraParams)` - merges `extraParams` into
- *     `options.extra` and reloads the currently active tab. Called from
- *     generated `onclick="Tabs.refreshTab({...})"` attributes
- *     (includes/functions.php, includes/class_table.php) and from
- *     pages/playerinfo_killstats.php's killLimit <select>.
- *   - The global `Tabs` identifier is assigned with `var` (not `let`/`const`)
- *     so that `var Tabs = new Tabs(...)` in claninfo.php/playerinfo.php can
- *     legally re-bind it to the page's live instance, which is what makes
- *     `Tabs.refreshTab(...)` (above) resolve to the right object.
+ * Tabs.refreshTab(params) (static) still refreshes the page's tabs, for
+ * custom templates that call it.
  */
-var Tabs = (function () {
+(() => {
 	'use strict';
 
-	// Mirrors MooTools' Hash.toQueryString: encodes a flat (or nested)
-	// object into a query string, recursing into nested objects/arrays with
-	// bracket notation, and skipping null/undefined values.
+	// Flat (or nested) object to query string, nested keys in bracket
+	// notation, null/undefined skipped.
 	function toQueryString(data, base) {
 		const parts = [];
 		Object.keys(data || {}).forEach((key) => {
@@ -55,22 +51,46 @@ var Tabs = (function () {
 				parts.push(`${paramKey}=${encodeURIComponent(value)}`);
 			}
 		});
-		return parts.join('&');
+		return parts.filter(Boolean).join('&');
 	}
 
-	// Re-creates <script> elements found in a freshly-inserted DOM subtree so
-	// the browser actually executes them (scripts inserted via innerHTML are
-	// inert). Declarations like `function switch_weapon(){}` end up global,
-	// same as the old stripScripts(true)+eval behavior.
+	const loadedOnce = new Set();
+
+	// Scripts inserted with innerHTML are inert, so they are re-created.
+	// Created scripts are async by default, which let playerinfo-trend-chart.js
+	// run before chart.js had loaded: async = false keeps document order.
 	function runScripts(root) {
 		root.querySelectorAll('script').forEach((oldScript) => {
+			const src = oldScript.getAttribute('src');
+			if (src && oldScript.hasAttribute('data-once')) {
+				if (loadedOnce.has(src)) {
+					oldScript.remove();
+					return;
+				}
+				loadedOnce.add(src);
+			}
+
 			const newScript = document.createElement('script');
 			for (const attr of oldScript.attributes) {
 				newScript.setAttribute(attr.name, attr.value);
 			}
+			newScript.async = false;
 			newScript.textContent = oldScript.textContent;
 			oldScript.replaceWith(newScript);
 		});
+	}
+
+	function tabName(toggler) {
+		return toggler.id.replace(/^tab_/, '');
+	}
+
+	function parseJson(text, fallback) {
+		try {
+			return JSON.parse(text);
+		} catch (e) {
+			console.error('Tabs: invalid JSON', text, e);
+			return fallback;
+		}
 	}
 
 	class Tabs {
@@ -90,29 +110,74 @@ var Tabs = (function () {
 			this.currentTab = null;
 			this.loading = null;
 
-			this.togglers.forEach((toggler, idx) => this.addTab(toggler, idx));
-		}
+			Tabs.instances.push(this);
 
-		addTab(toggler, idx) {
-			toggler.addEventListener('click', () => this.loadTab(toggler, idx));
-			if (toggler.id.replace(/^tab_/, '') === this.options.defaultTab) {
-				this.loadTab(toggler, idx);
+			this.togglers.forEach((toggler, idx) => {
+				toggler.addEventListener('click', (e) => {
+					// href="#" used to jump to the top of the page and add "#" to the URL
+					e.preventDefault();
+					this.loadTab(toggler, idx, true);
+				});
+			});
+
+			const fromHash = /^#tab=([a-z_|]+)$/i.exec(window.location.hash);
+			const wanted = fromHash ? fromHash[1] : this.options.defaultTab;
+			let start = this.togglers.findIndex((t) => tabName(t) === wanted);
+			if (start < 0) {
+				start = this.togglers.findIndex((t) => tabName(t) === this.options.defaultTab);
+			}
+			if (start >= 0) {
+				this.loadTab(this.togglers[start], start, false);
 			}
 		}
 
-		updateTab(txt, idx) {
+		static refreshTab(change) {
+			const tabs = Tabs.instances[Tabs.instances.length - 1];
+			if (tabs) {
+				tabs.refreshTab(change);
+			}
+		}
+
+		static forElement(el) {
+			return Tabs.instances.find((tabs) => tabs.container.contains(el)) || null;
+		}
+
+		removeLoading() {
 			if (this.loading) {
 				this.loading.remove();
 				this.loading = null;
 			}
+		}
+
+		showLoading() {
+			this.loading = document.createElement('div');
+			this.loading.style.textAlign = 'center';
+			this.loading.append(document.createElement('br'), document.createElement('br'));
+			const label = document.createElement('b');
+			label.textContent = 'Loading...';
+			this.loading.append(label, document.createElement('br'));
+			if (this.options.loadingImage) {
+				const img = document.createElement('img');
+				img.src = this.options.loadingImage;
+				img.alt = 'Loading...';
+				this.loading.append(img);
+			}
+			this.container.appendChild(this.loading);
+		}
+
+		updateTab(html, idx, failed) {
+			this.removeLoading();
 
 			const div = document.createElement('div');
-			div.innerHTML = txt;
+			div.innerHTML = html;
+			if (failed) {
+				// Kept so the message shows, but fetched again on the next click
+				div.dataset.failed = '1';
+			}
 			this.container.appendChild(div);
+			this.container.style.minHeight = '';
 			this.elements[idx] = div;
 
-			// Evaluate the response AFTER it's been inserted, same ordering
-			// as the previous stripScripts(true) call.
 			runScripts(div);
 
 			this.currentRequest = null;
@@ -121,61 +186,68 @@ var Tabs = (function () {
 		refreshTab(change) {
 			this.options.extra = Object.assign({}, this.options.extra, change);
 
-			for (let i = 0; i < this.togglers.length; i++) {
-				if (this.togglers[i].id.replace(/^tab_/, '') === this.currentTab) {
-					if (this.elements[i]) {
-						this.elements[i].remove();
-					}
-					this.loadTab(this.togglers[i], i);
-					return;
-				}
+			const idx = this.togglers.findIndex((t) => tabName(t) === this.currentTab);
+			if (idx < 0) {
+				return;
 			}
+			if (this.elements[idx]) {
+				this.elements[idx].remove();
+				this.elements[idx] = null;
+			}
+			this.loadTab(this.togglers[idx], idx, false);
 		}
 
-		loadTab(toggler, idx) {
-			const tab = toggler.id.replace(/^tab_/, '');
+		loadTab(toggler, idx, fromClick) {
+			const tab = tabName(toggler);
+			const cached = this.elements[idx];
+			const usable = cached && !cached.dataset.failed && this.container.contains(cached);
 
-			// Current tab, and already loaded/visible? Just return.
-			if (this.currentTab === tab && this.elements[idx] && this.container.contains(this.elements[idx])) {
+			// Current tab, already loaded and visible
+			if (this.currentTab === tab && usable && cached.style.display !== 'none') {
 				return;
 			}
 
-			// Mark the active toggler.
 			this.togglers.forEach((t) => { t.className = ''; });
 			toggler.className = 'active';
 			this.currentTab = tab;
 
-			// Cancel any in-flight request.
+			if (fromClick) {
+				history.replaceState(null, '', '#tab=' + tab);
+			}
+
 			if (this.currentRequest) {
-				if (this.loading) {
-					this.loading.remove();
-					this.loading = null;
-				}
 				this.currentRequest.abort();
 				this.currentRequest = null;
 			}
+			this.removeLoading();
 
-			// Hide the currently shown tab panel(s).
+			// Keep the height while the next panel loads, so the page does not
+			// shrink under the visitor and jump back up
+			this.container.style.minHeight = this.container.offsetHeight + 'px';
+
 			Array.from(this.container.children).forEach((el) => {
 				el.style.display = 'none';
 			});
 
-			// Already cached? Just show it.
-			if (this.elements[idx] && this.container.contains(this.elements[idx])) {
-				this.elements[idx].style.display = 'block';
+			if (usable) {
+				cached.style.display = 'block';
+				this.container.style.minHeight = '';
 				return;
 			}
+			if (cached) {
+				cached.remove();
+				this.elements[idx] = null;
+			}
 
-			// Loading indicator (may change in the future).
-			this.loading = document.createElement('div');
-			this.loading.innerHTML = '<br /><br /><center><b>Loading...</b><br /><img src="' + this.options.loadingImage + '" alt="Loading..." /></center>';
-			this.container.appendChild(this.loading);
+			this.showLoading();
 
-			// AJAX FTW
 			const controller = new AbortController();
 			this.currentRequest = controller;
 
-			const url = 'hlstats.php?mode=' + encodeURIComponent(this.options.mode) + '&type=ajax&game=' + encodeURIComponent(this.options.game) + '&tab=' + encodeURIComponent(tab) + '&' + toQueryString(this.options.extra);
+			const url = 'hlstats.php?mode=' + encodeURIComponent(this.options.mode)
+				+ '&type=ajax&game=' + encodeURIComponent(this.options.game)
+				+ '&tab=' + encodeURIComponent(tab)
+				+ '&' + toQueryString(this.options.extra);
 
 			fetch(url, { signal: controller.signal })
 				.then((response) => {
@@ -184,17 +256,61 @@ var Tabs = (function () {
 					}
 					return response.text();
 				})
-				.then((txt) => this.updateTab(txt, idx))
-				.catch((err) => {
-					if (err.name !== 'AbortError') {
-						console.error('Tabs: failed to load tab "' + tab + '"', err);
-						// Don't inject the server's error page; show a short message instead.
-						this.updateTab('<p style="text-align:center;">This section could not be loaded. Please try again later.</p>', idx);
-						this.elements[idx] = null;
+				.then((html) => {
+					// The visitor may have switched tabs while the body was read
+					if (this.currentRequest === controller) {
+						this.updateTab(html, idx, false);
 					}
+				})
+				.catch((err) => {
+					if (err.name === 'AbortError' || this.currentRequest !== controller) {
+						return;
+					}
+					console.error('Tabs: failed to load tab "' + tab + '"', err);
+					// Don't insert the server's error page; show a short message instead.
+					this.updateTab('<p style="text-align:center;">This section could not be loaded. Please try again later.</p>', idx, true);
 				});
 		}
 	}
 
-	return Tabs;
+	Tabs.instances = [];
+
+	document.addEventListener('click', (e) => {
+		const link = e.target.closest('[data-tab-refresh]:not(select)');
+		const tabs = link && Tabs.forElement(link);
+		if (!tabs) {
+			// Not inside tabs: a normal link
+			return;
+		}
+		e.preventDefault();
+		tabs.refreshTab(parseJson(link.dataset.tabRefresh, {}));
+	});
+
+	document.addEventListener('change', (e) => {
+		const select = e.target.closest('select[data-tab-refresh-param]');
+		const tabs = select && Tabs.forElement(select);
+		if (!tabs) {
+			return;
+		}
+		const change = parseJson(select.dataset.tabRefresh || '{}', {});
+		change[select.dataset.tabRefreshParam] = select.value;
+		tabs.refreshTab(change);
+	});
+
+	const init = () => {
+		document.querySelectorAll('[data-tabs]').forEach((container) => {
+			const options = parseJson(container.dataset.tabs, null);
+			if (options) {
+				new Tabs(container, document.querySelectorAll(options.togglers || '#main ul.subsection_tabs a'), options);
+			}
+		});
+	};
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+
+	window.Tabs = Tabs;
 })();

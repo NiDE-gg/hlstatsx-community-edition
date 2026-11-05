@@ -257,23 +257,16 @@ $db->query("
 			<a href="#" id="tab_killstats">Killstats</a>
 		</li>
 	</ul><br />
-	<div id="main_content"></div>
-	<script type="text/javascript">
-		var Tabs = new Tabs
-		(
-			document.getElementById('main_content'), document.querySelectorAll('#main ul.subsection_tabs a'),
-			{
-				'mode': 'playerinfo',
-				'game': '<?php echo $game; ?>',
-				'loadingImage': '<?php echo IMAGE_PATH; ?>/ajax.gif',
-				'defaultTab': 'general_aliases',
-				'extra':
-				{
-					'player': '<?php echo $player; ?>', 'killLimit': '<?php echo $killLimit; ?>'
-				}
-			}
-		);
-	</script>
+	<div id="main_content" data-tabs="<?= eHtml(json_encode([
+		'mode' => 'playerinfo',
+		'game' => $game,
+		'loadingImage' => IMAGE_PATH . '/ajax.gif',
+		'defaultTab' => 'general_aliases',
+		'extra' => [
+			'player' => (string)$player,
+			'killLimit' => (string)$killLimit,
+		],
+	])); ?>"></div>
 <?php
 	}
 	else
