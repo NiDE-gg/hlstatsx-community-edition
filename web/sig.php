@@ -398,7 +398,6 @@ if ($player_id > 0) {
 
 	if ($background_img) {
 		imagecopy($image, $background_img, 0, 0, 0, 0, 400, 75);
-		imagedestroy($background_img);
 	}   
 
 	if ($background == 0)
@@ -410,7 +409,6 @@ if ($player_id > 0) {
 		if ($flag) {
 			imagecopy($image, $flag, 8, 4, 0, 0, 18, 12); 
 			$start_header_name += 22;
-			imagedestroy($flag);
 		}
 	}
         imagealphablending($image, true);
@@ -464,7 +462,6 @@ if ($player_id > 0) {
 	if ($trend) {
 		imagecopy($image, $trend, $start_pos_x, 26, 0, 0, 7, 7);
 		$start_header_name += 22;
-		imagedestroy($trend);
 		$start_pos_x += 10;
 	}
 	imagestring($image, 2, $start_pos_x, 22, $skill_change.') points', $font_color);
@@ -479,8 +476,6 @@ if ($player_id > 0) {
 	Header('Last-Modified:'.$mod_date);
 
 	imagepng($image);
-	imagedestroy($image);
-	imagedestroy($watermark);
 
 }   
 ?>
