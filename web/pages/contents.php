@@ -69,6 +69,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 		unset($_SESSION['game']);
 		
 		pageHeader(array('Contents'), array('Contents' => ''));
+		// Discord servers get their own rows in the games table below
+		$voicecommSkipDiscord = true;
 		include(PAGE_PATH . '/voicecomm_serverlist.php');
 		printSectionTitle('Games');
 	?>
@@ -223,32 +225,45 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 		}
 ?>	
+<?php
+		// Discord servers of Admin > Manage Voice Servers. This row used to be hardcoded and
+		// called discord.com twice on every view of this page (no cache, no timeout, and a
+		// PHP warning whenever Discord refused); DiscordService caches the answers.
+		$discordRows = $db->query("SELECT serverId, name, addr FROM hlstats_Servers_VoiceComm WHERE serverType = 2 ORDER BY serverId");
+		$discordService = $container->get(\Service\DiscordService::class);
+		while ($discordRow = $db->fetch_array($discordRows))
+		{
+			$dc = $discordService->getServer((string)$discordRow['addr']);
+			$dcData = $dc['data'];
+			$dcDetails = $g_options['scripturl'] . '?mode=discord&discordId=' . (int)$discordRow['serverId'];
+			$dcLink = $dcData['invite'] ?? $dcDetails;
+
+			if ($dcData === null) {
+				$dcCount = \Service\DiscordService::errorText($dc['error']);
+			} elseif ($dcData['online'] !== null && $dcData['members'] !== null) {
+				$dcCount = number_format((int)$dcData['online']) . ' / ' . number_format((int)$dcData['members']);
+			} elseif ($dcData['members'] !== null) {
+				$dcCount = number_format((int)$dcData['members']);
+			} else {
+				$dcCount = number_format((int)$dcData['online']) . ' online';
+			}
+?>
 			<tr class="discord-row">
 				<td class="game-table-cell" style="height:30px; text-align:left;">
-					<a href="https://discord.nide.gg" target="_blank" class="fSmall">
+					<a href="<?php echo eHtml($dcLink); ?>" target="_blank" rel="noopener noreferrer" class="fSmall">
 						<img src="<?php echo IMAGE_PATH; ?>/discord.png" style="vertical-align:middle; margin-right: 5px;" alt="Discord" />
-						NiDE.GG Discord
+						<?php echo eHtml($discordRow['name']); ?>
 					</a>
 				</td>
 				<td class="game-table-cell" data-label="Members" style="text-align:center;">
-<?php
-$server_code = "d7mQP8K7";
-$url = "https://discord.com/api/v9/invites/".$server_code."?with_counts=true&with_expiration=true";      
-$jsonIn = file_get_contents($url);
-$json_obj = json_decode($jsonIn, $assoc = false);
-$total = $json_obj ->approximate_member_count;
-$guild_id = '579962159270985733';
-$data = json_decode(file_get_contents("https://discordapp.com/api/guilds/{$guild_id}/widget.json"), true);
-$membersOnline = isset($data['presence_count']) ? $data['presence_count'] : 0;
-		if ($membersOnline == 0)
-			echo "$total";
-		else
-			echo "$membersOnline / $total";
-?>
-</td>
+					<a href="<?php echo eHtml($dcDetails); ?>" title="Online / members"><?php echo eHtml($dcCount); ?></a>
+				</td>
 				<td class="game-table-cell hide-mobile" style="text-align:center;">-</td>
 				<td class="game-table-cell hide-mobile" style="text-align:center;">-</td>
 			</tr>
+<?php
+		}
+?>
 				</table>
 		
 		</div><br /><br />

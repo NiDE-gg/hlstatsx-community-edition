@@ -46,21 +46,36 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	$edlist = new EditList('serverId', 'hlstats_Servers_VoiceComm', '', false);
 	$edlist->columns[] = new EditListColumn('name', 'Server Name', 45, true, 'text', '', 64);
-	$edlist->columns[] = new EditListColumn('addr', 'Server IP or Hostname', 20, true, 'text', '', 64);
+	$edlist->columns[] = new EditListColumn('addr', 'Server IP or Hostname (Discord: invite link or server ID)', 20, true, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('password', 'Password', 20, false, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('UDPPort', 'UDP Port (TS only)', 6, false, 'text', '8767', 64);
 	$edlist->columns[] = new EditListColumn('queryPort', 'Query Port (TS)/Connect Port (Vent)', 6, true, 'text', '51234', 64);
 	$edlist->columns[] = new EditListColumn('descr', 'Notes', 40, false, 'text', '', 64);
-	$edlist->columns[] = new EditListColumn('serverType', 'Server Type', 20, true, 'select', '0/Teamspeak;1/Ventrilo');
-	
+	$edlist->columns[] = new EditListColumn('serverType', 'Server Type', 20, true, 'select', '0/Teamspeak;1/Ventrilo;2/Discord');
+
 	if ($_POST) {
 		if ($edlist->update())
 			message('success', 'Operation successful.');
 		else
 			message('warning', $edlist->error());
+
+		// Tell the admin right away about a Discord address that can never work
+		$discordResult = $db->query("SELECT name, addr FROM hlstats_Servers_VoiceComm WHERE serverType = 2");
+		while ($discordRow = $db->fetch_array($discordResult)) {
+			if (\Service\DiscordService::parseAddress((string)$discordRow['addr']) === null) {
+				message('warning', 'Discord server "' . eHtml($discordRow['name']) . '": the address must be an invite link (https://discord.gg/...) or a server ID.');
+			}
+		}
 	}
-	
+
 ?>
+<p>
+	<strong>Discord</strong>: enter an invite link (<code>https://discord.gg/abc</code>, ideally one that never expires) or the server ID.
+	The ports and the password are not used. The member and online counts come from the invite.
+	To also show voice channels and online members, turn on <em>Server Settings &rarr; Widget &rarr; Enable Server Widget</em> in Discord;
+	with only a server ID, the widget is required and the join link is the widget's invite channel.
+	Discord data is refreshed every 5 minutes.
+</p>
 
 <?php
 	

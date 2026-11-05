@@ -1,13 +1,17 @@
 <?php
 	// VOICECOMM MODULE
-	global $db;
+	global $db, $container;
 	
 	// game.php and contents.php both include this file
 	if (!defined('TS')) {
 		define('TS', 0);
 		define('VENT', 1);
+		define('DISCORD', 2);
 	}
 	
+	// contents.php shows the Discord servers in its games table instead
+	$voicecommWhere = !empty($voicecommSkipDiscord) ? 'WHERE serverType <> ' . DISCORD : '';
+
 	$result = $db->query("
 		SELECT
 			serverId,
@@ -20,6 +24,10 @@
 			serverType
 		FROM
 			hlstats_Servers_VoiceComm
+		$voicecommWhere
+		ORDER BY
+			serverType,
+			serverId
         ");
   
 	if ($db->num_rows($result) >= 1) {
@@ -56,6 +64,8 @@
 				$vent_servers[$j]['descr'] = $row['descr'];
 				$vent_servers[$j]['queryPort'] = $row['queryPort'];
 				$j++;
+			} else if ($row['serverType'] == DISCORD) {
+				$discord_servers[] = $row;
 			}
 		}
 		if (isset($ts_servers))
@@ -140,6 +150,48 @@
 				</td>
 				<td>
 					<?php echo eHtml($vent_server['descr']); ?>
+				</td>
+			</tr>
+<?php
+			}
+		}
+		if (isset($discord_servers))
+		{
+			// Cached by DiscordService: no call to discord.com on most page views
+			$discordService = $container->get(\Service\DiscordService::class);
+			foreach ($discord_servers as $dc_server)
+			{
+				$dc = $discordService->getServer((string)$dc_server['addr']);
+				$dcData = $dc['data'];
+				$dcInvite = $dcData['invite'] ?? null;
+				if ($dcData === null) {
+					$dc_channels = 'err';
+					$dc_slots = \Service\DiscordService::errorText($dc['error']);
+				} else {
+					// Voice channels are only known with the server widget on
+					$dc_channels = $dcData['widget'] ? count($dcData['channels']) : '-';
+					$dc_slots = ($dcData['online'] ?? '?') . ($dcData['members'] !== null ? '/' . $dcData['members'] : ' online');
+				}
+?>
+			<tr class="bg1">
+				<td class="fHeading">
+					<img src="<?php echo IMAGE_PATH; ?>/discord.png" alt="Discord" />
+					&nbsp;<a href="<?php echo $g_options['scripturl'] . '?mode=discord&amp;game=' . urlencode((string)$game) . '&amp;discordId=' . (int)$dc_server['serverId']; ?>"><?php echo eHtml(trim($dc_server['name'])); ?></a>
+				</td>
+				<td>
+					<?php if ($dcInvite) { ?>
+					<a href="<?php echo eHtml($dcInvite); ?>" target="_blank" rel="noopener noreferrer"><?php echo eHtml(preg_replace('#^https://#', '', $dcInvite)); ?></a>
+					<?php } else { ?>-<?php } ?>
+				</td>
+				<td></td>
+				<td style="text-align:right;">
+					<?php echo eHtml($dc_channels); ?>
+				</td>
+				<td style="text-align:right;">
+					<?php echo eHtml($dc_slots); ?>
+				</td>
+				<td>
+					<?php echo eHtml($dc_server['descr']); ?>
 				</td>
 			</tr>
 <?php

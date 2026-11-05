@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="127";
-SET @VERSION="1.14.5";
+SET @DBVERSION="128";
+SET @VERSION="1.15.0";
 
 -- --------------------------------------------------------
 
@@ -6544,6 +6544,22 @@ CREATE TABLE IF NOT EXISTS `hlstats_server_load` (
   `fps` varchar(10) NOT NULL default '0',
   KEY `server_id` (`server_id`),
   KEY `timestamp` (`timestamp`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hlstats_DiscordCache`
+--
+-- Cached Discord invite / server widget data for the voice server list.
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_DiscordCache` (
+  `source` varchar(64) NOT NULL,
+  `data` mediumtext default NULL,
+  `error` varchar(32) NOT NULL default '',
+  `fetched` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`source`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

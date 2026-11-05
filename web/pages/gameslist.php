@@ -57,8 +57,15 @@ global $game;
 	?>
 <ul id="header_gameslist">
 <?php
-		echo "\t\t\t\t<a href='https://discord.nide.gg'>" .
-		"<img src=\"" . IMAGE_PATH . "/discord.png\" style=\"margin-left: 2px; margin-right: 2px;\" alt=\"Discord\" title=\"Discord\" /></a>";
+		// Icon for the first Discord server of Admin > Manage Voice Servers (it was a
+		// hardcoded link). header.php runs inside pageHeader(), hence $GLOBALS.
+		$discordResult = $db->query("SELECT serverId, addr FROM hlstats_Servers_VoiceComm WHERE serverType = 2 ORDER BY serverId LIMIT 1");
+		if (($discordFirst = $db->fetch_array($discordResult)) && isset($GLOBALS['container'])) {
+			$dc = $GLOBALS['container']->get(\Service\DiscordService::class)->getServer((string)$discordFirst['addr']);
+			$discordLink = $dc['data']['invite'] ?? ($g_options['scripturl'] . '?mode=discord&discordId=' . (int)$discordFirst['serverId']);
+			echo "\t\t\t\t<a href=\"" . eHtml($discordLink) . "\" target=\"_blank\" rel=\"noopener noreferrer\">" .
+			"<img src=\"" . IMAGE_PATH . "/discord.png\" style=\"margin-left: 2px; margin-right: 2px;\" alt=\"Discord\" title=\"Discord\" /></a>";
+		}
 		// Iterate over array of game names and codes
 		while ($gamedata = $db->fetch_row($resultGames))
 		{
