@@ -246,15 +246,26 @@ For support and installation notes visit http://www.hlxcommunity.com
 			$tblPlayerKillStats->sort2 $tblPlayerKillStats->sortorder
 		LIMIT $tblPlayerKillStats->startitem,$tblPlayerKillStats->numperpage
 	");
-	if ($numitems > 0)
+	// The kill limit form is shown even when nothing matches: with the default limit (5),
+	// a player with no victim killed 5 times had no way to lower it.
+	if ($numitems > 0 || $realkills > 0)
 	{
 		printSectionTitle('Player Kill Statistics *');
-		$tblPlayerKillStats->draw($result, $numitems, 95); ?>
+		if ($numitems > 0) {
+			$tblPlayerKillStats->draw($result, $numitems, 95);
+		} else {
+			echo '<div class="subblock">No victim was killed ' . (int)$killLimit . ' or more times.</div>';
+		}
+?>
 	<br /><br />
 	<div class="subblock">
 	<form method="get" action="<?php echo $g_options['scripturl']; ?>">
+		<?php // Without tabs the form is submitted (it had no fields to say which page to show) ?>
+		<input type="hidden" name="mode" value="playerinfo" />
+		<input type="hidden" name="player" value="<?php echo (int)$player; ?>" />
+		<input type="hidden" name="game" value="<?php echo eHtml($game); ?>" />
 		<strong>&#8226;</strong> Show only victims this person has killed
-		<select name="killLimit" onchange="Tabs.refreshTab({'killLimit': this.options[this.selectedIndex].value, 'playerkills_page': 1})">
+		<select name="killLimit" data-tab-refresh-param="killLimit" data-tab-refresh='{"playerkills_page":1}' data-autosubmit>
 			<?php
 				for($j = 0; $j < 16; $j++)
 				{
@@ -268,6 +279,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			?>
 		</select>
 		or more times
+		<noscript><input type="submit" value="Show" class="smallsubmit" /></noscript>
 	</form>
 	</div>
 	<br /><br />

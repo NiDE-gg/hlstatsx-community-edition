@@ -223,7 +223,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 			if ($g_options['slider'] == 1) {
 ?>
-	<tr class="game-table-row toggler" style="cursor: pointer;" onmouseover="this.setAttribute('class', 'game-table-row-hover');" onmouseout="this.setAttribute('class', 'game-table-row toggler');">
+	<tr class="game-table-row toggler" style="cursor: pointer;" data-hover-class="game-table-row-hover">
             <td class="game-table-cell" data-label="Server">
 <?php
 			} else {

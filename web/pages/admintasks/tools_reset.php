@@ -222,7 +222,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo "ERROR</li>\n";
 			}
 		}
-		if (isset($_POST['clear_events_admin']) || $clearAll || $clearAllDelete)
+		// "Delete All Events" checks these two in the form too, but they were skipped here
+		if (isset($_POST['clear_events_admin']) || $clearAll || $clearAllDelete || $clearAllEvents)
 		{
 			echo "<li>Deleting Admin Events ... ";
 			if ($gamefilter == '')
@@ -242,7 +243,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo "ERROR</li>\n";
 			}
 		}
-		if (isset($_POST['clear_events_changename']) || $clearAll || $clearAllDelete)
+		if (isset($_POST['clear_events_changename']) || $clearAll || $clearAllDelete || $clearAllEvents)
 		{
 			echo "<li>Deleting Name Change Events ... ";
 			if ($gamefilter == '')
@@ -608,11 +609,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 <em>* indicates game is currently disabled</em>
 <table width="350" align="middle" border="0"><tr class="bg1"><td class="fNormal" align="left">
 <ul style="list-style-type:none;">
-	<li style="font-weight:bold;"><input type="checkbox" name="clear_all_delete" onclick="clear_all_delete_checked()" /> Reset/Clear All and Delete Players and Clans</li><br />
-	<li style="font-weight:bold;"><input type="checkbox" name="clear_all" onclick="clear_all_checked()" /> Reset/Clear All</li>
+	<li style="font-weight:bold;"><input type="checkbox" name="clear_all_delete" data-controls='input[type="checkbox"][name^="clear_"]' /> Reset/Clear All and Delete Players and Clans</li><br />
+	<li style="font-weight:bold;"><input type="checkbox" name="clear_all" data-controls='input[type="checkbox"][name^="clear_"]:not([name="clear_all_delete"])' /> Reset/Clear All</li>
 	<li><input type="checkbox" name="clear_awards" /> Clear Players' Awards History and Ribbons</li>
 	<li><input type="checkbox" name="clear_sessions" /> Clear Players' Session History</li>
-	<li><input type="checkbox" name="clear_names" onclick="name_history_checked()" /> Clear Players' Name History</li>
+	<li><input type="checkbox" name="clear_names" data-controls='input[name="clear_names_counts"]' /> Clear Players' Name History</li>
 	<li><input type="checkbox" name="clear_names_counts" /> Reset Players' Names' Counts</li>
 	<li><input type="checkbox" name="clear_skill" /> Reset Players' Skill</li>
 	<li><input type="checkbox" name="clear_pcounts" /> Reset Players' Counts</li>
@@ -622,7 +623,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<li><input type="checkbox" name="clear_mcounts" /> Reset Maps' Counts</li>
 	<li><input type="checkbox" name="clear_rcounts" /> Reset Roles' Counts</li>
 	<br />
-	<li style="font-weight:bold;"><input type="checkbox" name="clear_all_events" onclick="clear_all_events_checked()" /> Delete All Events</li>
+	<li style="font-weight:bold;"><input type="checkbox" name="clear_all_events" data-controls='input[type="checkbox"][name^="clear_events_"]' /> Delete All Events</li>
 	<li><input type="checkbox" name="clear_events_admin" /> Delete Admin Events</li>
 	<li><input type="checkbox" name="clear_events_rcon" /> Delete Rcon Events</li>
 	<li><input type="checkbox" name="clear_events_connects" /> Delete Connect Events</li>

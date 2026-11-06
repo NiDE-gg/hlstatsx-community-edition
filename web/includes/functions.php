@@ -405,16 +405,8 @@ function getSortArrow($sort, $sortorder, $name, $longname, $var_sort = 'sort', $
 	$arrowstring = '<a href="' . $g_options['scripturl'] . '?' . makeQueryString($var_sort, $name,
 		array($var_sortorder));
 
-	if ($sort == $name)
-	{
-		$arrowstring .= "&amp;$var_sortorder=$othersortorder";
-		$jsarrow = "'" . $var_sortorder . "': '" . $othersortorder . "'";
-	}
-	else
-	{
-		$arrowstring .= "&amp;$var_sortorder=$sortorder";
-		$jsarrow = "'" . $var_sortorder . "': '" . $sortorder . "'";
-	}
+	$newsortorder = ($sort == $name) ? $othersortorder : $sortorder;
+	$arrowstring .= "&amp;$var_sortorder=$newsortorder";
 
 	if ($sorthash)
 	{
@@ -422,10 +414,11 @@ function getSortArrow($sort, $sortorder, $name, $longname, $var_sort = 'sort', $
 	}
 
 	$arrowstring .= '" class="head"';
-	
+
 	if ( $ajax )
 	{
-		$arrowstring .= " onclick=\"Tabs.refreshTab({'$var_sort': '$name', $jsarrow}); return false;\"";
+		// tabs.js reloads the AJAX tab with these parameters instead of following the link
+		$arrowstring .= ' data-tab-refresh="' . eHtml(json_encode(array($var_sort => $name, $var_sortorder => $newsortorder))) . '"';
 	}
 	
 	$arrowstring .= ' title="Change sorting order">' . "$longname</a>";

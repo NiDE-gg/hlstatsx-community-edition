@@ -259,16 +259,9 @@ class Table
 
 				if ($col->link)
 				{
-					if (strpos($col->link, 'javascript:') === false) {
-						$link = str_ireplace('%k', urlencode($rowdata[$this->keycol]), $col->link);
-						$cellbody .= "<a href=\"" . $g_options['scripturl'] . "?$link\">";
-					}
-					else
-					{              
-						$col->link = str_replace('\\\\', '', $col->link);
-						$link      = str_ireplace('%k', $rowdata[$this->keycol], $col->link);
-						$cellbody .= "<a href=\"$link\">";
-					}  
+					// (The javascript: link variant was unused and put the raw key into the href.)
+					$link = str_ireplace('%k', urlencode((string)$rowdata[$this->keycol]), $col->link);
+					$cellbody .= "<a href=\"" . $g_options['scripturl'] . "?$link\">";
 				}
 
 				if ($col->icon)
@@ -496,15 +489,13 @@ class Table
 
 		$urlSafe = eHtml($url);
 
-		$onclick = '';
+		$refresh = '';
 		if ($this->ajax) {
-			// JSON_HEX_QUOT would turn the key quotes into ", which is a JS syntax error
-			// outside a string; escape for the HTML attribute instead.
-			$ajaxData = json_encode([$this->var_page => $number]);
-			$onclick = ' onclick="Tabs.refreshTab(' . eHtml($ajaxData) . '); return false;"';
+			// tabs.js reloads the AJAX tab on that page instead of following the link
+			$refresh = ' data-tab-refresh="' . eHtml(json_encode([$this->var_page => $number])) . '"';
 		}
 
-		echo "{$prefix}<a href=\"{$urlSafe}\"{$onclick}>{$label}</a>{$postfix} ";
+		echo "{$prefix}<a href=\"{$urlSafe}\"{$refresh}>{$label}</a>{$postfix} ";
 	}
 }
 

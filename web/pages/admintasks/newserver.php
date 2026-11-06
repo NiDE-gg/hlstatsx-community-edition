@@ -150,6 +150,6 @@ The "Public Address" should be the address you want shown to users. If left blan
 </tr>
 	<table width="75%" border=0 cellspacing=0 cellpadding=0>
         <tr>
-            <td align="center"><input type="submit" value="  Add Server  " class="submit" onclick="checkMod();return false;"></td>
+            <td align="center"><input type="submit" value="  Add Server  " class="submit"></td>
         </tr>
 	</table>

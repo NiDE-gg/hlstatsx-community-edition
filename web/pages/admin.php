@@ -579,9 +579,10 @@ class EditList
 					/* else fall through to default */
 
 				default:
+					// hlstats.js empties the field when it gets focus while it still shows "(encrypted)"
 					$onclick = '';
 					if ($col->type == 'password') {
-						$onclick = " onclick=\"if (this.value == '(encrypted)') this.value='';\"";
+						$onclick = ' data-clear-value="(encrypted)"';
 					}
 
 					if ($col->datasource != '' && !isset($rowdata[$col->name]))
@@ -593,9 +594,10 @@ class EditList
 						$value = $rowdata[$col->name];
 					}
 
+					// admin-help.js shows the help text while the field is hovered or focused
 					$onClick = '';
 					if (!empty($this->helpKey) && !empty($rowdata[$this->helpKey])) {
-						$onClick = "onmouseover=\"javascript:showHelp('" . strtolower($rowdata[$this->helpKey]) . "')\" onmouseout=\"javascript:hideHelp()\"";
+						$onClick = 'data-help-key="' . eHtml(strtolower($rowdata[$this->helpKey])) . '"';
 					}
 
 					$input_value = (!empty($value)) ? htmlentities(html_entity_decode($value), ENT_COMPAT, 'UTF-8') : "";

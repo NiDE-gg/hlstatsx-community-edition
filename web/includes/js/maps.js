@@ -22,7 +22,7 @@
 
 	function preloadImages(urls) {
 		(urls || []).forEach(function (src) {
-			var img = new Image();
+			const img = new Image();
 			img.src = src;
 		});
 	}
@@ -30,18 +30,19 @@
 	// Mirrors the old (window.)escape()-free HTML building in
 	// createMarker()/createMarkerS(): everything coming from the server is
 	// untrusted, so it's always run through this before going into
-	// innerHTML/InfoWindow content.
+	// innerHTML/InfoWindow content. Quotes are escaped too: the result also
+	// goes into href="..." attributes (textContent/innerHTML left them as is).
+	const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 	function escapeHtml(value) {
-		var div = document.createElement('div');
-		div.textContent = String(value);
-		return div.innerHTML;
+		return String(value).replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 	}
 
 	// Same popup markup as the old createMarker(point, city, country, player_info)
 	// function: a title row, then one Kills/Deaths row per player (plus a Time
 	// row when includeTime is set, i.e. when type == 'main').
 	function buildPlayerContent(location, includeTime) {
-		var html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + escapeHtml(location.city) + ', ' + escapeHtml(location.country) + '</td></tr>';
+		let html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + escapeHtml(location.city) + ', ' + escapeHtml(location.country) + '</td></tr>';
 
 		(location.items || []).forEach(function (player) {
 			html += '<tr><td><a href="hlstats.php?mode=playerinfo&amp;player=' + escapeHtml(player.id) + '">' + escapeHtml(player.name) + '</a></td></tr>';
@@ -57,7 +58,7 @@
 
 	// Same popup markup as the old createMarkerS(point, servers, city, country, kills).
 	function buildServerContent(location, game) {
-		var html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + escapeHtml(location.city) + ', ' + escapeHtml(location.country) + '</td></tr>';
+		let html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + escapeHtml(location.city) + ', ' + escapeHtml(location.country) + '</td></tr>';
 
 		(location.items || []).forEach(function (server) {
 			// server.addr is "ip:port" and must stay literal (not URL-encoded)
@@ -72,12 +73,12 @@
 	}
 
 	function addMarker(map, position, icon, content) {
-		var marker = new google.maps.Marker({
+		const marker = new google.maps.Marker({
 			position: position,
 			map: map,
 			icon: icon
 		});
-		var infowindow = new google.maps.InfoWindow({ content: content });
+		const infowindow = new google.maps.InfoWindow({ content: content });
 		google.maps.event.addListener(marker, 'click', function () {
 			infowindow.open(map, marker);
 		});
@@ -85,12 +86,12 @@
 	}
 
 	function init() {
-		var dataEl = findBootstrapElement();
+		const dataEl = findBootstrapElement();
 		if (!dataEl || typeof google === 'undefined' || !google.maps) {
 			return;
 		}
 
-		var data;
+		let data;
 		try {
 			data = JSON.parse(dataEl.textContent);
 		} catch (e) {
@@ -98,14 +99,14 @@
 			return;
 		}
 
-		var mapEl = document.getElementById('map');
+		const mapEl = document.getElementById('map');
 		if (!mapEl) {
 			return;
 		}
 
 		preloadImages(data.preload);
 
-		var mapOptions = {
+		const mapOptions = {
 			center: new google.maps.LatLng(data.mapCenter.lat, data.mapCenter.lng),
 			zoom: data.mapCenter.zoom,
 			scrollwheel: false,
@@ -119,11 +120,11 @@
 			mapOptions.mapTypeId = google.maps.MapTypeId[data.mapTypeId];
 		}
 
-		var map = new google.maps.Map(mapEl, mapOptions);
+		const map = new google.maps.Map(mapEl, mapOptions);
 
-		var pointIcon = data.imagePath + '/mm_20_blue.png';
-		var pointIconRed = data.imagePath + '/mm_20_red.png';
-		var includeTime = data.type === 'main';
+		const pointIcon = data.imagePath + '/mm_20_blue.png';
+		const pointIconRed = data.imagePath + '/mm_20_red.png';
+		const includeTime = data.type === 'main';
 
 		(data.players || []).forEach(function (location) {
 			addMarker(map, new google.maps.LatLng(location.lat, location.lng), pointIcon, buildPlayerContent(location, includeTime));

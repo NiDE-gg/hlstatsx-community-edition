@@ -113,11 +113,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<!-- U R A SMACKHEAD -->
 
 	<link rel="SHORTCUT ICON" href="favicon.ico" />
-	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/heatmap.js'); ?>"></script>
+	<script src="<?php echo asset_url(INCLUDE_PATH . '/js/hlstats.js'); ?>" defer></script>
+	<script src="<?php echo asset_url(INCLUDE_PATH . '/js/heatmap.js'); ?>" defer></script>
 <?php
 	if ($g_options['playerinfo_tabs'] == '1') {
 ?>
-	<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/tabs.js'); ?>"></script>
+	<script src="<?php echo asset_url(INCLUDE_PATH . '/js/tabs.js'); ?>" defer></script>
 <?php
 	}
 ?>
@@ -133,32 +134,25 @@ For support and installation notes visit http://www.hlxcommunity.com
 </head>
 <body> 
 <?php
-	// Admin pages drop any POST without the CSRF token (Auth::resume), so the two
-	// forms below carry it while an admin is logged in.
+	// Admin pages drop any POST without the CSRF token (Auth::resume), so the
+	// style form below carries it while an admin is logged in.
 	$csrfField = (class_exists('Auth', false) && !empty($_SESSION['loggedin'])) ? Auth::csrfField() : '';
 
-	//JS Check
-
-	if (isset($_POST['js']) && $_POST['js']) {
+	// JS check: without JavaScript, pages show all their sections inline instead of
+	// AJAX tabs. On a first visit the page is rendered that way with the marker
+	// below; hlstats.js then sets the hlx_js cookie and reloads the page once.
+	// (This used to be a self-submitting POST form, which turned the first page
+	// into a POST response.)
+	if (!empty($_COOKIE['hlx_js'])) {
 		$_SESSION['nojs'] = 0;
-	} else {
-		if ((!isset($_SESSION['nojs'])) or ($_SESSION['nojs'] == 1)) {
-			// Send javascript form - if they have javascript enabled it will POST the JS variable, and the code above will update their session variable
-			echo '
-			<!-- Either this is your first visit in a while, or you don\'t have javascript enabled -->
-			<form name="jsform" id="jsform" action="" method="post" style="display:none">
-			<div>
-			<input name="js" type="text" value="true" />' . $csrfField . '
-			<script type="text/javascript">
-			document.jsform.submit();
-			</script>
-			</div>
-			</form>'
-			;
-			$_SESSION['nojs'] = 1;
-			$g_options['playerinfo_tabs'] = 0;
-			$g_options['show_google_map'] = 0;
+	} else if (!isset($_SESSION['nojs']) || $_SESSION['nojs'] == 1) {
+		// Not on a POST response: reloading it would post the form again
+		if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+			echo '<div id="hlx-js-check" hidden></div>' . "\n";
 		}
+		$_SESSION['nojs'] = 1;
+		$g_options['playerinfo_tabs'] = 0;
+		$g_options['show_google_map'] = 0;
 	}
 	
 	// Determine if we should show SourceBans links/Forum links
@@ -245,7 +239,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 		<div class="fNormal" style="float:right;"> 
 			<form name="style_selection" id="style_selection" action="" method="post"> Style: <?php echo $csrfField; ?>
-				<select name="stylesheet" onchange="document.style_selection.submit()"> 
+				<select name="stylesheet" data-autosubmit>
 				<?php 
 					// Starts as an array: with only the default style installed, asort(null) was a fatal error.
 					$styles = array();

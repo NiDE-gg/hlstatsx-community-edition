@@ -655,8 +655,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 							'bgColor'   => '#' . $g_options['graphbg_trend'],
 							'textColor' => '#' . $g_options['graphtxt_trend'],
 						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>"></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>"></script>
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>" data-once></script>
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>" data-once></script>
 						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo-trend-chart.js'); ?>"></script>
 					</td>
 				</tr>
@@ -697,11 +697,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 							);
 						?>
 						<script type="application/json" id="playerinfo-forum-text-data"><?php echo jsEscape($forumTextData); ?></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo.js'); ?>"></script>
-						<a href="" onclick="setForumText(1);return false">
-							bbCode 1 (phpBB, SMF)</a>&nbsp;|&nbsp;<a href="" onclick="setForumText(2);return false">bbCode 2 (IPB)</a>&nbsp;|&nbsp;<a href="" onclick="setForumText(0);return false">Direct Image
+						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo.js'); ?>" data-once></script>
+						<a href="#" data-forum-text="1">
+							bbCode 1 (phpBB, SMF)</a>&nbsp;|&nbsp;<a href="#" data-forum-text="2">bbCode 2 (IPB)</a>&nbsp;|&nbsp;<a href="#" data-forum-text="0">Direct Image
 						</a>
-						<?php echo '<textarea style="width: 95%; height: 50px;" rows="2" cols="70" id="siglink" readonly="readonly" onclick="document.getElementById(\'siglink\').select();">[url='."$script_path/hlstats.php?mode=playerinfo&amp;player=$player"."][img]$imglink".'[/img][/url]</textarea>'; ?>
+						<?php echo '<textarea style="width: 95%; height: 50px;" rows="2" cols="70" id="siglink" readonly="readonly" data-select-on-click>[url='."$script_path/hlstats.php?mode=playerinfo&amp;player=$player"."][img]$imglink".'[/img][/url]</textarea>'; ?>
 					</td>
 				</tr>
 			</table>
