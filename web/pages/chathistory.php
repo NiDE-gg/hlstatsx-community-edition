@@ -66,11 +66,7 @@
 
 	$playerdata = $db->fetch_array();
 	$pl_name = $playerdata['lastName'];
-	$pl_shortname = $pl_name;
-
-	if (strlen($pl_name) > 10) {
-		$pl_shortname = substr($pl_name, 0, 8) . '...';
-	}
+	$pl_shortname = shortName($pl_name);
 
 	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT, 'UTF-8');
 	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT, 'UTF-8');

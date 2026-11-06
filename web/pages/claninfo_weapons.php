@@ -40,7 +40,9 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-    $container = require ROOT_PATH . '/bootstrap.php';
+    // Reuse the container of the entry point: a new one opens another PDO connection
+    // and reads every option again (an AJAX tab request includes several of these pages)
+    $container = $container ?? require ROOT_PATH . '/bootstrap.php';
     $gameRepo = $container->get(\Repository\GameRepository::class);
     $realgame = $gameRepo->getGameByCode($game, 'realgame');
 
@@ -125,12 +127,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Events_Frags
 		LEFT JOIN hlstats_Weapons ON
 			hlstats_Weapons.code = hlstats_Events_Frags.weapon
+			AND hlstats_Weapons.game = '$game'
 		LEFT JOIN hlstats_Players ON
 			hlstats_Players.playerId=hlstats_Events_Frags.killerId
 		WHERE
-			clan=$clan
-		AND
-			hlstats_Weapons.game='$game'
+			hlstats_Players.clan=$clan
 		GROUP BY
 			hlstats_Events_Frags.weapon
 		ORDER BY

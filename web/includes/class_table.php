@@ -473,7 +473,7 @@ class Table
 					if ($i < $numpages - 1)
 						$this->_echoPageNumber($numpages, "Last page", "... ");
 					else
-						$this->_echoPageNumber($numpages, 10);
+						$this->_echoPageNumber($numpages, $numpages);
 				}
 			}
 		?>

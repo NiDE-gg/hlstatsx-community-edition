@@ -34,6 +34,11 @@ class teamspeakDisplayClass
 	// Opens a connection to the teamspeak server
 	function _openConnection(&$socket, $host, $port, $timeout) {
 		@$socket = fsockopen($host, $port, $errno, $errstr, $timeout);
+		if ($socket) {
+			// Without a read timeout, a host that accepts the connection but never answers
+			// held the page (the Contents page, for every visitor) for default_socket_timeout.
+			stream_set_timeout($socket, 2);
+		}
 		if ($socket and ($this->_stripEOL(fgets($socket, 4096)) == "[TS]")) {
 			return true;
 		} else {

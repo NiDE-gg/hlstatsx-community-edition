@@ -97,11 +97,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$db->free_result();
 	
 	$pl_name = $playerdata['lastName'];
-	if (strlen($pl_name) > 10) {
-		$pl_shortname = substr($pl_name, 0, 8) . '...';
-	} else {
-		$pl_shortname = $pl_name;
-	}
+	$pl_shortname = shortName($pl_name);
 
 	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT);
 	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT);
@@ -214,11 +210,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Events_Frags
 		LEFT JOIN hlstats_Weapons ON
 			hlstats_Weapons.code = hlstats_Events_Frags.weapon
+			AND hlstats_Weapons.game = '$game'
 		LEFT JOIN hlstats_Servers ON
 			hlstats_Servers.serverId=hlstats_Events_Frags.serverId
 		WHERE
 			hlstats_Servers.game='$game' AND hlstats_Events_Frags.killerId=$player
-			AND (hlstats_Weapons.game='$game' OR hlstats_Weapons.weaponId IS NULL)
 		GROUP BY
 			hlstats_Events_Frags.weapon
 		ORDER BY

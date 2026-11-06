@@ -75,14 +75,15 @@ function checkValidGame(string $gameStr, array $allowedGames, ?string &$retError
 
 function buildSearchSqlSafe($db, $search)
 {
-	$search = trim($search);
+	$search = trim((string)$search);
 	if ($search === '') {
 		return "";
 	}
 
 	$len = mb_strlen($search, 'UTF-8');
-	$like_filter = $db->escape(addcslashes($search, '%_'));
-	$match_filter = $db->escape($search);
+	// LIKE treats %, _ and \ specially; = does not, so it gets the plain escaped value.
+	$like_filter = $db->escape(addcslashes($search, '%_\\'));
+	$exact_filter = $db->escape($search);
 
 	// 'MATCH' - doesn't work for text shorter than 4 characters. Fixed without editing the mysql cfg.
 	if ($len <= 3) {
@@ -91,12 +92,21 @@ function buildSearchSqlSafe($db, $search)
 		}
 
 		return " AND (
-			hlstats_Events_Chat.message = '{$like_filter}'
+			hlstats_Events_Chat.message = '{$exact_filter}'
 			OR hlstats_Events_Chat.message LIKE '{$like_filter} %'
 			OR hlstats_Events_Chat.message LIKE '% {$like_filter}'
 			OR hlstats_Events_Chat.message LIKE '% {$like_filter} %'
 		)";
 	}
+
+	// Boolean-mode operators typed by visitors are a syntax error on InnoDB (an e-mail
+	// address, "gg-", "hello(" ...), which made the whole page fail: search the words only.
+	$words = preg_split('/[\s+\-<>()~*"@]+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
+	if (empty($words)) {
+		return " AND hlstats_Events_Chat.message LIKE '%{$like_filter}%'";
+	}
+
+	$match_filter = $db->escape(implode(' ', $words));
 
 	return " AND MATCH (hlstats_Events_Chat.message) AGAINST ('{$match_filter}' IN BOOLEAN MODE)";
 }
@@ -122,7 +132,30 @@ function getChatFilterParam()
 
 function eHtml($str)
 {
-    return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return htmlspecialchars((string)$str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/**
+ * shortName()
+ *
+ * Shortens a player name for titles and breadcrumbs. Counts characters, not bytes:
+ * cutting a multibyte character in half makes htmlspecialchars() return '', so names
+ * written in Cyrillic, CJK, etc. used to vanish from the page.
+ *
+ * @param mixed $name
+ * @param int $max  Names longer than this are shortened
+ * @param int $keep Characters kept before the "..."
+ * @return string The (unescaped) short name
+ */
+function shortName($name, int $max = 10, int $keep = 8) : string
+{
+	$name = (string)$name;
+
+	if (mb_strlen($name, 'UTF-8') > $max) {
+		return mb_substr($name, 0, $keep, 'UTF-8') . '...';
+	}
+
+	return $name;
 }
 
 /**
@@ -459,46 +492,27 @@ function getSelect($name, $values, $currentvalue = '')
  
 function getLink($url, $type = 'http://', $target = '_blank')
 {
-	$urld=parse_url($url);
+	// Players set their own homepage in game (hlx_set homepage ...), so this is
+	// untrusted input: only http(s) URLs with a plain host name, always escaped.
+	$url = trim((string)$url);
 
-	if(!isset($urld['scheme']) && (!isset($urld['host']) && isset($urld['path'])))
-	{
-			$urld['scheme']=str_replace('://', '', $type);
-			$urld['host']=$urld['path'];
-			unset($urld['path']);
-	}
-
-	if($urld['scheme']!='http' && $urld['scheme']!='https')
-	{
-			return 'Invalid Url :(';
+	if ($url !== '' && !preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
+		$url = $type . $url;
 	}
 
-	if(!isset($urld['path']))
+	$urld = parse_url($url);
+
+	if (!is_array($urld) || !isset($urld['host'])
+		|| !in_array(strtolower($urld['scheme'] ?? ''), array('http', 'https'), true)
+		|| !preg_match('/^(\[[0-9a-f:.]+\]|[\p{L}\p{N}.-]+)$/iu', $urld['host'])
+		|| preg_match('/[\s\x00-\x1f\x7f]/', $url))
 	{
-			$urld['path']='';
+		return 'Invalid Url :(';
 	}
 
-	if(!isset($urld['query']))
-	{
-			$urld['query']='';
-	}
-	else
-	{
-			$urld['query']='?' . urlencode($urld['query']);
-	}
+	$display = preg_replace('#^https?://#i', '', $url);
 
-	if(!isset($urld['fragment']))
-	{
-			$urld['fragment']='';
-	}
-	else
-	{
-			$urld['fragment']='#' . urlencode($urld['fragment']);
-	}
-
-	$uri=sprintf("%s%s%s", $urld['path'], $urld['query'], $urld['fragment']);
-	$host_uri=$urld['host'] . $uri;
-	return sprintf('<a href="%s://%s%s" target="%s">%s</a>',$urld['scheme'], $urld['host'], $uri, $target, htmlspecialchars($host_uri, ENT_COMPAT));
+	return sprintf('<a href="%s" target="%s" rel="nofollow ugc noopener noreferrer">%s</a>', eHtml($url), eHtml($target), eHtml($display));
 }
 
 /**

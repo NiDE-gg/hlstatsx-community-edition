@@ -54,7 +54,9 @@ foreach ($_SERVER as $key => $entry) {
 				(strrchr($entry, '/') !== '/config.php') &&
 				(strrchr($entry, '/') !== '/') &&
 				($entry !== '')) {
-				header('Location: http://'.$_SERVER['HTTP_HOST'].'/hlstats.php');    
+				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
+				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+				header('Location: ' . $scheme . $_SERVER['HTTP_HOST'] . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			}    
 		}
@@ -236,12 +238,10 @@ if ($player_id > 0) {
 	$pl_name = $playerdata['lastName'];
     
 	if(function_exists('imagettftext')) {
-		if (strlen($pl_name) > 30) {
-			$pl_name = substr($pl_name, 0, 27) . '...';
-		}
+		$pl_name = shortName($pl_name, 30, 27);
 	} else {
-		if (strlen($pl_name) > 30) {
-			$pl_shortname =	substr($pl_name, 0, 27) . '...';
+		if (mb_strlen($pl_name, 'UTF-8') > 30) {
+			$pl_shortname =	shortName($pl_name, 30, 27);
 		} else {
 			$pl_shortname	= $pl_name;
 			$pl_name		= htmlspecialchars($pl_name, ENT_COMPAT);
@@ -398,7 +398,6 @@ if ($player_id > 0) {
 
 	if ($background_img) {
 		imagecopy($image, $background_img, 0, 0, 0, 0, 400, 75);
-		imagedestroy($background_img);
 	}   
 
 	if ($background == 0)
@@ -410,7 +409,6 @@ if ($player_id > 0) {
 		if ($flag) {
 			imagecopy($image, $flag, 8, 4, 0, 0, 18, 12); 
 			$start_header_name += 22;
-			imagedestroy($flag);
 		}
 	}
         imagealphablending($image, true);
@@ -464,7 +462,6 @@ if ($player_id > 0) {
 	if ($trend) {
 		imagecopy($image, $trend, $start_pos_x, 26, 0, 0, 7, 7);
 		$start_header_name += 22;
-		imagedestroy($trend);
 		$start_pos_x += 10;
 	}
 	imagestring($image, 2, $start_pos_x, 22, $skill_change.') points', $font_color);
@@ -479,8 +476,6 @@ if ($player_id > 0) {
 	Header('Last-Modified:'.$mod_date);
 
 	imagepng($image);
-	imagedestroy($image);
-	imagedestroy($watermark);
 
 }   
 ?>

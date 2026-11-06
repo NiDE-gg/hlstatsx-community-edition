@@ -86,7 +86,6 @@
 
             $body = curl_exec($curl);
             $httpCode = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            curl_close($curl);
 
             if ($body === false || $httpCode !== 200) {
                 $this->logger->warning("Steam profile fetch failed for {$communityId} (HTTP {$httpCode})");

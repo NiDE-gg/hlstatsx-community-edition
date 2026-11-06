@@ -41,7 +41,9 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-    $container = require ROOT_PATH . '/bootstrap.php';
+    // Reuse the container of the entry point: a new one opens another PDO connection
+    // and reads every option again (an AJAX tab request includes several of these pages)
+    $container = $container ?? require ROOT_PATH . '/bootstrap.php';
     $playerRepo = $container->get(\Repository\PlayerRepository::class);
 
 	$player = valid_request(intval($_GET['player']), true);
@@ -125,11 +127,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$db->free_result();
 	
 	$pl_name = $playerdata['lastName'];
-	if (strlen($pl_name) > 10) {
-		$pl_shortname = substr($pl_name, 0, 8) . '...';
-	} else {
-		$pl_shortname = $pl_name;
-	}
+	$pl_shortname = shortName($pl_name);
 
 	$pl_name = htmlspecialchars($pl_name, ENT_COMPAT);
 	$pl_shortname = htmlspecialchars($pl_shortname, ENT_COMPAT);

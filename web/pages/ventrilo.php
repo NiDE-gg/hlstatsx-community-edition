@@ -66,7 +66,7 @@ function VentriloDisplayEX1( &$stat, $name, $cid, $bgidx )
 	if($name != 'nil232143241432432131')
 	{
 		$disp_out .= "  <td style=\"padding-left:20px;border:0;\"><img src=\"".IMAGE_PATH."/ventrilo/".$img.".gif\" alt=\"\" class=\"tsicon\"/>&nbsp;<span style=\"color:$fg;font-weight:bold;\">";
-		$disp_out .= $name;
+		$disp_out .= eHtml($name);
 		$disp_out .= "</span>\n";
 	}
 	else
@@ -101,9 +101,10 @@ function VentriloDisplayEX1( &$stat, $name, $cid, $bgidx )
 		if ( strlen( $flags ) )
 			$disp_out .= "\"$flags\" ";
 		
-		$disp_out .= $client->m_name;
+		// Names and comments are typed by whoever connects to the Ventrilo server
+		$disp_out .= eHtml($client->m_name);
 		if ( $client->m_comm )
-			$disp_out .= " ($client->m_comm)";
+			$disp_out .= ' (' . eHtml($client->m_comm) . ')';
 		
 		$disp_out .= "  </td>\n";
 		$disp_out .= "      </tr>\n";
@@ -174,13 +175,12 @@ function show($tpl, $array)
 	
 	if ( $rc )
 	{
-		error("No Ventrilo", 1);
-		echo "CVentriloStatus->Request() failed. <strong>$stat->m_error</strong><br><br>\n";
+		error('No Ventrilo: ' . $stat->m_error, 1);
 	}
 	else
 	{
-		$name = $stat->m_name;
-		$os = $stat->m_platform;
+		$name = eHtml($stat->m_name);
+		$os = eHtml($stat->m_platform);
 		$uptime = $stat->m_uptime;
 		$cAmount = $stat->m_channelcount;
 		$user = $stat->m_clientcount;
