@@ -167,7 +167,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$image = getImage('/ranks/'.$rankrow['image']);
 	if ($image)
 		echo '<img src="'.$image['url'].'" alt="" />';
-	echo '<b>'.$rankrow['rankName'].'</b>';
+	echo '<b>'.eHtmlOnce($rankrow['rankName']).'</b>';
 	$table->draw($result, $numitems, 95, 'center');
 ?>
 </div>

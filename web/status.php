@@ -255,7 +255,7 @@ if ($server_data['addr'] != '')  {
 	echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
 	echo '<html>';
 	echo '<head>';
-	echo '<title>'.$g_options["sitename"].'</title>';
+	echo '<title>' . eHtmlOnce($g_options["sitename"]) . '</title>';
 	echo '<style type="text/css">{margin:0px;padding:0px;}</style>';
 	echo '<link rel="stylesheet" type="text/css" href="'.asset_url('hlstats.css').'">';
 	echo '<link rel="stylesheet" type="text/css" href="'.asset_url('styles/'.$g_options['style']).'">';
@@ -294,7 +294,7 @@ if ($server_data['addr'] != '')  {
 	if ($server_url == 1)
 	{
 		echo '<tr><td align="center" colspan="2" class="'.$fsize.'">';
-		echo '<a href="steam://connect/'.$server_data['addr'].'" title="Connent to Server"><b>'.$server_data['addr'].'</b></a>';
+		echo '<a href="steam://connect/'.eHtmlOnce($server_data['addr']).'" title="Connent to Server"><b>'.eHtmlOnce($server_data['addr']).'</b></a>';
 		echo '</td></tr>';
 	}
 
@@ -479,7 +479,7 @@ if ($server_data['addr'] != '')  {
 					echo '<a target="_blank" style="color:'.$thisteam['playerlist_color'].';" href="'.$g_options['scriptbase'].'/hlstats.php?mode=playerinfo&amp;player='.$thisplayer['player_id'].'" title="Player Details">';
 					if ($show_flags == 1)
 					{
-					echo '<img src="'.getFlag($thisplayer['cli_flag']).'" alt="'.ucfirst(strtolower($thisplayer['cli_country'])).'" title="'.ucfirst(strtolower($thisplayer['cli_country'])).'">&nbsp;';
+					echo '<img src="'.getFlag($thisplayer['cli_flag']).'" alt="'.eHtmlOnce(ucfirst(strtolower($thisplayer['cli_country']))).'" title="'.eHtmlOnce(ucfirst(strtolower($thisplayer['cli_country']))).'">&nbsp;';
 					}
 					echo '<span style="vertical-align:middle;">'.htmlspecialchars($thisplayer['name'], ENT_COMPAT).'</span></a>';
 				}
@@ -609,7 +609,7 @@ if ($server_data['addr'] != '')  {
 			{
 				if ($player['country'] == '')
 					$player['country'] = 'Unknown Country';
-				echo '<img src="'.getFlag($player['flag']).'" alt="'.ucfirst($player['country']).'" title="'.ucfirst($player['country']).'">&nbsp;';
+				echo '<img src="'.getFlag($player['flag']).'" alt="'.eHtmlOnce(ucfirst($player['country'])).'" title="'.eHtmlOnce(ucfirst($player['country'])).'">&nbsp;';
 			}
 			else
 			{

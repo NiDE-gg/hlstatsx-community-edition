@@ -483,12 +483,12 @@ function getSelect($name, $values, $currentvalue = '')
 			$gotcval = true;
 		}
 
-		$select .= '>' . eHtml($v) . "</option>\n";
+		$select .= '>' . eHtmlOnce($v) . "</option>\n";
 	}
 
 	if ($currentvalue && !$gotcval)
 	{
-		$select .= "\t<option value=\"" . eHtml($currentvalue) . '" selected="selected">' . eHtml($currentvalue) . "</option>\n";
+		$select .= "\t<option value=\"" . eHtml($currentvalue) . '" selected="selected">' . eHtmlOnce($currentvalue) . "</option>\n";
 	}
 
 	$select .= '</select>';
@@ -626,25 +626,56 @@ function getImage($filename)
 }
 
 /**
+ * message()
+ *
+ * Prints a notice with an icon, on the admin and updater pages.
+ *
+ * @param string $icon Image name in IMAGE_PATH, without the extension
+ * @param string $msg HTML, already escaped by the caller
+ * @return void
+ */
+function message($icon, $msg)
+{
+	global $g_options;
+?>
+		<table width="60%" border="0" cellspacing="0" cellpadding="0">
+
+		<tr valign="top">
+			<td width="40"><img src="<?php echo IMAGE_PATH . "/$icon"; ?>.gif" width="16" height="16" border="0" hspace="5" alt="" /></td>
+			<td width="100%"><?php
+	echo "<b>$msg</b>";
+?></td>
+		</tr>
+
+		</table><br /><br />
+<?php
+}
+
+/**
  * sendPageSecurityHeaders()
  *
  * Browser-side limits for the HTML pages. They carry no inline JavaScript, so
  * scripts can be restricted to this site and injected markup can't run. Inline
- * styles are still used everywhere. The Google hosts are the ones the Maps
- * JavaScript API documents, and are only allowed when the map is switched on.
+ * styles are still used everywhere.
+ *
+ * The Maps JavaScript API needs the sources listed in Google's CSP guide. They
+ * include 'unsafe-eval' and wildcard hosts serving user uploads, which weaken the
+ * policy, so they are only added on pages showing the map, when it is switched
+ * on. The guide's 'unsafe-inline' is left out: nothing here needs it.
  *
  * @param bool $frameable false for pages an admin acts on (clickjacking)
+ * @param bool $mapPage true for the pages that can show the Google map
  * @return void
  */
-function sendPageSecurityHeaders(bool $frameable = true) : void
+function sendPageSecurityHeaders(bool $frameable = true, bool $mapPage = false) : void
 {
 	global $g_options;
 
-	$maps = ($g_options['show_google_map'] ?? 0) == 1;
+	$maps = $mapPage && ($g_options['show_google_map'] ?? 0) == 1;
 
 	$policy = array(
 		"default-src 'self'",
-		"script-src 'self'" . ($maps ? ' https://*.googleapis.com https://*.gstatic.com https://*.google.com blob:' : ''),
+		"script-src 'self'" . ($maps ? " 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:" : ''),
 		"style-src 'self' 'unsafe-inline'" . ($maps ? ' https://fonts.googleapis.com' : ''),
 		"img-src 'self' data: https:",
 		"font-src 'self' data:" . ($maps ? ' https://fonts.gstatic.com' : ''),

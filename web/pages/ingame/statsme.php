@@ -151,7 +151,7 @@ For support and installation notes visit http://www.hlxcommunity.com
             <td class="fSmall">Name:</td>
             <td colspan="2" class="fSmall"><?php
                 if ($g_options['countrydata'] == 1)
-					echo '<img src="'.getFlag($playerdata['flag']).'" alt="'.strtolower($playerdata['country']).'" title="'.strtolower($playerdata['country']).'">&nbsp;';   
+					echo '<img src="'.getFlag($playerdata['flag']).'" alt="'.eHtmlOnce(strtolower($playerdata['country'])).'" title="'.eHtmlOnce(strtolower($playerdata['country'])).'">&nbsp;';   
 				echo '<strong>' . htmlspecialchars($playerdata['lastName'], ENT_COMPAT) . '</strong>';
             ?></td>
         </tr>

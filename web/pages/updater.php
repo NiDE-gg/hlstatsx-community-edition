@@ -28,6 +28,12 @@
 		return;
 	}
 
+	// While an update is pending this is the only page left, so the new password is
+	// chosen here. A database from before updater 110 can't store one until it is updated.
+	if (Auth::canStoreHash() && !$auth->requireNewPassword($g_options['scripturl'] . '?mode=updater')) {
+		return;
+	}
+
 	if (empty($_POST['runupdate'])) {
 		echo "<div class=\"warning\">\n<form method=\"post\" action=\"" . $g_options['scripturl'] . "?mode=updater\">\n"
 			. Auth::csrfField()

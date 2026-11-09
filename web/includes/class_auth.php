@@ -180,9 +180,10 @@ class Auth
 
 	// Access level of the signed-in admin, or 0. For pages that only need the level:
 	// the same checks as resume() (account deleted, password changed, session idle).
+	// A session opened with the install password counts for nothing until it is changed.
 	static function sessionLevel()
 	{
-		if (empty($_SESSION['loggedin'])) {
+		if (empty($_SESSION['loggedin']) || !empty($_SESSION['authdefaultpassword'])) {
 			return 0;
 		}
 
@@ -288,6 +289,10 @@ class Auth
 			return $problem;
 		}
 
+		if (!self::canStoreHash()) {
+			return 'This database cannot store a new password yet. Please run the database update first.';
+		}
+
 		$newHash = self::hashPassword($password);
 		$updated = $db->query("
 			UPDATE
@@ -308,6 +313,46 @@ class Auth
 		$this->usesDefaultPassword = false;
 
 		return null;
+	}
+
+	// The install password is public: an account using it can do nothing else until it
+	// has a new one. Prints the form for that while it is needed, so call it after
+	// pageHeader(). Returns true when the page can go on.
+	function requireNewPassword($formAction)
+	{
+		if (!$this->usesDefaultPassword) {
+			return true;
+		}
+
+		if (isset($_POST['new_password']) && is_string($_POST['new_password'])) {
+			$repeat = (isset($_POST['new_password_repeat']) && is_string($_POST['new_password_repeat'])) ? $_POST['new_password_repeat'] : '';
+			$passwordError = ($_POST['new_password'] === $repeat)
+				? $this->changeOwnPassword($_POST['new_password'])
+				: 'The two passwords do not match.';
+
+			if ($passwordError === null) {
+				$_POST = array();
+				message('success', 'Password changed.');
+				return true;
+			}
+
+			message('warning', eHtml($passwordError));
+		}
+
+		message('warning', 'This account still uses the default password. Choose a new one to continue.');
+?>
+<form method="post" action="<?php echo eHtml($formAction); ?>">
+	<?php echo self::csrfField(); ?>
+	<table class="data-table">
+		<tr><td class="bg1">New password (<?php echo self::MIN_PASSWORD_LENGTH; ?> characters or more):</td>
+			<td class="bg1"><input type="password" name="new_password" size="30" maxlength="<?php echo self::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
+		<tr><td class="bg1">Repeat it:</td>
+			<td class="bg1"><input type="password" name="new_password_repeat" size="30" maxlength="<?php echo self::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
+		<tr><td class="bg1">&nbsp;</td><td class="bg1"><input type="submit" value=" Change password " class="submit" /></td></tr>
+	</table>
+</form>
+<?php
+		return false;
 	}
 
 	static function csrfToken()
@@ -393,6 +438,10 @@ class Auth
 		$stored = (string) $stored;
 
 		if (self::isLegacyHash($stored)) {
+			// As slow as a bcrypt check, so failed logins can't single out the accounts
+			// still on MD5, the likeliest to have the default password
+			password_verify($password, self::DUMMY_HASH);
+
 			return hash_equals(strtolower($stored), md5($password));
 		}
 
@@ -409,13 +458,21 @@ class Auth
 		return (bool) preg_match('/^[0-9a-f]{32}$/i', (string) $stored);
 	}
 
+	// Before updater 110 the column is varchar(32) and would truncate a new hash,
+	// which locks the account out
+	static function canStoreHash()
+	{
+		global $g_options;
+
+		return (int) ($g_options['dbversion'] ?? 0) >= self::HASH_DBVERSION;
+	}
+
 	// Returns the hash now stored for the user
 	static function upgradeHash($username, $password, $oldHash)
 	{
-		global $db, $g_options;
+		global $db;
 
-		// Before updater 110 the column is varchar(32) and would truncate the new hash
-		if ((int) ($g_options['dbversion'] ?? 0) < self::HASH_DBVERSION) {
+		if (!self::canStoreHash()) {
 			return $oldHash;
 		}
 

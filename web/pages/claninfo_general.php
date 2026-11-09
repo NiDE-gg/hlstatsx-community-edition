@@ -188,7 +188,7 @@ printSectionTitle('Clan Information');
 				    		
 					list($favServerId,$favServerName) = $db->fetch_row();
 
-					echo "<a href='hlstats.php?game=$game&amp;mode=servers&amp;server_id=" . (int) $favServerId . "'> " . eHtml($favServerName) . " </a>";
+					echo "<a href='hlstats.php?game=$game&amp;mode=servers&amp;server_id=" . (int) $favServerId . "'> " . eHtmlOnce($favServerName) . " </a>";
     			?></td>
 		    </tr>
 

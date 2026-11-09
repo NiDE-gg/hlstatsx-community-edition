@@ -128,7 +128,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}    
    
 		echo "<td style=\"text-align:center;vertical-align:top;width:$colwidth%;\">"
-			.'<strong>'.$r['rankName'].'</strong><br />'
+			.'<strong>'.eHtmlOnce($r['rankName']).'</strong><br />'
 			.'<span class="fSmall">('.$r['minKills'].'-'.$r['maxKills'].'&nbsp;kills)'.'<br />'
 			."$achvd<br /></span>"
 			.$imagestring.'

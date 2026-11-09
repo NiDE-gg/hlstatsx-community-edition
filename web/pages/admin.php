@@ -828,23 +828,6 @@ class PropertyPage_Property
 	}
 }
 
-function message($icon, $msg)
-{
-	global $g_options;
-?>
-		<table width="60%" border="0" cellspacing="0" cellpadding="0">
-
-		<tr valign="top">
-			<td width="40"><img src="<?php echo IMAGE_PATH . "/$icon"; ?>.gif" width="16" height="16" border="0" hspace="5" alt="" /></td>
-			<td width="100%"><?php
-	echo "<b>$msg</b>";
-?></td>
-		</tr>
-
-		</table><br /><br />
-<?php
-}
-
 $auth = new Auth;
 if ($auth->ok === false) {
 	return;
@@ -856,38 +839,8 @@ if ($auth->csrfRejected) {
 	message('warning', 'The form was not sent from this admin page, or has expired. Nothing was changed: please submit it again.');
 }
 
-// The install password is public: an account using it can do nothing else until it is changed
-if ($auth->usesDefaultPassword) {
-	if (isset($_POST['new_password']) && is_string($_POST['new_password'])) {
-		$repeat = (isset($_POST['new_password_repeat']) && is_string($_POST['new_password_repeat'])) ? $_POST['new_password_repeat'] : '';
-		$passwordError = ($_POST['new_password'] === $repeat)
-			? $auth->changeOwnPassword($_POST['new_password'])
-			: 'The two passwords do not match.';
-
-		if ($passwordError === null) {
-			$_POST = array();
-			message('success', 'Password changed.');
-		} else {
-			message('warning', eHtml($passwordError));
-		}
-	}
-
-	if ($auth->usesDefaultPassword) {
-		message('warning', 'This account still uses the default password. Choose a new one to continue.');
-?>
-<form method="post" action="<?php echo $g_options['scripturl']; ?>?mode=admin">
-	<?php echo Auth::csrfField(); ?>
-	<table class="data-table">
-		<tr><td class="bg1">New password (<?php echo Auth::MIN_PASSWORD_LENGTH; ?> characters or more):</td>
-			<td class="bg1"><input type="password" name="new_password" size="30" maxlength="<?php echo Auth::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
-		<tr><td class="bg1">Repeat it:</td>
-			<td class="bg1"><input type="password" name="new_password_repeat" size="30" maxlength="<?php echo Auth::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
-		<tr><td class="bg1">&nbsp;</td><td class="bg1"><input type="submit" value=" Change password " class="submit" /></td></tr>
-	</table>
-</form>
-<?php
-		return;
-	}
+if (!$auth->requireNewPassword($g_options['scripturl'] . '?mode=admin')) {
+	return;
 }
 
 // Only full administrators can act on this list, and it tells others which accounts are open
@@ -1039,7 +992,7 @@ else
 		if ($gamecode == $selGame)
 		{
 ?>
-&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin" name="game_<?php echo eHtml($gamecode); ?>"><?php echo eHtml($gamename); ?></a></b> (<?php echo eHtml($gamecode); ?>)<br /><br /> <?php
+&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin" name="game_<?php echo eHtml($gamecode); ?>"><?php echo eHtmlOnce($gamename); ?></a></b> (<?php echo eHtml($gamecode); ?>)<br /><br /> <?php
 			foreach ($admintasks as $code => $task)
 			{
 				if ($auth->userdata['acclevel'] >= $task->acclevel && $task->type == 'game')
@@ -1076,7 +1029,7 @@ else
 		else
 		{
 ?>
-&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/rightarrow.gif" width="6" height="9" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo urlencode($gamecode); ?>#game_<?php echo eHtml($gamecode); ?>"><?php echo eHtml($gamename); ?></a></b> (<?php echo eHtml($gamecode); ?>)<br /><br /> <?php
+&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/rightarrow.gif" width="6" height="9" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo urlencode($gamecode); ?>#game_<?php echo eHtml($gamecode); ?>"><?php echo eHtmlOnce($gamename); ?></a></b> (<?php echo eHtml($gamecode); ?>)<br /><br /> <?php
 		}
 	}
 }

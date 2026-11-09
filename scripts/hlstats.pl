@@ -2069,7 +2069,8 @@ $s_output = "";
 my ($proxy_s_peerhost, $proxy_s_peerport);
 # Anyone who can reach the UDP port or choose a player name can send a line that
 # makes a handler die, which used to stop the daemon. The line is dropped instead.
-# (exit() still ends the program from inside the eval: "kill" and the signal handlers.)
+# (exit() still ends the program from inside the eval: "kill", the signal handlers
+# and a database failure, see queryFailed() in HLstats.plib.)
 my $lineFailed;
 do {
 $lineFailed = 0;

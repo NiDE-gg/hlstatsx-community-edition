@@ -3017,12 +3017,31 @@ sub doEvent_Admin
 # 501. Statsme (weapon)
 #
 
+#
+# boolean validCounts (list counts)
+#
+# weaponstats numbers are added to totals kept in memory, so one absurd value
+# would make every later save of that player and server fail. Missing ones are
+# fine: not every game logs them all.
+#
+
+sub validCounts
+{
+	foreach my $count (@_) {
+		return 0 if (defined($count) && $count ne "" && $count !~ /^\d{1,7}\z/);
+	}
+
+	return 1;
+}
+
 sub doEvent_Statsme
 {
 	my ($playerId, $playerUniqueId, $weapon, $shots, $hits, $headshots, $damage, $kills, $deaths) = @_;
 	my $desc;
 	my $player    = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
+
+	return "(IGNORED) BADCOUNTS: " . $playerstr . " STATSME weaponstats" unless (&validCounts($shots, $hits, $headshots, $damage, $kills, $deaths));
 
 	if ($g_servers{$s_addr}->{num_trackable_players} < $g_servers{$s_addr}->{minplayers})
 	{
@@ -3111,6 +3130,8 @@ sub doEvent_Statsme2
     my $desc;
     my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
     my $playerstr = &getPlayerInfoString($player, $playerId);
+
+	return "(IGNORED) BADCOUNTS: " . $playerstr . " STATSME weaponstats2" unless (&validCounts($head, $chest, $stomach, $leftarm, $rightarm, $leftleg, $rightleg));
 
 	if ($g_servers{$s_addr}->{num_trackable_players} < $g_servers{$s_addr}->{minplayers})
 	{

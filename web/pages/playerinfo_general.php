@@ -691,10 +691,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 							}
 							
 							echo '<img src="' . eHtml($jimglink) . '" title="Copy &amp; Paste the whole URL below in your forum signature" alt="forum sig image"/>';
-							$script_path = (isset($_SERVER['SSL']) || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on")) ? 'https://' : 'http://';
-							$script_path .= $_SERVER['HTTP_HOST'];
-							$script_path .= str_replace('\\','/',dirname($_SERVER['PHP_SELF']));
-							$script_path = preg_replace('/\/$/','',$script_path);
+							$script_path = rtrim($siteurlneo, '/');
 						?>
 						<br /><br />
 						<?php
@@ -785,7 +782,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$result = $db->fetch_array();
 
 		$histimage = getImage('/ranks/' . $result['image'] . '_small');
-		$rankHistory .= '<img src="' . $histimage['url'] . '" title="' . $result['rankName'] . '" alt="' . $result['rankName'] . '" /> ';
+		$rankHistory .= '<img src="' . $histimage['url'] . '" title="' . eHtmlOnce($result['rankName']) . '" alt="' . eHtmlOnce($result['rankName']) . '" /> ';
 	} 
 ?>
 
@@ -801,7 +798,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				</tr>
 				<tr class="bg1">
 					<td style="text-align:center;" colspan="2">
-						<?php echo '<img src="'.$rankimage['url']."\" alt=\"$rankName\" title=\"$rankName\" />"; ?>
+						<?php echo '<img src="'.$rankimage['url'].'" alt="'.eHtmlOnce($rankName).'" title="'.eHtmlOnce($rankName).'" />'; ?>
 					</td>
 				</tr>
 				<tr class="data-table-head">
@@ -916,7 +913,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			{
 				$image = IMAGE_PATH."/award.png";
 			}		
-			$ribbonList .= '<img src="'.$image.'" style="border:0px;" alt="'.$result['ribbonName'].'" title="'.$result["ribbonName"].'" /> ';
+			$ribbonList .= '<img src="'.$image.'" style="border:0px;" alt="'.eHtmlOnce($result['ribbonName']).'" title="'.eHtmlOnce($result["ribbonName"]).'" /> ';
 			$awards_done[$ribbonCode]=$ribbonCode;
 		}
 	}
@@ -972,7 +969,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		{
 			$image = IMAGE_PATH."/award.png";
 		}		
-		$GlobalAwardsList .= "<img src=\"$image\" alt=\"$a->ribbonName\" title=\"$a->ribbonName\" /> ";
+		$GlobalAwardsList .= "<img src=\"$image\" alt=\"" . eHtmlOnce($a->ribbonName) . "\" title=\"" . eHtmlOnce($a->ribbonName) . "\" /> ";
 	}
 	if ($ribbonList != '' || $GlobalAwardsList != '')
 	{
