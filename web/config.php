@@ -48,6 +48,15 @@ if (PHP_VERSION_ID < 80512) {
 	exit('HLstats requires PHP 8.5.12 or newer (this server runs PHP ' . PHP_VERSION . '). Older releases have critical security bugs: update PHP.');
 }
 
+// Errors go to the log, never to the visitor: PHP's built-in default is to display them
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+// Sent by every entry point: this file is always loaded first
+header_remove('X-Powered-By');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+
 // Credentials and other server-specific values are read from a .env file one level
 // above this folder (the repository root), outside the web root so it is never served.
 // It is not tracked by git, so deployments never overwrite it. See .env.example.

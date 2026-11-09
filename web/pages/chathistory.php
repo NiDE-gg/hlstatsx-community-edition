@@ -147,7 +147,14 @@
 
 	$urlSafe = htmlspecialchars($g_options['scripturl'], ENT_QUOTES, 'UTF-8');
 
-	$whereclause = "hlstats_Events_Chat.playerId = {$player} ";
+	// Visitors only see public chat: team and squad messages are private to those players
+	// (admins have the Chat page), and recent messages stay hidden like on that page
+	$whereclause = "hlstats_Events_Chat.playerId = {$player} AND hlstats_Events_Chat.message_mode NOT IN (2, 3) ";
+
+	$delayChat = (int)CHAT_DELAY_TIME;
+	if ($delayChat > 0 && $delayChat <= CHAT_DELAY_MAX_TIME) {
+		$whereclause .= " AND hlstats_Events_Chat.eventTime <= (NOW() - INTERVAL {$delayChat} MINUTE) ";
+	}
 
 	$filter = getChatFilterParam();
 	$whereclause .= buildSearchSqlSafe($db, $filter);
@@ -156,7 +163,7 @@
 	("
 		SELECT
 			hlstats_Events_Chat.eventTime,
-			IF(hlstats_Events_Chat.message_mode=2, CONCAT('(Team) ', hlstats_Events_Chat.message), IF(hlstats_Events_Chat.message_mode=3, CONCAT('(Squad) ', hlstats_Events_Chat.message), hlstats_Events_Chat.message)) AS message,
+			hlstats_Events_Chat.message,
 			hlstats_Servers.name AS serverName,
 			hlstats_Events_Chat.map
 		FROM

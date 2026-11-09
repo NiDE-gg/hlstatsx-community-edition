@@ -121,6 +121,9 @@ function printMap($type = 'main')
 				INNER JOIN
 					hlstats_Servers
 					ON (hlstats_Servers.serverId=hlstats_Livestats.server_id)
+				INNER JOIN
+					hlstats_Players
+					ON (hlstats_Players.playerId=hlstats_Livestats.player_id AND hlstats_Players.hideranking=0)
 				WHERE
 					hlstats_Livestats.cli_lat IS NOT NULL
 					AND hlstats_Livestats.cli_lng IS NOT NULL
@@ -162,9 +165,9 @@ function printMap($type = 'main')
 			}
 
 			$bootstrap['players'][] = array(
-				'lat' => (float) $map_location['cli_lat'],
-				'lng' => (float) $map_location['cli_lng'],
-				'city' => urldecode($map_location['cli_city']),
+				'lat' => round((float) $map_location['cli_lat'], 1),
+				'lng' => round((float) $map_location['cli_lng'], 1),
+				'city' => '',
 				'country' => urldecode($map_location['cli_country']),
 				'items' => $playerMarkers,
 			);
@@ -231,9 +234,9 @@ function printMap($type = 'main')
 			}
 
 			$bootstrap['players'][] = array(
-				'lat' => (float) $location['lat'],
-				'lng' => (float) $location['lng'],
-				'city' => urldecode($location['city']),
+				'lat' => round((float) $location['lat'], 1),
+				'lng' => round((float) $location['lng'], 1),
+				'city' => '',
 				'country' => urldecode($location['country']),
 				'items' => $playerMarkers,
 			);

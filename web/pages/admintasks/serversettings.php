@@ -159,7 +159,7 @@ These are the actual server parameters used by the hlstats.pl script.<br>
 	$sourceIds = '';
 	$db->query("SELECT CONCAT(name,' (',address,':',port,')') AS name, serverId FROM hlstats_Servers WHERE serverId<>$key ORDER BY name, address, port");
 	while ($r = $db->fetch_array())
-		$sourceIds .= '<OPTION VALUE="'.$r['serverId'].'">'.$r['name'];
+		$sourceIds .= '<OPTION VALUE="'.(int) $r['serverId'].'">'.eHtmlOnce($r['name']);
    
 ?>
 

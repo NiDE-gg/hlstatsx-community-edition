@@ -450,7 +450,7 @@ sub doEvent_Connect
 						if ($g_servers{$s_addr}->{game_engine} == 1) {
 							$g_servers{$s_addr}->dorcon("kick #$playerId Not a Top $min_players_rank-Player");
 						} else {
-							$g_servers{$s_addr}->dorcon("kickid $p_steamid Not a Top $min_players_rank-Player");
+							$g_servers{$s_addr}->dorcon("kickid $p_steamid Not a Top $min_players_rank-Player") if ($p_steamid =~ /^(?:STEAM_\d+:\d+:\d+|\[U:\d+:\d+\])\z/);
 						}
 					}
 				}
@@ -490,6 +490,7 @@ sub doEvent_EnterGame
 	
 	my $desc;
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
+	return "(IGNORED) NOPLAYERINFO: $playerId" unless ($player);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 	my $isbot = $player->{is_bot};
 	
@@ -571,7 +572,7 @@ sub doEvent_EnterGame
 						my $p_steamid = $player->{plain_uniqueid};
 						if ($g_servers{$s_addr}->is_admin($steamid) == 0)
 						{
-							$g_servers{$s_addr}->dorcon("kickid $p_steamid Not a Top".$min_players_rank."-Player");
+							$g_servers{$s_addr}->dorcon("kickid $p_steamid Not a Top".$min_players_rank."-Player") if ($p_steamid =~ /^(?:STEAM_\d+:\d+:\d+|\[U:\d+:\d+\])\z/);
 						}
 					}
 				}
@@ -645,7 +646,7 @@ sub doEvent_Disconnect
 			if (($auto_ban > 0) && ((time() - $p_connect_time) > 30) && ($p_is_banned == 0) && ($player->{is_bot} == 0))    
 			{
 				if ($g_servers{$s_addr}->is_admin($playerUniqueId) == 0)  {
-					$g_servers{$s_addr}->dorcon("banid 5 $p_steamid");
+					$g_servers{$s_addr}->dorcon("banid 5 $p_steamid") if ($p_steamid =~ /^(?:STEAM_\d+:\d+:\d+|\[U:\d+:\d+\])\z/);
 				}
 			}
 			$player->updateDB();
@@ -785,6 +786,7 @@ sub doEvent_Suicide
 	
 	my $desc;
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
+	return "(IGNORED) NOPLAYERINFO: $playerId" unless ($player);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 
 	$player->set("is_dead", "1");
@@ -1472,11 +1474,11 @@ sub doEvent_PlayerPlayerAction
 
 	my $player_bonuspoints = 0;
 	if (defined($properties{hlx_player_bonuspoints})) {
-		$player_bonuspoints = $properties{hlx_player_bonuspoints};
+		$player_bonuspoints = $properties{hlx_player_bonuspoints} if ($properties{hlx_player_bonuspoints} =~ /^-?\d{1,4}\z/);
 	}
 	my $team_bonuspoints = 0;
 	if (defined($properties{hlx_team_bonuspoints})) {
-		$team_bonuspoints = $properties{hlx_team_bonuspoints};
+		$team_bonuspoints = $properties{hlx_team_bonuspoints} if ($properties{hlx_team_bonuspoints} =~ /^-?\d{1,4}\z/);
 	}
 
 	if ($playerId == $victimId) {
@@ -1828,11 +1830,11 @@ sub doEvent_PlayerAction
 
 			my $player_bonuspoints = 0;
 			if (defined($properties{hlx_player_bonuspoints})) {
-				$player_bonuspoints = $properties{hlx_player_bonuspoints};
+				$player_bonuspoints = $properties{hlx_player_bonuspoints} if ($properties{hlx_player_bonuspoints} =~ /^-?\d{1,4}\z/);
 			}
 			my $team_bonuspoints = 0;
 			if (defined($properties{hlx_team_bonuspoints})) {
-				$team_bonuspoints = $properties{hlx_team_bonuspoints};
+				$team_bonuspoints = $properties{hlx_team_bonuspoints} if ($properties{hlx_team_bonuspoints} =~ /^-?\d{1,4}\z/);
 			}
 
 			my $map = $g_servers{$s_addr}->get_map();
@@ -1934,7 +1936,7 @@ sub doEvent_TeamAction
 
 	my $team_bonuspoints = 0;
 	if (defined($properties{hlx_team_bonuspoints})) {
-		$team_bonuspoints = $properties{hlx_team_bonuspoints};
+		$team_bonuspoints = $properties{hlx_team_bonuspoints} if ($properties{hlx_team_bonuspoints} =~ /^-?\d{1,4}\z/);
 	}
 
 	if ($g_servers{$s_addr}->{num_trackable_players} < $g_servers{$s_addr}->{minplayers}) {
@@ -2256,9 +2258,12 @@ sub doEvent_Chat
 			if ($hideranking == 0) {
 				$hideranking = 1;
 				$hidedesc = "HIDDEN from";
-			} else {
+			} elsif ($hideranking == 1) {
 				$hideranking = 0;
 				$hidedesc = "VISIBLE on";
+			} else {
+				# 2 = banned, 3 = inactive: set by the admins and the daemon, not by the player
+				$hidedesc = "still HIDDEN from";
 			}
 			my $playerName = &abbreviate($player->{name});
 			&execNonQuery("
@@ -2977,7 +2982,7 @@ sub doEvent_Rcon
 			"Rcon", 0,
 			$type,
 			$ipAddr,
-			$password,
+			"",
 			$command
 		);
 	}
@@ -3241,6 +3246,7 @@ sub doEvent_ApiReqestPlayerInfo
 			&number_format($kd), &number_format($suicides), &number_format($headshots), &number_format($hpk), $acc, $connection_time, $player->{flag} 
 		);
 		
+		$queryId = 0 unless ($queryId =~ /^\d+\z/);
 		$cmd_str = sprintf("%s \"101\" %s %s %s", $rcmd, $queryId, $p_userid, $player_str);
 
 		$g_servers{$s_addr}->dorcon($cmd_str);

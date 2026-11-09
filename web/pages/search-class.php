@@ -83,6 +83,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 
 // Search Class
+	require_once(INCLUDE_PATH . '/class_auth.php');
+
 	class Search
 	{
 		var $query;
@@ -116,7 +118,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					'player' => 'Player Names',
 					'uniqueid' => 'Player' . $this->uniqueid_string_plural
 				);
-				if ($g_options['Mode'] != 'LAN' && isset($_SESSION['loggedin']) && $_SESSION['acclevel'] >= 80) {
+				if ($g_options['Mode'] != 'LAN' && Auth::sessionLevel() >= 80) {
 					$searchtypes['ip'] = 'Player IP Addresses';
 				}
 				$searchtypes['clan'] = 'Clan Names';
@@ -202,7 +204,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 			$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
-			$sr_query = $db->escape($sr_query);
+			$sr_query = $db->escape(addcslashes($sr_query, '%_\\'));
 			$sr_query = preg_replace('/\s/', '%', $sr_query);
 			if ($this->type == 'player')
 			{
@@ -413,7 +415,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			}
 			elseif ($this->type == 'ip')
 			{
-				if (!isset($_SESSION['loggedin']) || $_SESSION['acclevel'] < 80) {
+				if (Auth::sessionLevel() < 80) {
 					die ("Access denied!");
 				}
 				$table = new Table

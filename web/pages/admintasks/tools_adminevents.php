@@ -124,7 +124,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		SELECT
 			CONCAT(<table>.type, ' Rcon'),
 			<table>.eventTime,
-			CONCAT('\"', command, '\"\nFrom: %A%".$g_options['scripturl']."?mode=search&q=', remoteIp, '&st=ip&game=%', remoteIp, '%/A%', IF(password<>'',CONCAT(', password: \"', password, '\"'),'')),
+			CONCAT('\"', command, '\"\nFrom: %A%".$g_options['scripturl']."?mode=search&q=', remoteIp, '&st=ip&game=%', remoteIp, '%/A%'),
 			IFNULL(hlstats_Servers.name, 'Unknown'),
 			<table>.map
 		FROM

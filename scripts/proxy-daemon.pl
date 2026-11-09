@@ -327,7 +327,7 @@ my $server = IO::Socket::INET->new(	LocalPort=>$proxy_port,
 				) or die "Can't create UDP server: $@";
 
 # It went ok, lets start recive messages...
-&printEvent("DAEMON", "HlstatsX Proxy Daemon up and running on port: $proxy_port, key: $proxy_key", 1);
+&printEvent("DAEMON", "HlstatsX Proxy Daemon up and running on port: $proxy_port", 1);
 
 # Do initial heartbeat check.
 &checkHeartbeat(\%daemon, $proxy_key);
@@ -400,6 +400,17 @@ while ($server->recv($datagram,1024,$flags)) {
 		my $dest = sockaddr_in($ipport, inet_aton($ipaddr));
 		my $bytes = send($server, $msg, 0, $dest);
 
+		next;
+	}
+
+	# Control commands for this proxy were handled above. One forwarded to a daemon
+	# would arrive wrapped in the proxy key, and the daemon would obey it.
+	if ($datagram =~ /^\xff*C;/) {
+		next;
+	}
+
+	# One entry per source address: a flood of spoofed sources must not grow this forever
+	if (!defined($srv_list{$ipaddr}) && keys(%srv_list) > 4096) {
 		next;
 	}
 

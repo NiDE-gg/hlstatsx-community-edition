@@ -51,6 +51,14 @@ class Auth
 	const MAX_FAILURES_PER_IP = 5;
 	const MAX_FAILURES_PER_USER = 20;
 
+	// Checked against the password when the username doesn't exist, so a failed
+	// login takes the same time either way and usernames can't be probed
+	const DUMMY_HASH = '$2y$12$n5HhhK0sfo720WM/KKLUzOAK48CRwObZzZxibAkD82UQJXDXhREqi';
+
+	// bcrypt ignores everything past 72 bytes
+	const MIN_PASSWORD_LENGTH = 12;
+	const MAX_PASSWORD_LENGTH = 72;
+
 	public $ok = false;
 	public $error = false;
 	public $username = '';
@@ -66,8 +74,18 @@ class Auth
 		$authPassword = (isset($_POST['authpassword']) && is_string($_POST['authpassword'])) ? $_POST['authpassword'] : '';
 
 		if ($authUsername !== '') {
+			$csrfOk = self::checkCsrf();
 			// clear POST vars so as not to confuse the receiving page
 			$_POST = array();
+
+			if (!$csrfOk) {
+				// Another site can't sign the visitor in to an account of its choosing
+				$this->username = $authUsername;
+				$this->error = 'Your session has expired. Please try again.';
+				$this->printAuth();
+				return;
+			}
+
 			$this->login($authUsername, $authPassword);
 		} elseif (!empty($_SESSION['loggedin'])) {
 			$this->resume();
@@ -80,7 +98,10 @@ class Auth
 	{
 		$this->username = $username;
 
-		$failureKeys = self::failureKeys($username);
+		// The username collation ignores case and accents, so "ADMIN" and "ádmin" reach
+		// the same account: count their failures under the name it is stored with
+		$user = self::fetchUser($username);
+		$failureKeys = self::failureKeys($user !== null ? $user['username'] : $username);
 		$lockedFor = self::lockedFor($failureKeys);
 		if ($lockedFor > 0) {
 			// Checked before the password, so guesses made while locked tell nothing
@@ -89,8 +110,8 @@ class Auth
 			return;
 		}
 
-		$user = self::fetchUser($username);
-		if ($user === null || !self::verifyPassword($password, $user['password'])) {
+		$passwordOk = self::verifyPassword($password, $user !== null ? $user['password'] : self::DUMMY_HASH);
+		if ($user === null || !$passwordOk) {
 			// Counted for unknown usernames too, so a lockout doesn't reveal which ones exist
 			self::loginFailures()->record(array_keys($failureKeys), time(), time() - self::LOCKOUT_WINDOW);
 			// Same message for both cases, so valid usernames can't be guessed
@@ -157,6 +178,26 @@ class Auth
 		$this->ok = true;
 	}
 
+	// Access level of the signed-in admin, or 0. For pages that only need the level:
+	// the same checks as resume() (account deleted, password changed, session idle).
+	static function sessionLevel()
+	{
+		if (empty($_SESSION['loggedin'])) {
+			return 0;
+		}
+
+		$user = self::fetchUser((string) ($_SESSION['username'] ?? ''));
+		$sessionHash = (string) ($_SESSION['authhash'] ?? '');
+		$sessionStart = (int) ($_SESSION['authsessionStart'] ?? 0);
+
+		if ($user === null || !hash_equals(self::fingerprint($user['password']), $sessionHash)
+			|| $sessionStart < time() - self::SESSION_TIMEOUT) {
+			return 0;
+		}
+
+		return (int) $user['acclevel'];
+	}
+
 	// hlstats_LoginFailures keys for this request and username, with their limits.
 	// Behind a reverse proxy, REMOTE_ADDR must be the client's address (Caddy's
 	// php_fastcgi does this; Apache needs mod_remoteip, nginx real_ip), or every
@@ -216,6 +257,57 @@ class Auth
 		$db->free_result($result);
 
 		return $users;
+	}
+
+	// Why $password can't be used for $username, or null when it can
+	static function passwordProblem($username, $password)
+	{
+		$password = (string) $password;
+
+		if (strlen($password) < self::MIN_PASSWORD_LENGTH) {
+			return 'Passwords must be at least ' . self::MIN_PASSWORD_LENGTH . ' characters long.';
+		}
+		if (strlen($password) > self::MAX_PASSWORD_LENGTH) {
+			return 'Passwords can be at most ' . self::MAX_PASSWORD_LENGTH . ' bytes long.';
+		}
+		if ($password === self::DEFAULT_PASSWORD || strcasecmp($password, (string) $username) === 0) {
+			return 'This password is too easy to guess.';
+		}
+
+		return null;
+	}
+
+	// Replaces the signed-in user's password and keeps their session valid.
+	// Returns an error message, or null on success.
+	function changeOwnPassword($password)
+	{
+		global $db;
+
+		$problem = self::passwordProblem($this->username, $password);
+		if ($problem !== null) {
+			return $problem;
+		}
+
+		$newHash = self::hashPassword($password);
+		$updated = $db->query("
+			UPDATE
+				hlstats_Users
+			SET
+				password = '" . $db->escape($newHash) . "'
+			WHERE
+				username = '" . $db->escape($this->username) . "'
+		", false);
+
+		if (!$updated) {
+			return 'The password could not be saved. Has the database update been run?';
+		}
+
+		$_SESSION['authhash'] = self::fingerprint($newHash);
+		$_SESSION['authdefaultpassword'] = false;
+		$this->userdata['password'] = $newHash;
+		$this->usesDefaultPassword = false;
+
+		return null;
 	}
 
 	static function csrfToken()

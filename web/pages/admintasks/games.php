@@ -47,6 +47,9 @@ For support and installation notes visit http://www.hlxcommunity.com
     function delete_game($game)
     {
     	global $db;
+
+		// Comes straight from the posted row key
+		$game = $db->escape($game);
 		
 		$srvtables = array(
 			"hlstats_Events_Admin",

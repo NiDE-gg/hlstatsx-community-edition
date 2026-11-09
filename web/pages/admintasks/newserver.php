@@ -48,7 +48,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$db->query("SELECT * FROM `hlstats_Servers` WHERE `address` = '" . $db->escape(clean_data($_POST['server_address'])) . "' AND `port` = '" . $db->escape(clean_data($_POST['server_port'])) . "'");
 		
 		if ( $row = $db->fetch_array() )
-			message("warning", "Server [" . $row['name'] . "] already exists");
+			message("warning", "Server [" . eHtml($row['name']) . "] already exists");
 		else
 		{
 			$db->query("SELECT `realgame` FROM `hlstats_Games` WHERE `code` = '" . $db->escape($selGame) . "'");

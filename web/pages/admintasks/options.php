@@ -84,14 +84,16 @@ For support and installation notes visit http://www.hlxcommunity.com
 			foreach ($this->options as $opt)
 			{
 				if (($this->title == 'Fonts') || ($this->title == 'General')) {
-					$optval = $_POST[$opt->name];
+					$optval = (isset($_POST[$opt->name]) && is_string($_POST[$opt->name])) ? $_POST[$opt->name] : '';
 					$search_pattern  = array('/script/i', '/;/', '/%/');
 					$replace_pattern = array('', '', '');
 					$optval = preg_replace($search_pattern, $replace_pattern, $optval);
 				} else {
-					$optval = valid_request($_POST[$opt->name], false);
+					$optval = valid_request($_POST[$opt->name] ?? '', false);
  	 			}
 				
+				$optval = $db->escape((string) $optval);
+
 				$result = $db->query("
 					SELECT
 						value
@@ -159,7 +161,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			{
 				case 'textarea':
 					echo "<textarea name=\"$this->name\" cols=\"35\" rows=\"4\" wrap=\"virtual\">";
-					echo html_entity_decode($optiondata[$this->name]);
+					echo eHtmlOnce($optiondata[$this->name]);
 					echo '</textarea>';
 					break;
 					
@@ -172,7 +174,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 							$sel = '';
 							if ($e==$g_options['style'])
 								$sel = 'selected="selected"';
-							echo "<option value=\"$e\"$sel>$ename</option>";
+							echo '<option value="' . eHtml($e) . "\"$sel>" . eHtml($ename) . '</option>';
 						} 
 					}
 					$d->close();
@@ -194,7 +196,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					
 				default:
 					echo "<input type=\"text\" name=\"$this->name\" size=\"35\" value=\"";
-					echo html_entity_decode($optiondata[$this->name]);
+					echo eHtmlOnce($optiondata[$this->name]);
 					echo '" class="textbox" maxlength="255" />';
 			}
 						?></td>

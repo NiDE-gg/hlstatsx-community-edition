@@ -57,11 +57,13 @@ For support and installation notes visit http://www.hlxcommunity.com
    $commands[2]["cmd"] = "KILL";
 
 	if (isset($_POST['confirm'])) {
-		$host = $_POST['masterserver'];
-		$port = $_POST["port"];
-		$command = $commands[$_POST["command"]]["cmd"];
+		$host = is_string($_POST['masterserver'] ?? null) ? trim($_POST['masterserver']) : '';
+		$port = is_string($_POST['port'] ?? null) ? (int) $_POST['port'] : 0;
+		$command = is_string($_POST['command'] ?? null) ? ($commands[$_POST['command']]['cmd'] ?? '') : '';
 		if (!$command) die ('Invalid command!');
-		if ($port==0) $port = "27500";
+		if ($port == 0) $port = 27500;
+		if ($port < 1 || $port > 65535) die ('Invalid port!');
+		if (!preg_match('/^[A-Za-z0-9.:-]{1,255}\z/', $host)) die ('Invalid host!');
 
 		// Check if we're contacting a remote host -- if so, need proxy_key configured for this to work (die and throw an error if we're missing it)
 		if (($host != "127.0.0.1") && ($host != "localhost")) 

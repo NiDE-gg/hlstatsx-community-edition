@@ -235,7 +235,9 @@ sub recieve_rcon
         $tmp     = substr($tmp, 12, length($tmp)-12);
         if ($splitted_answer > 0) {
           my $last_packet_id = $id;
-          while ($last_packet_id != $SPLIT_END_PACKET_ID) {
+          my $split_packets = 0;
+          # A server that keeps sending other ids must not hold the single-threaded daemon
+          while ($last_packet_id != $SPLIT_END_PACKET_ID && ++$split_packets <= 256 && length($tmp) <= 262144) {
             if(IO::Select->new($r_socket)->can_read($TIMEOUT)) {
               $r_socket->recv($split_data, 1500);
               my $split_size    = unpack("V",  substr($split_data, 0, 4));

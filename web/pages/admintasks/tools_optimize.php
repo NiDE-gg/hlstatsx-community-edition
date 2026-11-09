@@ -48,6 +48,20 @@ For support and installation notes visit http://www.hlxcommunity.com
 &nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" class="imageformat"><b>&nbsp;<?php echo $task->title; ?></b><p>
 
 
+<?php
+		// A long table-locking job: only ever started by this form, never by a link
+		if (!isset($_POST['confirm']))
+		{
+?>
+<form method="post">
+	<?php echo Auth::csrfField(); ?>
+	<input type="hidden" name="confirm" value="1" />
+	<span style="padding-left:35px;"><input type="submit" value="  Optimize and analyze all tables  " class="submit" /></span>
+</form>
+<?php
+			return;
+		}
+?>
 <span style="padding-left:35px;">Optimizing tables...</span></td>
 </tr>
 </table><br /><br />

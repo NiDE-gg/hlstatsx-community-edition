@@ -212,7 +212,8 @@ $db->query("
 	}
 
 	if (isset($_GET['type']) && $_GET['type'] == 'ajax') {
-		$tabs = explode('_', preg_replace('/[^a-z_]/', '', $_GET['tab'] ?? ''));
+		// One include per tab named: a repeated name would run its queries again
+		$tabs = array_slice(array_unique(explode('_', preg_replace('/[^a-z_]/', '', is_string($_GET['tab'] ?? null) ? $_GET['tab'] : ''))), 0, 8);
 
 		foreach ($tabs as $tab) {
 			if (file_exists(PAGE_PATH . "/playerinfo_$tab.php")) {

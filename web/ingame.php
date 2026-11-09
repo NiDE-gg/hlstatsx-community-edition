@@ -53,7 +53,7 @@ foreach ($_SERVER as $key => $entry) {
 				(strrchr($entry, "/") !== "/config.php") &&
 				(strrchr($entry, "/") !== "/") &&
 				($entry !== "")) {
-				header("Location: http://".$_SERVER['HTTP_HOST']."/hlstats.php");    
+				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			}    
 		}
@@ -112,6 +112,8 @@ if (isset($_GET["game"])) {
 }
 
 $mode = isset($_GET["mode"]) ? $_GET["mode"] : "";
+
+sendPageSecurityHeaders();
 
 $valid_modes = array(
     "pro",

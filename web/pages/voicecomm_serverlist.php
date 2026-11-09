@@ -1,4 +1,8 @@
 <?php
+	if (!defined('IN_HLSTATS')) {
+		die('Do not access this file directly.');
+	}
+
 	// VOICECOMM MODULE
 	global $db, $container;
 	

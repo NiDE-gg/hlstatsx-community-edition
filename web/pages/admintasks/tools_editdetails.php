@@ -107,7 +107,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 <?php
 	require(PAGE_PATH . "/search-class.php");
 	
-	$sr_query = $_GET["q"] ?? "";
+	$sr_query = is_string($_GET["q"] ?? null) ? $_GET["q"] : "";
     $search_pattern  = array("/script/i", "/;/", "/%/");
     $replace_pattern = array("", "", "");
     $sr_query = preg_replace($search_pattern, $replace_pattern, $sr_query);

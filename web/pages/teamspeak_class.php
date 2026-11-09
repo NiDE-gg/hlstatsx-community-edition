@@ -85,7 +85,7 @@ class teamspeakDisplayClass
 					$result[substr($buffer, 0, $pos)] = substr($buffer, $pos + 1);
 				}
 			}
-		} while (($buffer != "OK") && (strtoupper(substr($buffer, 0, 5)) != "ERROR") && (!feof($socket)));
+		} while (($buffer != "OK") && (strtoupper(substr($buffer, 0, 5)) != "ERROR") && (!feof($socket)) && !stream_get_meta_data($socket)['timed_out']);
 		return $result;
 	}
 	
@@ -134,7 +134,7 @@ class teamspeakDisplayClass
 					"receivedbytes" => $this->_stripPartFromString($buffer),
 					"sentpackets" => $this->_stripPartFromString($buffer),
 					"sentbytes" => $this->_stripPartFromString($buffer),
-					"paketlost" => $this->_stripPartFromString($buffer) / 100,
+					"paketlost" => (float) $this->_stripPartFromString($buffer) / 100,
 					"pingtime" => $this->_stripPartFromString($buffer),
 					"totaltime" => $this->_stripPartFromString($buffer),
 					"idletime" => $this->_stripPartFromString($buffer),
@@ -148,7 +148,7 @@ class teamspeakDisplayClass
 				$this->_setPlayerDisplayImage($result[$playerid]);
 				$this->_setPlayerDisplayName($result[$playerid]);
 			}
-		} while (($buffer != "OK") && (strtoupper(substr($buffer, 0, 5)) != "ERROR") && (!feof($socket)));
+		} while (($buffer != "OK") && (strtoupper(substr($buffer, 0, 5)) != "ERROR") && (!feof($socket)) && !stream_get_meta_data($socket)['timed_out']);
 		return $result;
 	}
 	
@@ -203,7 +203,7 @@ class teamspeakDisplayClass
 				);
 				$this->_setChannelDisplayName($result[$channelid]);
 			}
-		} while (($buffer != "OK") && (strtoupper(substr($buffer, 0, 5)) != "ERROR") && (!feof($socket)));
+		} while (($buffer != "OK") && (strtoupper(substr($buffer, 0, 5)) != "ERROR") && (!feof($socket)) && !stream_get_meta_data($socket)['timed_out']);
 		return $result;
 	}
 	

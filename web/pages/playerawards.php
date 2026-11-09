@@ -241,7 +241,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				");
 				list($lastName) = $db->fetch_row();
 			?>
-			Go to: <a href="<?php echo $g_options['scripturl'] . "?mode=playerinfo&amp;player=$player"; ?>"><?php echo $lastName; ?>'s Statistics</a>
+			Go to: <a href="<?php echo $g_options['scripturl'] . "?mode=playerinfo&amp;player=$player"; ?>"><?php echo eHtml($lastName); ?>'s Statistics</a>
 		</div>
 	</div>
 </div>

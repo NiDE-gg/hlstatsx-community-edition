@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Map Details
 
-	$map = valid_request($_GET['map'], false) or error('No map specified.');
+	$map = $db->escape(valid_request($_GET['map'], false)) or error('No map specified.');
 	
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
 	if ($db->num_rows() != 1) {

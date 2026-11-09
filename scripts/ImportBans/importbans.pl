@@ -167,8 +167,11 @@ if (@steamids) {
 	foreach $steamid (@steamids)
 	{
 		$steamid =~ s/^STEAM_[0-9]+?\://i; 
+		# Goes into the SQL below
+		next unless ($steamid =~ /^\d:\d+\z/);
 		$steamidstring .= $steamid."','";
 	}
+	die("No valid Steam IDs in the ban list. Exiting\n") if ($steamidstring eq "'");
 	$steamidstring =~ s/\,\'$//;
 
 	print "Connecting to HLX:CE database...\n";

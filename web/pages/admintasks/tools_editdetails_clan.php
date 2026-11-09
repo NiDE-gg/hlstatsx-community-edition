@@ -95,7 +95,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$data = $db->fetch_array($result);
 	
 	echo "<span class='fTitle'>";
-	echo $data['tag'];
+	echo eHtml($data['tag']);
 	echo "</span>";
 	
 	echo "<span class='fNormal'> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"

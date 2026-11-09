@@ -56,7 +56,7 @@ foreach ($_SERVER as $key => $entry) {
 				($entry !== '')) {
 				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
 				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-				header('Location: ' . $scheme . $_SERVER['HTTP_HOST'] . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
+				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			} 
 		}
@@ -124,30 +124,26 @@ if (isset($_GET['width']) && is_numeric($_GET['width'])) {
 	$width = valid_request($_GET['width'], true);
 }
 
-$body_color = 'ECF8FF';
-if (isset($_GET['body_color']) && is_string($_GET['body_color'])) {
-	$body_color = valid_request($_GET['body_color'], false);
+// Printed inside style="", after a #: anything but a hex color could add CSS rules
+function status_color_param($name, $default)
+{
+	$value = $_GET[$name] ?? '';
+
+	return (is_string($value) && preg_match('/^[0-9a-f]{3,8}\z/i', $value)) ? $value : $default;
 }
 
-$background_color = 'ABCCD6';
-if (isset($_GET['bg_color'])) {
-	$background_color = valid_request($_GET['bg_color'], false);
-}
+$body_color = status_color_param('body_color', 'ECF8FF');
 
-$color = '000000';
-if (isset($_GET['color']) && is_string($_GET['color'])) {
-	$color = valid_request($_GET['color'], false);
-}
+$background_color = status_color_param('bg_color', 'ABCCD6');
+
+$color = status_color_param('color', '000000');
 
 $border_width = '1';
 if (isset($_GET['border_width'])) {
 	$border_width = valid_request($_GET['border_width'], true);
 }
 
-$border_color = 'ABCCD6';
-if (isset($_GET['border_color'])) {
-	$border_color = valid_request($_GET['border_color'], false);
-}
+$border_color = status_color_param('border_color', 'ABCCD6');
 
 $show_logo = '1';
 if (isset($_GET['show_logo']) && is_string($_GET['show_logo'])) {
@@ -211,7 +207,7 @@ if (isset($_GET['show_map_wins']) && is_numeric($_GET['show_map_wins'])) {
 
 $top_players = '10';
 if (isset($_GET['top_players']) && is_numeric($_GET['top_players'])) {
-	$top_players = valid_request($_GET['top_players'], true);
+	$top_players = max(1, min(50, valid_request($_GET['top_players'], true)));
 }
 
 $players_images = '1';

@@ -151,7 +151,7 @@ class EditList
 
 		$okcols = 0;
 		foreach ($this->columns as $col) {
-			$value = (!empty($_POST["new_$col->name"])) ? $_POST["new_$col->name"] : '';
+			$value = (!empty($_POST["new_$col->name"]) && is_string($_POST["new_$col->name"])) ? $_POST["new_$col->name"] : '';
 			//  legacy code that should have never been here. these should never be html-escaped in the db.
 			//  if there's a problem with removing this, it needs to be fixed on the web/display end
 			//  -psychonic
@@ -165,9 +165,19 @@ class EditList
 
 			if ($value != '')
 			{
-				if ($col->type == 'ipaddress' && !preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $value))
+				$passwordProblem = ($col->type == 'password' && $col->name != 'rcon_password')
+					? Auth::passwordProblem($_POST['new_username'] ?? '', $value)
+					: null;
+
+				if ($col->type == 'ipaddress' && !preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\z/', $value))
 				{
 					$this->errors[] = "Column '$col->title' requires a valid IP address for new row";
+					$this->newerror = true;
+					$okcols++;
+				}
+				elseif ($passwordProblem !== null)
+				{
+					$this->errors[] = eHtml($passwordProblem);
 					$this->newerror = true;
 					$okcols++;
 				}
@@ -229,6 +239,11 @@ class EditList
 		
 		foreach ($_POST['rows'] as $row)
 		{
+			if (!is_string($row))
+			{
+				continue;
+			}
+
 			if (!empty($_POST[$row . '_delete'])) {
 				if (!empty($this->deleteCallback) && is_callable($this->deleteCallback)) {
 					call_user_func($this->deleteCallback, $row);
@@ -254,7 +269,7 @@ class EditList
 						continue;
 					}
 
-					$value = (!empty($_POST[$row . "_" . $col->name])) ? $_POST[$row . "_" . $col->name] : null;
+					$value = (!empty($_POST[$row . "_" . $col->name]) && is_string($_POST[$row . "_" . $col->name])) ? $_POST[$row . "_" . $col->name] : null;
 					
 					//  legacy code that should have never been here. these should never be html-escaped in the db.
 					//  if there's a problem with removing this, it needs to be fixed on the web/display end
@@ -277,14 +292,23 @@ class EditList
 						continue;
 					}
 
+					$passwordProblem = ($col->type == 'password' && $col->name != 'rcon_password' && $value != '')
+						? Auth::passwordProblem($row, $value)
+						: null;
+
 					if ($value == '' && $col->required)
 					{
-						$this->errors[] = "Required column '$col->title' must have a value for row '$row'";
+						$this->errors[] = "Required column '$col->title' must have a value for row '" . eHtml($row) . "'";
 						$rowerror = true;
 					}
-					elseif ($col->type == "ipaddress" && !preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/", $value))
+					elseif ($col->type == "ipaddress" && !preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\z/", (string) $value))
 					{
-						$this->errors[] = "Column '$col->title' requires a valid IP address for row '$row'";
+						$this->errors[] = "Column '$col->title' requires a valid IP address for row '" . eHtml($row) . "'";
+						$rowerror = true;
+					}
+					elseif ($passwordProblem !== null)
+					{
+						$this->errors[] = eHtml($passwordProblem) . " (row '" . eHtml($row) . "')";
 						$rowerror = true;
 					}
 
@@ -385,7 +409,7 @@ class EditList
 			
 			if ($this->showid)
 			{
-				echo '<td align="right" class="bg2 fSmall">' . $rowdata[$this->keycol] . "</td>\n";
+				echo '<td align="right" class="bg2 fSmall">' . eHtml($rowdata[$this->keycol]) . "</td>\n";
 			}
 
 			$this->drawfields($rowdata, false, false);
@@ -395,13 +419,13 @@ class EditList
 				global $gamecode;
 ?>
 			<td align="center" class="bg2 fSmall"><?php
-				echo "<a href='" . $g_options["scripturl"] . "?mode=admin&amp;game=$gamecode&amp;task=" . $this->DetailsLink . "&amp;key=" . $rowdata[$this->keycol] . "'><b>CONFIGURE</b></a>";
+				echo "<a href='" . $g_options["scripturl"] . "?mode=admin&amp;game=" . urlencode($gamecode) . "&amp;task=" . $this->DetailsLink . "&amp;key=" . urlencode($rowdata[$this->keycol]) . "'><b>CONFIGURE</b></a>";
 ?></td>
 <?php
 			}
 
 ?>
-<td align="center" class="bg2"><input type="checkbox" name="<?php echo $rowdata[$this->keycol]; ?>_delete" value="1" /></td>
+<td align="center" class="bg2"><input type="checkbox" name="<?php echo eHtml($rowdata[$this->keycol]); ?>_delete" value="1" /></td>
 <?php echo "</tr>\n\n";
 		}
 ?>
@@ -457,6 +481,8 @@ class EditList
 					$keyval = $keyval;
 
 			}
+
+			$keyvalHtml = eHtml($keyval);
 
 			if ($col->type != 'hidden')
 			{
@@ -518,7 +544,7 @@ class EditList
 						$width = '';
 					}
 
-					echo "<select name=\"" . $keyval . "_$col->name\"$width>\n";
+					echo "<select name=\"" . $keyvalHtml . "_$col->name\"$width>\n";
 
 					if (!$col->required)
 					{
@@ -539,12 +565,12 @@ class EditList
 							$selected = '';
 						}
 
-						echo "<option value=\"$k\"$selected>$v</option>\n";
+						echo '<option value="' . eHtml($k) . "\"$selected>" . eHtmlOnce($v) . "</option>\n";
 					}
 
 					if (!$gotcval)
 					{
-						echo '<option value="' . $rowdata[$col->name] . '" selected="selected">' . $rowdata[$col->name] . "</option>\n";
+						echo '<option value="' . eHtml($rowdata[$col->name]) . '" selected="selected">' . eHtmlOnce($rowdata[$col->name]) . "</option>\n";
 					}
 
 					echo '</select>';
@@ -563,17 +589,17 @@ class EditList
 						$selected = '';
 					}
 
-					echo '<center><input type="checkbox" name="' . $keyval . "_$col->name\" value=\"$selectedval\"$selected /></center>";
+					echo '<center><input type="checkbox" name="' . $keyvalHtml . "_$col->name\" value=\"$selectedval\"$selected /></center>";
 					break;
 					
 				case 'hidden':
-					echo '<input type="hidden" name="' . $keyval . "_$col->name\" value=\"" . htmlspecialchars($col->datasource) . '" />';
+					echo '<input type="hidden" name="' . $keyvalHtml . "_$col->name\" value=\"" . htmlspecialchars($col->datasource) . '" />';
 					break;
 					
 				case 'readonly':
 					if (!$new)
 					{
-						echo html_entity_decode($rowdata[$col->name]);
+						echo eHtmlOnce($rowdata[$col->name]);
 						break;
 					}
 					/* else fall through to default */
@@ -602,7 +628,7 @@ class EditList
 
 					$input_value = (!empty($value)) ? htmlentities(html_entity_decode($value), ENT_COMPAT, 'UTF-8') : "";
 
-					echo "<input $onClick type=\"text\" name=\"" . $keyval . "_$col->name\" size=$col->width " . "value=\"" . $input_value . "\" class=\"textbox\"" . " maxlength=\"$col->maxlength\"$onclick />";
+					echo "<input $onClick type=\"text\" name=\"" . $keyvalHtml . "_$col->name\" size=$col->width " . "value=\"" . $input_value . "\" class=\"textbox\"" . " maxlength=\"$col->maxlength\"$onclick />";
 // doing htmlentities on something that we just decoded is because we need to encode them when we fill out a form, but we don't want to double encode them (some items like rcon are not encoded at all - but server names are)
 			}
 
@@ -682,19 +708,20 @@ class PropertyPage
 		{
 			foreach ($group->properties as $prop)
 			{
+				$postValue = (isset($_POST[$prop->name]) && is_string($_POST[$prop->name])) ? $_POST[$prop->name] : '';
+
 				if ($prop->name == 'name')
 				{
-					$value = $_POST[$prop->name];
 					$search_pattern = array('/script/i', '/;/', '/%/');
 					$replace_pattern = array('', '', '');
-					$value = preg_replace($search_pattern, $replace_pattern, $value);
-					$setstrings[] = $prop->name . "='" . $value . "'";
+					$value = preg_replace($search_pattern, $replace_pattern, $postValue);
 				}
 				else
 				{
-                    $postValue = isset($_POST[$prop->name]) ? $_POST[$prop->name] : '';
-					$setstrings[] = $prop->name . "='" . valid_request($postValue, 0) . "'";
+					$value = valid_request($postValue, 0);
 				}
+
+				$setstrings[] = $prop->name . "='" . $db->escape($value) . "'";
 			}
 		}
 
@@ -829,16 +856,47 @@ if ($auth->csrfRejected) {
 	message('warning', 'The form was not sent from this admin page, or has expired. Nothing was changed: please submit it again.');
 }
 
-$defaultPasswordUsers = Auth::usersWithDefaultPassword();
-if ($auth->usesDefaultPassword && !in_array($auth->username, $defaultPasswordUsers, true)) {
-	$defaultPasswordUsers[] = $auth->username;
+// The install password is public: an account using it can do nothing else until it is changed
+if ($auth->usesDefaultPassword) {
+	if (isset($_POST['new_password']) && is_string($_POST['new_password'])) {
+		$repeat = (isset($_POST['new_password_repeat']) && is_string($_POST['new_password_repeat'])) ? $_POST['new_password_repeat'] : '';
+		$passwordError = ($_POST['new_password'] === $repeat)
+			? $auth->changeOwnPassword($_POST['new_password'])
+			: 'The two passwords do not match.';
+
+		if ($passwordError === null) {
+			$_POST = array();
+			message('success', 'Password changed.');
+		} else {
+			message('warning', eHtml($passwordError));
+		}
+	}
+
+	if ($auth->usesDefaultPassword) {
+		message('warning', 'This account still uses the default password. Choose a new one to continue.');
+?>
+<form method="post" action="<?php echo $g_options['scripturl']; ?>?mode=admin">
+	<?php echo Auth::csrfField(); ?>
+	<table class="data-table">
+		<tr><td class="bg1">New password (<?php echo Auth::MIN_PASSWORD_LENGTH; ?> characters or more):</td>
+			<td class="bg1"><input type="password" name="new_password" size="30" maxlength="<?php echo Auth::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
+		<tr><td class="bg1">Repeat it:</td>
+			<td class="bg1"><input type="password" name="new_password_repeat" size="30" maxlength="<?php echo Auth::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
+		<tr><td class="bg1">&nbsp;</td><td class="bg1"><input type="submit" value=" Change password " class="submit" /></td></tr>
+	</table>
+</form>
+<?php
+		return;
+	}
 }
-if ($defaultPasswordUsers) {
-	$changeIt = ($auth->userdata['acclevel'] >= 100)
-		? "Change it in <a href=\"{$g_options['scripturl']}?mode=admin&amp;task=adminusers\">Admin Users</a>."
-		: 'Ask an administrator to change it.';
-	message('warning', 'Still using the default password (' . Auth::DEFAULT_PASSWORD . '): '
-		. eHtml(implode(', ', $defaultPasswordUsers)) . ". Anyone can log in to these accounts. $changeIt");
+
+// Only full administrators can act on this list, and it tells others which accounts are open
+if ($auth->userdata['acclevel'] >= 100) {
+	$defaultPasswordUsers = Auth::usersWithDefaultPassword();
+	if ($defaultPasswordUsers) {
+		message('warning', 'Still using the default password: ' . eHtml(implode(', ', $defaultPasswordUsers))
+			. ". Anyone can log in to these accounts. Change it in <a href=\"{$g_options['scripturl']}?mode=admin&amp;task=adminusers\">Admin Users</a>.");
+	}
 }
 
 $selTask = isset($_GET['task']) ? valid_request($_GET['task'], false) : '';
@@ -851,17 +909,20 @@ $selGame = valid_game_code($_GET['game'] ?? '');
 	<td><?php
 
 // General Settings
-$admintasks['options'] = new AdminTask('HLstatsX:CE Settings', 80);
+// Level 80 ("Restricted") covers the areas listed on the Admin Users page: clan tags, weapons,
+// teams, roles, ranks, ribbons, awards and actions. Anything that reaches the servers, the
+// daemon, player IP addresses or other accounts needs level 100.
+$admintasks['options'] = new AdminTask('HLstatsX:CE Settings', 100);
 $admintasks['adminusers'] = new AdminTask('Admin Users', 100);
-$admintasks['games'] = new AdminTask('Games', 80);
+$admintasks['games'] = new AdminTask('Games', 100);
 $admintasks['hostgroups'] = new AdminTask('Host Groups', 100);
 $admintasks['clantags'] = new AdminTask('Clan Tag Patterns', 80);
-$admintasks['voicecomm'] = new AdminTask('Manage Voice Servers', 80);
+$admintasks['voicecomm'] = new AdminTask('Manage Voice Servers', 100);
 
 // Game Settings
-$admintasks['newserver'] = new AdminTask('Add Server', 80, 'game');
-$admintasks['servers'] = new AdminTask('Edit Servers', 80, 'game');
-$admintasks['serversettings'] = new AdminTask('&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;Server Details', 80, 'game');
+$admintasks['newserver'] = new AdminTask('Add Server', 100, 'game');
+$admintasks['servers'] = new AdminTask('Edit Servers', 100, 'game');
+$admintasks['serversettings'] = new AdminTask('&nbsp;&nbsp;&nbsp;&gt;&gt;&nbsp;Server Details', 100, 'game');
 $admintasks['actions'] = new AdminTask('Actions', 80, 'game');
 $admintasks['teams'] = new AdminTask('Teams', 80, 'game');
 $admintasks['roles'] = new AdminTask('Roles', 80, 'game');
@@ -874,24 +935,24 @@ $admintasks['ranks'] = new AdminTask('Ranks (triggered by Kills)', 80, 'game');
 $admintasks['ribbons'] = new AdminTask('Ribbons (triggered by Awards)', 80, 'game');
 
 // Tools
-$admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 80, 'tool', 'Reload or stop your HLX: CE Daemons');
-$admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 80, 'tool', 'Edit a player or clan\'s profile information.');
-$admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 80, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
-$admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');
+$admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 100, 'tool', 'Reload or stop your HLX: CE Daemons');
+$admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 100, 'tool', 'Edit a player or clan\'s profile information.');
+$admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 100, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
+$admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 100, 'tool', 'See which ISPs your players are using.');
 $admintasks['tools_optimize'] = new AdminTask('Optimize Database', 100, 'tool', 'This operation tells the MySQL server to clean up the database tables, optimizing them for better performance. It is recommended that you run this at least once a month.');
 //$admintasks['tools_synchronize'] = new AdminTask('Synchronize Statistics', 80, 'tool', 'Sychronize all players with the offical global ELstatsNEO banlist with catched VAC cheaters.');
 $admintasks['tools_resetdbcollations'] = new AdminTask('Reset All DB Collations to UTF8', 100, 'tool', 'Reset DB Collations to UTF-8 if you receive collation errors after an upgrade from another HLstats(X)-based system.');
 
 // Sub-Tools
-$admintasks['tools_editdetails_player'] = new AdminTask('Edit Player Details', 80, 'subtool', 'Edit a player\'s profile information.');
-$admintasks['tools_editdetails_clan'] = new AdminTask('Edit Clan Details', 80, 'subtool', 'Edit a clan\'s profile information.');
+$admintasks['tools_editdetails_player'] = new AdminTask('Edit Player Details', 100, 'subtool', 'Edit a player\'s profile information.');
+$admintasks['tools_editdetails_clan'] = new AdminTask('Edit Clan Details', 100, 'subtool', 'Edit a clan\'s profile information.');
 
 // Reset Tools
 $admintasks['tools_reset'] = new AdminTask('Full or Partial Reset', 100, 'tool', 'Resets chosen data globally or for selected game', 'reset');
 $admintasks['tools_reset_2'] = new AdminTask('Clean up Statistics', 100, 'tool', 'Delete all inactive players, clans and corresponding events from the database.', 'reset');
 
 // Game Settings Tools
-$admintasks['tools_settings_copy'] = new AdminTask('Duplicate Game settings', 80, 'tool', 'Duplicate a whole game settings tree to split servers of same gametype', 'settingstool');
+$admintasks['tools_settings_copy'] = new AdminTask('Duplicate Game settings', 100, 'tool', 'Duplicate a whole game settings tree to split servers of same gametype', 'settingstool');
 
 
 // Show Tool
@@ -978,7 +1039,7 @@ else
 		if ($gamecode == $selGame)
 		{
 ?>
-&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin" name="game_<?php echo $gamecode; ?>"><?php echo $gamename; ?></a></b> (<?php echo $gamecode; ?>)<br /><br /> <?php
+&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin" name="game_<?php echo eHtml($gamecode); ?>"><?php echo eHtml($gamename); ?></a></b> (<?php echo eHtml($gamecode); ?>)<br /><br /> <?php
 			foreach ($admintasks as $code => $task)
 			{
 				if ($auth->userdata['acclevel'] >= $task->acclevel && $task->type == 'game')
@@ -986,9 +1047,9 @@ else
 					if ($selTask == $code)
 					{
 ?>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo $gamecode; ?>" name="<?php echo $code; ?>"><?php echo $task->title; ?></a></b><br /><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo urlencode($gamecode); ?>" name="<?php echo $code; ?>"><?php echo $task->title; ?></a></b><br /><br />
 
-<form method="post" name="<?php echo $code; ?>form" action="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo $gamecode; ?>&task=<?php echo $code; ?>#<?php echo $code; ?>">
+<form method="post" name="<?php echo $code; ?>form" action="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo urlencode($gamecode); ?>&task=<?php echo $code; ?>#<?php echo $code; ?>">
 <?php echo Auth::csrfField(); ?>
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -1007,7 +1068,7 @@ else
 					elseif ($code != 'serversettings')
 					{
 	?>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/rightarrow.gif" width="6" height="9" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo $gamecode; ?>&task=<?php echo $code; ?>#<?php echo $code; ?>"><?php echo $task->title; ?></a></b><br /><br /> <?php
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/rightarrow.gif" width="6" height="9" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo urlencode($gamecode); ?>&task=<?php echo $code; ?>#<?php echo $code; ?>"><?php echo $task->title; ?></a></b><br /><br /> <?php
 					}
 				}
 			}
@@ -1015,7 +1076,7 @@ else
 		else
 		{
 ?>
-&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/rightarrow.gif" width="6" height="9" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo $gamecode; ?>#game_<?php echo $gamecode; ?>"><?php echo $gamename; ?></a></b> (<?php echo $gamecode; ?>)<br /><br /> <?php
+&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/rightarrow.gif" width="6" height="9" alt="" /><b>&nbsp;<a href="<?php echo $g_options['scripturl']; ?>?mode=admin&amp;game=<?php echo urlencode($gamecode); ?>#game_<?php echo eHtml($gamecode); ?>"><?php echo eHtml($gamename); ?></a></b> (<?php echo eHtml($gamecode); ?>)<br /><br /> <?php
 		}
 	}
 }

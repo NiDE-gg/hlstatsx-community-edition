@@ -1,4 +1,8 @@
 <?php
+	if (!defined('IN_HLSTATS')) {
+		die('Do not access this file directly.');
+	}
+
 	pageHeader(
 		array('Teamspeak viewer'),
 		array('Teamspeak viewer' => '')

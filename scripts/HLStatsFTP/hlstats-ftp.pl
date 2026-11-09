@@ -28,7 +28,7 @@ Options:
    --ftp-ip=IP       ftp log server IP address, if different from
                      game server IP address (--gs-ip)
    --ftp-usr=USR     ftp log server user name
-   --ftp-pwd=PWD     ftp log server password
+   --ftp-pwd=PWD     ftp log server password (better: set HLSTATS_FTP_PWD instead)
    --ftp-dir=DIR     ftp log server directory
    --quiet           quiet operation, i.e. no output
 
@@ -67,6 +67,9 @@ GetOptions(
 	"ftp-dir=s"		=>	\$ftp_dir,
 	"quiet"			=>	\$opt_quiet
 ) or die(USAGE);
+
+# The command line is visible to every user on the machine (ps)
+$ftp_pwd //= $ENV{HLSTATS_FTP_PWD};
 
 if ($opt_help) {
 	print USAGE;

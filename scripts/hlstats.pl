@@ -1100,7 +1100,9 @@ sub getPlayerInfo
 {
 	my ($player, $create_player, $ipAddr) = @_;
 
-	if ($player =~ /^(.*?)<(\d+)><([^<>]*)><([^<>]*)>(?:<([^<>]*)>)?.*$/) {
+	# Greedy on purpose: the name comes first and players choose it, so it can contain
+	# something that looks like "<2><STEAM_0:1:123><CT>". The real group is the last one.
+	if ($player =~ /^(.*)<(\d+)><([^<>]*)><([^<>]*)>(?:<([^<>]*)>)?.*$/) {
 		my $name		= $1;
 		my $userid		= $2;
 		my $uniqueid	= $3;
@@ -1551,7 +1553,7 @@ $g_player_minkills = 50;
 $g_onlyconfig_servers = 1;
 $g_track_stats_trend = 0;
 %g_lan_noplayerinfo = ();
-%g_preconnect = ();
+$g_preconnect = {};
 $g_global_banning = 0;
 $g_log_chat = 0;
 $g_log_chat_admins = 0;
@@ -1653,6 +1655,9 @@ sub readDatabaseConfig()
 		my $serverConfig = &doQuery("SELECT parameter,value FROM hlstats_Servers_Config WHERE serverId=$serverId");
 		while ( my($p,$v) = $serverConfig->fetchrow_array) {
 			$g_config_servers{$addr}{$p} = $v;
+		}
+		if (($g_config_servers{$addr}{"LogSecret"} // "") eq "") {
+			&printEvent("HLSTATSX", "Server $addr has no LogSecret: anyone who can spoof its address can forge its log lines (see README)", 1);
 		}
 	}
 	$srv_id->finish;
@@ -2062,6 +2067,13 @@ sub getLine
 $timeout    = 0;
 $s_output = "";
 my ($proxy_s_peerhost, $proxy_s_peerport);
+# Anyone who can reach the UDP port or choose a player name can send a line that
+# makes a handler die, which used to stop the daemon. The line is dropped instead.
+# (exit() still ends the program from inside the eval: "kill" and the signal handlers.)
+my $lineFailed;
+do {
+$lineFailed = 0;
+eval {
 while ($loop = &getLine()) {
 
     my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time());
@@ -2141,7 +2153,13 @@ while ($loop = &getLine()) {
 		my ($address, $port);
 		my @data = split ";", $s_output;
 		$cmd = $data[0];
-		if ($cmd eq "C" && ($s_peerhost eq "127.0.0.1" || (($proxy_key eq $rproxy_key) && $proxy_key ne ""))) {
+		# A control command is either signed with the proxy key and gives no address
+		# (web panel, proxy heartbeat), or comes from this host when no key is set.
+		# A line forwarded by proxy-daemon.pl carries a game server's address: it is a
+		# log line, even though it arrives wrapped in the key.
+		my $keyedControl = ($proxy_key ne "" && $proxy_key eq $rproxy_key && $s_addr eq "");
+		my $localControl = ($proxy_key eq "" && $s_peerhost eq "127.0.0.1");
+		if ($cmd eq "C" && ($keyedControl || $localControl)) {
 			&printEvent("CONTROL", "Command received: ".$data[1], 1);
 			if ($proxy_s_peerhost ne "" && $proxy_s_peerport ne "") {
 				$address = $proxy_s_peerhost;
@@ -2172,7 +2190,7 @@ while ($loop = &getLine()) {
 			if ($data[1] eq "KILL") {
 				&printEvent("CONTROL", "SHUTTING DOWN SCRIPT", 1);
 				&flushAll(1);
-				die "Exit script by request";
+				exit(0);
 			} 
 			
 			next;
@@ -2202,7 +2220,12 @@ while ($loop = &getLine()) {
 		if (!defined($g_servers{$s_addr})) {
 			if (($g_onlyconfig_servers == 1) && (!defined($g_config_servers{$s_addr}))) {
 				# HELLRAISER disabled this for testing
-				&printEvent(997, "NOT ALLOWED SERVER: " . $s_output);
+				# At most one line a minute: any host on the internet can send these
+				if (($g_notallowed_warned // 0) < time() - 60) {
+					$g_notallowed_warned = time();
+					(my $printable = $s_output) =~ s/[^\x20-\x7e]/?/g;
+					&printEvent(997, "NOT ALLOWED SERVER: $s_addr: $printable");
+				}
 				next;
 			} elsif (!defined($g_config_servers{$s_addr})) { # create std cfg.
 				my %std_cfg;
@@ -2450,7 +2473,11 @@ while ($loop = &getLine()) {
 			$ev_min   = $5;
 			$ev_sec   = $6;
 			$ev_time  = "$ev_hour:$ev_min:$ev_sec";
-			$ev_remotetime  = timelocal($ev_sec,$ev_min,$ev_hour,$ev_day,$ev_month-1,$ev_year);
+			$ev_remotetime  = eval { timelocal($ev_sec,$ev_min,$ev_hour,$ev_day,$ev_month-1,$ev_year) };
+			if (!defined($ev_remotetime)) {
+				&printEvent(998, "MALFORMED DATA: " . $s_output);
+				next;
+			}
 			
 			if ($g_timestamp) {
 				$ev_timestamp = "$ev_year-$ev_month-$ev_day $ev_time";
@@ -2493,11 +2520,11 @@ while ($loop = &getLine()) {
 		# pvkii parrot log lines also fit the death line parsing
 		if ($g_servers{$s_addr}->{play_game} == PVKII()
 			&& $s_output =~ /^
-				"(.+?(?:<[^>]*>){3})"		# player string
+				"([^"]+?(?:<[^>]*>){3})"		# player string
 				\s[a-z]{6}\s				# 'killed'
 				"npc_parrot<.+?>"			# parrot string
 				\s[a-z]{5}\s[a-z]{2}\s		# 'owned by'
-				"(.+?(?:<[^>]*>){3})"		# owner string
+				"([^"]+?(?:<[^>]*>){3})"		# owner string
 				\s[a-z]{4}\s				# 'with'
 				"([^"]*)"				#weapon
 				(.*)					#properties
@@ -2545,12 +2572,12 @@ while ($loop = &getLine()) {
 			}
 		} elsif ($s_output =~ /^
 				(?:\(DEATH\))?		# l4d prefix, such as (DEATH) or (INCAP)
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				(?:<setpos_exact\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d);[^"]*)?
 				)"						# player string with or without l4d-style location coords
 				(?:\s\[(-?\d+)\s(-?\d+)\s(-?\d+)\])?
 				\skilled\s			# verb (ex. attacked, killed, triggered)
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				(?:<setpos_exact\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d);[^"]*)?
 				)"						# player string as above or action name
 				(?:\s\[(-?\d+)\s(-?\d+)\s(-?\d+)\])?
@@ -2641,11 +2668,11 @@ while ($loop = &getLine()) {
 			} 
 		} elsif ($g_servers{$s_addr}->{play_game} == L4D() && $s_output =~ /^
 				\(INCAP\)		# l4d prefix, such as (DEATH) or (INCAP)
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				<setpos_exact\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d);[^"]*
 				)"						# player string with or without l4d-style location coords
 				\swas\sincapped\sby\s			# verb (ex. attacked, killed, triggered)
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				<setpos_exact\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d)\s(-?\d+?\.\d\d);[^"]*
 				)"						# player string as above or action name
 				\swith\s				# (ex. with, against)
@@ -2671,7 +2698,7 @@ while ($loop = &getLine()) {
 			my $killerinfo = &getPlayerInfo($ev_obj_a, 1);
 			my $victiminfo = &getPlayerInfo($ev_player, 1);
 			
-			if ($victiminfo->{team} eq "Infected") {
+			if ($victiminfo && $victiminfo->{team} eq "Infected") {
 				$victiminfo = undef;
 			}
 			$ev_type = 800;
@@ -2705,7 +2732,7 @@ while ($loop = &getLine()) {
 					&getProperties($ev_properties)
 				);
 			}
-		} elsif ($g_servers{$s_addr}->{play_game} == L4D() && $s_output =~ /^\(TONGUE\)\sTongue\sgrab\sstarting\.\s+Smoker:"(.+?(?:<.+?>)*?(?:|<setpos_exact ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d);.*?))"\.\s+Victim:"(.+?(?:<.+?>)*?(?:|<setpos_exact ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d);.*?))".*/) {
+		} elsif ($g_servers{$s_addr}->{play_game} == L4D() && $s_output =~ /^\(TONGUE\)\sTongue\sgrab\sstarting\.\s+Smoker:"([^"]+?(?:<[^"]+?>)*?(?:|<setpos_exact ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d);.*?))"\.\s+Victim:"([^"]+?(?:<[^"]+?>)*?(?:|<setpos_exact ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d) ((?:|-)\d+?\.\d\d);.*?))".*/) {
 			# Prototype: (TONGUE) Tongue grab starting.  Smoker:"player". Victim:"victim".
 			# Matches:
 			# 11. Player Action
@@ -2747,13 +2774,13 @@ while ($loop = &getLine()) {
 					);
 			}
 		} elsif ($s_output =~ /^
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				)"						# player string
 				\s(triggered(?:\sa)?)\s			# verb (ex. attacked, killed, triggered)
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				)"						# player string as above or action name
 				\s[a-zA-Z]+\s				# (ex. with, against)
-				"(.+?(?:<.+?>)*?
+				"([^"]+?(?:<[^"]+?>)*?
 				)"						# player string as above or weapon name
 				(?:\s[a-zA-Z]+\s"(.+?)")?	# weapon name on plyrplyr actions
 				(.*)					#properties
@@ -2825,7 +2852,7 @@ while ($loop = &getLine()) {
 					);
 				}
 			}
-		} elsif ($s_output =~ /^(?:\[STATSME\] )?"(.+?(?:<.+?>)*)" triggered "(weaponstats\d{0,1})"(.*)$/ ) {
+		} elsif ($s_output =~ /^(?:\[STATSME\] )?"([^"]+?(?:<[^"]+?>)*)" triggered "(weaponstats\d{0,1})"(.*)$/ ) {
 			# Prototype: [STATSME] "player" triggered "weaponstats?"[properties]
 			# Matches:
 			# 501. Statsme weaponstats
@@ -2908,7 +2935,7 @@ while ($loop = &getLine()) {
 					}
 				}
 			}
-		} elsif ($s_output =~ /^(?:\[STATSME\] )?"(.+?(?:<.+?>)*)" triggered "(latency|time)"(.*)$/ ) {
+		} elsif ($s_output =~ /^(?:\[STATSME\] )?"([^"]+?(?:<[^"]+?>)*)" triggered "(latency|time)"(.*)$/ ) {
 			# Prototype: [STATSME] "player" triggered "latency|time"[properties]
 			# Matches:
 			# 503. Statsme latency
@@ -2949,7 +2976,7 @@ while ($loop = &getLine()) {
 					);
 				}
 			}
-		} elsif ($s_output =~ /^"(.+?(?:<.+?>)*?)" triggered "clantag" \(value "(.+?)?"\)$/) {
+		} elsif ($s_output =~ /^"([^"]+?(?:<[^"]+?>)*?)" triggered "clantag" \(value "(.+?)?"\)$/) {
 			# L 08/14/2014 - 18:04:21: "Laam4<7><STEAM_1:0:106564><Unassigned>" triggered "clantag" (value "Kunіngas")
 			$ev_player = $1;
 			$ev_clantag = $2;
@@ -2967,7 +2994,7 @@ while ($loop = &getLine()) {
 					);
 				}
 			}
-		} elsif ($s_output =~ /^"(.+?(?:<.+?>)*?)" api_request "playerinfo" \(value "(.+?)?"\)$/) {
+		} elsif ($s_output =~ /^"([^"]+?(?:<[^"]+?>)*?)" api_request "playerinfo" \(value "(.+?)?"\)$/) {
 
 			$ev_player = $1;
 			$ev_queryId = $2;
@@ -2980,7 +3007,7 @@ while ($loop = &getLine()) {
 					$ev_status = &doEvent_ApiReqestPlayerInfo($playerinfo->{"userid"}, $playerinfo->{"uniqueid"}, $ev_queryId);
 				}
 			}
-		} elsif ($s_output =~ /^"(.+?(?:<.+?>)*?)"(?:\s\[(-?\d+)\s(-?\d+)\s(-?\d+)\]) ([a-zA-Z,_\s]+) "(.+?)"(.*)$/) {
+		} elsif ($s_output =~ /^"([^"]+?(?:<[^"]+?>)*?)"(?:\s\[(-?\d+)\s(-?\d+)\s(-?\d+)\]) ([a-zA-Z,_\s]+) "(.+?)"(.*)$/) {
 			# 4. Suicide for CS:GO
 			$ev_player = $1;
 			$ev_Xcoord = $2;
@@ -3005,7 +3032,7 @@ while ($loop = &getLine()) {
 					);
 				}
 			}
-		} elsif ($s_output =~ /^"(.+?(?:<.+?>)*?)" ([a-zA-Z,_\s]+) "(.+?)"(.*)$/) {
+		} elsif ($s_output =~ /^"([^"]+?(?:<[^"]+?>)*?)" ([a-zA-Z,_\s]+) "(.+?)"(.*)$/) {
 			# Prototype: "player" verb "obj_a"[properties]
 			# Matches:
 			#  1. Connection
@@ -3177,7 +3204,7 @@ while ($loop = &getLine()) {
 					);
 				}
 			}
-		} elsif ($s_output =~ /^(?:Kick: )?"(.+?(?:<.+?>)*)" ([^\(]+)(.*)$/) {
+		} elsif ($s_output =~ /^(?:Kick: )?"([^"]+?(?:<[^"]+?>)*)" ([^\(]+)(.*)$/) {
 			# Prototype: "player" verb[properties]
 			# Matches:
 			#	 1. Connection (CS:GO only)
@@ -3241,6 +3268,7 @@ while ($loop = &getLine()) {
 			
 			if ($ev_obj_a eq "pointcaptured") {
 				$numcappers = $ev_properties_hash{numcappers};
+				$numcappers = 0 unless (defined($numcappers) && $numcappers =~ /^\d{1,2}\z/);
 				if ($g_debug > 1) {
 					print "NumCappers = ".$numcappers."\n";
 				}
@@ -3573,8 +3601,8 @@ EOT
 			} else {
 				&printEvent($ev_type, "BAD DATA: $s_output");
 			}
-		} elsif (($s_output =~ /^Banid: "(.+?(?:<.+?>)*)" was (?:kicked and )?banned "for ([0-9]+).00 minutes" by "Console"$/) ||
-				($s_output =~ /^Banid: "(.+?(?:<.+?>)*)" was (?:kicked and )?banned "(permanently)" by "Console"$/)) {
+		} elsif (($s_output =~ /^Banid: "([^"]+?(?:<[^"]+?>)*)" was (?:kicked and )?banned "for ([0-9]+).00 minutes" by "Console"$/) ||
+				($s_output =~ /^Banid: "([^"]+?(?:<[^"]+?>)*)" was (?:kicked and )?banned "(permanently)" by "Console"$/)) {
 			
 			# Prototype: "player" verb[properties]
     		# Banid: huaaa<1804><STEAM_0:1:10769><>" was kicked and banned "permanently" by "Console"
@@ -3709,11 +3737,11 @@ EOT
 		}
 	}
 
-	while ( my($pl, $player) = each(%g_preconnect) ) {
+	while ( my($pl, $player) = each(%$g_preconnect) ) {
 		my $timeout = 600;
 		if ( ($ev_unixtime - $player->{"timestamp"}) > $timeout ) {
 			&printEvent(401, "Clearing pre-connect entry with key ".$pl);
-			delete($g_preconnect{$pl});
+			delete($g_preconnect->{$pl});
 		}
 	}
 	
@@ -3747,6 +3775,13 @@ EOT
 	$c = 1 if ($c > 500000);
 	$import_logs_count++ if ($g_stdin);
 }
+1;
+} or do {
+	$lineFailed = 1;
+	(my $lineError = $@) =~ s/[\r\n]+/ /g;
+	&printEvent("HLSTATSX", "Ignored a log line that could not be processed: " . substr($lineError, 0, 500), 1);
+};
+} while ($lineFailed);
 
 $end_time = time();
 if ($g_stdin) {

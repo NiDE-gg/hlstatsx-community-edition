@@ -65,7 +65,7 @@ Usernames and passwords can be set up for access to this HLstats Admin area. For
 
 <b>Access Levels</b><br>
 
-&#149; <i>Restricted</i> users only have access to the Host Groups, Clan Tag Patterns, Weapons, Teams, Awards and Actions configuration areas. This means these users cannot set Options or add new Games, Servers or Admin Users to HLstats, or use any of the admin Tools.<br>
+&#149; <i>Restricted</i> users only have access to the Clan Tag Patterns, Weapons, Teams, Awards and Actions configuration areas. This means these users cannot set Options or add new Games, Servers or Admin Users to HLstats, or use any of the admin Tools.<br>
 &#149; <i>Administrator</i> users have full, unrestricted access.<p>
 
 <?php
