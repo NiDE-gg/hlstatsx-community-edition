@@ -42,7 +42,7 @@
 	// function: a title row, then one Kills/Deaths row per player (plus a Time
 	// row when includeTime is set, i.e. when type == 'main').
 	function buildPlayerContent(location, includeTime) {
-		let html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + escapeHtml(location.city) + ', ' + escapeHtml(location.country) + '</td></tr>';
+		let html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + [location.city, location.country].filter(Boolean).map(escapeHtml).join(', ') + '</td></tr>';
 
 		(location.items || []).forEach(function (player) {
 			html += '<tr><td><a href="hlstats.php?mode=playerinfo&amp;player=' + escapeHtml(player.id) + '">' + escapeHtml(player.name) + '</a></td></tr>';
@@ -58,7 +58,7 @@
 
 	// Same popup markup as the old createMarkerS(point, servers, city, country, kills).
 	function buildServerContent(location, game) {
-		let html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + escapeHtml(location.city) + ', ' + escapeHtml(location.country) + '</td></tr>';
+		let html = '<table class="gmapstab"><tr><td colspan="2" class="gmapstabtitle" style="border-bottom:1px solid black;">' + [location.city, location.country].filter(Boolean).map(escapeHtml).join(', ') + '</td></tr>';
 
 		(location.items || []).forEach(function (server) {
 			// server.addr is "ip:port" and must stay literal (not URL-encoded)

@@ -48,6 +48,12 @@
 		return;
 	}
 
+	// The default password has to be changed first, in the admin panel
+	if ($auth->usesDefaultPassword)
+	{
+		error('Please change the default password in the admin panel first.');
+	}
+
     $gameRepo = $container->get(\Repository\GameRepository::class);
     $allowedGames = $gameRepo->getGameCodes();
 

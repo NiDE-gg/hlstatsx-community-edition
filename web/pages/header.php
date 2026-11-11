@@ -124,10 +124,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 	<title>
 <?php
-	echo $g_options['sitename']; 
+	echo eHtmlOnce($g_options['sitename']);
 	foreach ($title as $t)
 	{
-		echo " - $t";
+		echo ' - ' . eHtmlOnce($t);
 	}
 ?>
 	</title>
@@ -212,7 +212,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				if (!preg_match('#^https?://#i', $siteLink)) {
 					$siteLink = '//' . ltrim($siteLink, '/');
 				}
-				echo '<li><a href="' . eHtml($siteLink) . '">'. $g_options['sitename'] . '</a> <span class="arrow">&raquo;</span></li>';
+				echo '<li><a href="' . eHtml($siteLink) . '">' . eHtmlOnce($g_options['sitename']) . '</a> <span class="arrow">&raquo;</span></li>';
 			}
 			// Relative link: an absolute http:// one sent HTTPS visitors back to plain HTTP.
 			echo '<li><a href="' . eHtml($g_options['scripturl']) . '">HLstatsX</a>';
@@ -224,10 +224,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 				$url = preg_replace('/%s/', $g_options['scripturl'], $url);
 				$url = preg_replace('/&/', '&amp;', $url);
 				echo ' <span class="arrow">&raquo;</span></li><li>';
+				$label = eHtmlOnce($l);
 				if ($url) {
-					echo "<a href=\"$url\">$l</a>";
+					echo "<a href=\"$url\">$label</a>";
 				} else {
-					echo "<strong>$l</strong>";
+					echo "<strong>$label</strong>";
 				}
 				$i++;
 		}

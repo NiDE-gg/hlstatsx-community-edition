@@ -1,5 +1,9 @@
 <?php
 
+	if (!defined('IN_HLSTATS')) {
+		die('Do not access this file directly.');
+	}
+
 	pageHeader(
 		array('Ventrilo viewer'),
 		array('Ventrilo viewer'=>'')

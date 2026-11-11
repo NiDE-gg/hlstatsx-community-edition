@@ -48,15 +48,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$db->query("SELECT * FROM `hlstats_Servers` WHERE `address` = '" . $db->escape(clean_data($_POST['server_address'])) . "' AND `port` = '" . $db->escape(clean_data($_POST['server_port'])) . "'");
 		
 		if ( $row = $db->fetch_array() )
-			message("warning", "Server [" . $row['name'] . "] already exists");
+			message("warning", "Server [" . eHtmlOnce($row['name']) . "] already exists");
 		else
 		{
 			$db->query("SELECT `realgame` FROM `hlstats_Games` WHERE `code` = '" . $db->escape($selGame) . "'");
 			if ( list($game) = $db->fetch_row() )
 			{
-				$script_path = (isset($_SERVER['SSL']) || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on")) ? 'https://' : 'http://';
-				$script_path .= $_SERVER['HTTP_HOST'];
-				$script_path .= str_replace("\\","/",dirname($_SERVER["PHP_SELF"]));
+				$script_path = rtrim($siteurlneo, '/');
 				$db->query(sprintf("INSERT INTO `hlstats_Servers` (`address`, `port`, `name`, `game`, `publicaddress`, `rcon_password`) VALUES ('%s', '%d', '%s', '%s', '%s', '%s')",
 					$db->escape(clean_data($_POST['server_address'])),
 					$db->escape(clean_data($_POST['server_port'])),

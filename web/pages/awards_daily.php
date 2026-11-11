@@ -128,7 +128,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		{
 			$img = IMAGE_PATH.'/award.png';
 		}
-		$weapon = '<a href="hlstats.php?mode=dailyawardinfo&amp;award='.$r['awardId']."&amp;game=$game\"><img src=\"$img\" alt=\"".$r['code'].'" /></a>';
+		$weapon = '<a href="hlstats.php?mode=dailyawardinfo&amp;award='.$r['awardId']."&amp;game=$game\"><img src=\"$img\" alt=\"".eHtmlOnce($r['code']).'" /></a>';
 		if ($r['d_winner_id'] > 0) {
 			if ($g_options['countrydata'] == 1)	{
 				$imagestring = '<img src="'.getFlag($r['flag']).'" alt="'.$r['flag'].'" />&nbsp;&nbsp;';
@@ -144,7 +144,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
 			
 		echo "<td style=\"text-align:center;vertical-align:top;width:$colwidth%;\">
-			<strong>".$r['name'].'</strong><br /><br />'
+			<strong>".eHtmlOnce($r['name']).'</strong><br /><br />'
 			."$weapon<br /><br />"
 			."$achvd<br />"
 			.'<span class="fSmall">'.$wincount. ' ' . htmlspecialchars($r['verb']).'</span>

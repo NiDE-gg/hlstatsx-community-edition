@@ -247,7 +247,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	<div class="subblock">
 		<div style="float:left;">
-			<strong><?php echo $act_name; ?></strong> from a total of <strong><?php echo number_format(intval($totalact)); ?></strong> achievements (Last <?php echo $g_options['DeleteDays']; ?> Days)
+			<strong><?php echo eHtmlOnce($act_name); ?></strong> from a total of <strong><?php echo number_format(intval($totalact)); ?></strong> achievements (Last <?php echo $g_options['DeleteDays']; ?> Days)
 		</div>
 		<div style="float:right;">
 			Back to <a href="<?php echo $g_options['scripturl'] . "?mode=actions&amp;game=$game"; ?>">Action Statistics</a>
@@ -331,7 +331,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<a name="victims"><?php printSectionTitle("Action Victim Details"); ?></a>
 	<div class="subblock">
 		<div style="float:left;">
-			<strong>Victims of <?php echo $act_name; ?></strong> (Last <?php echo $g_options['DeleteDays']; ?> Days)
+			<strong>Victims of <?php echo eHtmlOnce($act_name); ?></strong> (Last <?php echo $g_options['DeleteDays']; ?> Days)
 		</div>
 	</div>
 	<div style="clear:both;padding:2px;"></div>

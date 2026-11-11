@@ -126,9 +126,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 //        temporary: used to transfer current cheaters to elstatsneo masterserver ~~ 30000 cheaters transferred :)
 //        $db->query("INSERT INTO vac_ids VALUES ('$entry')");
         if ($first == 0)
-          $insert_part = "('".$entry."'";
+          $insert_part = "('".$db->escape($entry)."'";
         else
-          $insert_part .= ",'".$entry."'";
+          $insert_part .= ",'".$db->escape($entry)."'";
         $first++;
         if ($first % 50 == 0)  {
           $insert_part .= ")";

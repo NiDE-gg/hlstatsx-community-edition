@@ -18,6 +18,8 @@ spec:
         app: hlstatx
     spec:
       hostNetwork: false
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: hlstatx-daemon
         image: ghcr.io/nide-gg/hlstatsx-deamon:latest

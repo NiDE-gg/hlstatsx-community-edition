@@ -8,12 +8,48 @@
 		die('Updater directory is missing.');
 	}
 	
+	// Database changes are started by a full administrator, never by a visitor
+	require_once(INCLUDE_PATH . '/class_auth.php');
+
+	$auth = new Auth;
+	if ($auth->ok === false) {
+		return;
+	}
+
 	define('IN_UPDATER', true);
 	
 	pageHeader
 	(
-		array ($gamename, 'Updater')
+		array ('Updater')
 	);
+
+	if ($auth->userdata['acclevel'] < 100) {
+		error('Access denied!', false);
+		return;
+	}
+
+	// While an update is pending this is the only page left, so the new password is
+	// chosen here. A database from before updater 110 can't store one until it is updated.
+	if (Auth::canStoreHash() && !$auth->requireNewPassword($g_options['scripturl'] . '?mode=updater')) {
+		return;
+	}
+
+	if (empty($_POST['runupdate'])) {
+		echo "<div class=\"warning\">\n<form method=\"post\" action=\"" . $g_options['scripturl'] . "?mode=updater\">\n"
+			. Auth::csrfField()
+			. "<input type=\"hidden\" name=\"runupdate\" value=\"1\" />\n"
+			. "<input type=\"submit\" value=\" Run the database update \" class=\"submit\" />\n</form>\n</div>\n";
+		return;
+	}
+
+	// Two updates at the same time would run the same ALTERs twice
+	$lockResult = $db->query("SELECT GET_LOCK('hlstats_updater', 0)");
+	list($gotLock) = $db->fetch_row($lockResult);
+	if (!$gotLock) {
+		error('A database update is already running.', false);
+		return;
+	}
+
 	echo "<div class=\"warning\">\n" .
 	"<span id=\"warning-header\"><strong>HLX:CE Database Updater log</span></strong><br /><br />\n";
 	// Check version since updater wasn't implemented until version 1.6.2

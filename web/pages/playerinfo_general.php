@@ -77,7 +77,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<tr class="bg2">
 					<td>
 						<?php
-							echo '<img src="'.getFlag($playerdata['flag']).'" alt="'.$playerdata['country'].'" title="'.$playerdata['country'].'" />&nbsp;';
+							echo '<img src="'.eHtml(getFlag($playerdata['flag'])).'" alt="'.eHtml($playerdata['country']).'" title="'.eHtml($playerdata['country']).'" />&nbsp;';
 							echo '<strong>' . htmlspecialchars($playerdata['lastName'], ENT_COMPAT) . ' </strong>';
 						?>
 					</td>
@@ -92,7 +92,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 								// if ($playerdata['city']) {
 								//	echo htmlspecialchars($playerdata['city'], ENT_COMPAT) . ', ';
 								//}
-								echo '<a href="'.$g_options['scripturl'].'?mode=countryclansinfo&amp;flag='.$playerdata['flag']."&amp;game=$game\">" . $playerdata['country'] . '</a>';
+								echo '<a href="'.$g_options['scripturl'].'?mode=countryclansinfo&amp;flag='.urlencode((string)$playerdata['flag'])."&amp;game=$game\">" . eHtml($playerdata['country']) . '</a>';
 							}
 							else
 							{
@@ -105,16 +105,24 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td>
 						<?php 
 							$prefix = ((!preg_match('/^BOT/i',$uqid)) && $g_options['Mode'] == 'Normal') ? 'STEAM_0:' : '';
-							echo "Steam: <a href=\"https://steamcommunity.com/profiles/$coid\" target=\"_blank\">$prefix" . "$uqid</a>";
+							// In LAN mode the unique ID is the player's IP address, in NameTrack mode their name
+							$coidUrl = urlencode((string)$coid);
+							if ($g_options['Mode'] == 'LAN') {
+								echo 'Steam: (hidden)';
+							} else {
+								echo "Steam: <a href=\"https://steamcommunity.com/profiles/$coidUrl\" target=\"_blank\">$prefix" . eHtml($uqid) . '</a>';
+							}
 						?>
 					</td>
 				</tr>
 				<tr class="bg1">
 					<td>
 						<?php
-							if (!preg_match('/^BOT/i', $uqid)) {
+							if (preg_match('/^[0-9]:[0-9]+\z/', (string)$uqid)) {
 								$steam3_id = '[U:1:' . (substr($uqid, 0, 1) + substr($uqid, 2) * 2) . ']';
-								echo "Steam3: <a href=\"https://steamcommunity.com/profiles/$coid\" target=\"_blank\">$steam3_id</a>";
+								echo "Steam3: <a href=\"https://steamcommunity.com/profiles/$coidUrl\" target=\"_blank\">$steam3_id</a>";
+							} elseif (!preg_match('/^BOT/i', (string)$uqid)) {
+								echo "Steam3: (hidden)";
 							} else {
 								echo "Steam3: (BOT)";
 							}
@@ -125,7 +133,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td>
 						<?php
 							if (!preg_match('/^BOT/i', $uqid)) {
-								echo "Steam64: <a href=\"https://steamcommunity.com/profiles/$coid\" target=\"_blank\">$coid</a>";
+								echo "Steam64: <a href=\"https://steamcommunity.com/profiles/$coidUrl\" target=\"_blank\">" . eHtml($coid) . '</a>';
 							} else {
 								echo "Steam64: (BOT)";
 							}
@@ -682,11 +690,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 								$jimglink = $imglink;
 							}
 							
-							echo "<img src=\"$imglink\" title=\"Copy &amp; Paste the whole URL below in your forum signature\" alt=\"forum sig image\"/>";
-							$script_path = (isset($_SERVER['SSL']) || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on")) ? 'https://' : 'http://';
-							$script_path .= $_SERVER['HTTP_HOST'];
-							$script_path .= str_replace('\\','/',dirname($_SERVER['PHP_SELF']));
-							$script_path = preg_replace('/\/$/','',$script_path);
+							echo '<img src="' . eHtml($jimglink) . '" title="Copy &amp; Paste the whole URL below in your forum signature" alt="forum sig image"/>';
+							$script_path = rtrim($siteurlneo, '/');
 						?>
 						<br /><br />
 						<?php
@@ -701,7 +706,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 						<a href="#" data-forum-text="1">
 							bbCode 1 (phpBB, SMF)</a>&nbsp;|&nbsp;<a href="#" data-forum-text="2">bbCode 2 (IPB)</a>&nbsp;|&nbsp;<a href="#" data-forum-text="0">Direct Image
 						</a>
-						<?php echo '<textarea style="width: 95%; height: 50px;" rows="2" cols="70" id="siglink" readonly="readonly" data-select-on-click>[url='."$script_path/hlstats.php?mode=playerinfo&amp;player=$player"."][img]$imglink".'[/img][/url]</textarea>'; ?>
+						<?php echo '<textarea style="width: 95%; height: 50px;" rows="2" cols="70" id="siglink" readonly="readonly" data-select-on-click>' . eHtml($forumTextData[1]) . '</textarea>'; ?>
 					</td>
 				</tr>
 			</table>
@@ -777,7 +782,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$result = $db->fetch_array();
 
 		$histimage = getImage('/ranks/' . $result['image'] . '_small');
-		$rankHistory .= '<img src="' . $histimage['url'] . '" title="' . $result['rankName'] . '" alt="' . $result['rankName'] . '" /> ';
+		$rankHistory .= '<img src="' . $histimage['url'] . '" title="' . eHtmlOnce($result['rankName']) . '" alt="' . eHtmlOnce($result['rankName']) . '" /> ';
 	} 
 ?>
 
@@ -793,7 +798,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				</tr>
 				<tr class="bg1">
 					<td style="text-align:center;" colspan="2">
-						<?php echo '<img src="'.$rankimage['url']."\" alt=\"$rankName\" title=\"$rankName\" />"; ?>
+						<?php echo '<img src="'.$rankimage['url'].'" alt="'.eHtmlOnce($rankName).'" title="'.eHtmlOnce($rankName).'" />'; ?>
 					</td>
 				</tr>
 				<tr class="data-table-head">
@@ -908,7 +913,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			{
 				$image = IMAGE_PATH."/award.png";
 			}		
-			$ribbonList .= '<img src="'.$image.'" style="border:0px;" alt="'.$result['ribbonName'].'" title="'.$result["ribbonName"].'" /> ';
+			$ribbonList .= '<img src="'.$image.'" style="border:0px;" alt="'.eHtmlOnce($result['ribbonName']).'" title="'.eHtmlOnce($result["ribbonName"]).'" /> ';
 			$awards_done[$ribbonCode]=$ribbonCode;
 		}
 	}
@@ -964,7 +969,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		{
 			$image = IMAGE_PATH."/award.png";
 		}		
-		$GlobalAwardsList .= "<img src=\"$image\" alt=\"$a->ribbonName\" title=\"$a->ribbonName\" /> ";
+		$GlobalAwardsList .= "<img src=\"$image\" alt=\"" . eHtmlOnce($a->ribbonName) . "\" title=\"" . eHtmlOnce($a->ribbonName) . "\" /> ";
 	}
 	if ($ribbonList != '' || $GlobalAwardsList != '')
 	{

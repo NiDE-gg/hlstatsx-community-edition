@@ -56,7 +56,7 @@ foreach ($_SERVER as $key => $entry) {
 				($entry !== '')) {
 				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
 				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-				header('Location: ' . $scheme . $_SERVER['HTTP_HOST'] . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
+				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			}    
 		}
@@ -294,8 +294,12 @@ if ($player_id > 0) {
 		$skill_change = $playerdata['last_skill_change'];  
 	
 	$background = 'random';
-	if (isset($_GET['background']) && ((($_GET['background'] > 0) && ($_GET['background'] < 12)) || ($_GET['background']=='random'))) {
-		$background = valid_request($_GET['background'], false);
+	if (isset($_GET['background']) && is_string($_GET['background'])) {
+		// Becomes part of a file name: only the numbers of the shipped backgrounds
+		$requestedBackground = filter_var($_GET['background'], FILTER_VALIDATE_INT, array('options' => array('min_range' => 1, 'max_range' => 11)));
+		if ($requestedBackground !== false) {
+			$background = $requestedBackground;
+		}
 	}
 
 	if ($background == 'random') {

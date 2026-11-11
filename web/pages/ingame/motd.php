@@ -68,17 +68,17 @@ For support and installation notes visit http://www.hlxcommunity.com
   
 	$players = 10;  
 	if (isset($_GET['players']) && is_numeric($_GET['players'])) {
-		$players = valid_request($_GET['players'], true);
+		$players = max(1, min(50, valid_request($_GET['players'], true)));
 	}
 
 	$clans = 3;  
 	if (isset($_GET['clans']) && is_numeric($_GET['clans'])) {
-		$clans = valid_request($_GET['clans'], true);
+		$clans = max(1, min(50, valid_request($_GET['clans'], true)));
 	}
 
 	$servers = 9001;  
 	if (isset($_GET['servers']) && is_numeric($_GET['servers'])) {
-		$servers = valid_request($_GET['servers'], true);
+		$servers = max(1, min(100, valid_request($_GET['servers'], true)));
 	}
 
 	//
@@ -260,7 +260,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$rowdata = $servers[$i]; 
 		$server_id = $rowdata['serverId'];
 		$c = ($i % 2) + 1;
-		$addr = $rowdata['addr'];
+		$addr = eHtmlOnce($rowdata['addr']);
 		$kills     = $rowdata['kills'];
 		$headshots = $rowdata['headshots'];
 		$player_string = $rowdata['act_players']."/".$rowdata['max_players'];

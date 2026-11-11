@@ -588,7 +588,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			if ($hidden == 1) {
 				$disabled_flag = "* ";
 			}
-			$games[] = "<option value=\"$code\" />$disabled_flag$name - $code\n";
+			$games[] = '<option value="' . eHtml($code) . '" />' . $disabled_flag . eHtmlOnce($name) . ' - ' . eHtml($code) . "\n";
 		}
 		
 ?>

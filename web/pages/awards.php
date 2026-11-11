@@ -59,7 +59,8 @@
     $tab = filter_input(INPUT_GET, 'tab', FILTER_UNSAFE_RAW) ?? '';
 
     if ($type == 'ajax') {
-        $tabs = explode('|', preg_replace('/[^a-z|]/', '', $tab));
+        // One include per tab named: a repeated name would run its queries again
+        $tabs = array_slice(array_unique(explode('|', preg_replace('/[^a-z|]/', '', $tab))), 0, 5);
 
         foreach ($tabs as $tab) {
             $awardPath = PAGE_PATH . '/awards_' . $tab . '.php';

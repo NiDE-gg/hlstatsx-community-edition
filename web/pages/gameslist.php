@@ -78,7 +78,7 @@ global $game;
 				}
 				echo "\t\t\t<li>\n";
 				echo "\t\t\t\t<a href=\"" . $g_options['scripturl'] . "?game=$gamedata[0]\">" . 
-						"<img src=\"" .$image['url'] ."\" style=\"margin-left: 2px; margin-right: 2px;\" alt=\"" . strtoupper($gamedata[0]) ."\" title=\"" . $gamedata[1] ."\" $img_id /></a>";
+						"<img src=\"" .$image['url'] ."\" style=\"margin-left: 2px; margin-right: 2px;\" alt=\"" . strtoupper($gamedata[0]) ."\" title=\"" . eHtmlOnce($gamedata[1]) ."\" $img_id /></a>";
 				echo "\n\t\t\t</li>\n";
 			}
 		}

@@ -180,13 +180,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo "<img class=\"mapinfo_thumb\" src=\"$mapimg\" alt=\"$map\" />";
 			}
 
-			if ($g_options['map_dlurl'])
+			// Called while the page renders with a name from the URL: known maps only, and quickly
+			if ($g_options['map_dlurl'] && $numitems > 0 && preg_match('/^[A-Za-z0-9_.-]+\z/', $map))
 			{
 				$map_dlurl = str_replace("%MAP%", $map, $g_options['map_dlurl']);
 				$map_dlurl = str_replace("%GAME%", $game, $map_dlurl);
-				$mapdlheader = @get_headers($map_dlurl);
-				if (preg_match("|200|", $mapdlheader[0])) {
-					echo "<p><a href=\"$map_dlurl\">Download this map...</a></p>";
+				$mapdlContext = stream_context_create(array('http' => array('method' => 'HEAD', 'timeout' => 3, 'follow_location' => 0)));
+				$mapdlheader = @get_headers($map_dlurl, false, $mapdlContext);
+				if ($mapdlheader && preg_match("|200|", $mapdlheader[0])) {
+					echo '<p><a href="' . eHtml($map_dlurl) . '">Download this map...</a></p>';
 				}
 			}
 

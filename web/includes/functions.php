@@ -136,6 +136,21 @@ function eHtml($str)
 }
 
 /**
+ * eHtmlOnce()
+ *
+ * eHtml() for values that may already be stored HTML-encoded (older admin
+ * forms and valid_request() store entities): decodes first, so they are not
+ * shown double-encoded, then encodes everything.
+ *
+ * @param mixed $str
+ * @return string
+ */
+function eHtmlOnce($str)
+{
+    return eHtml(html_entity_decode((string)$str, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+}
+
+/**
  * shortName()
  *
  * Shortens a player name for titles and breadcrumbs. Counts characters, not bytes:
@@ -171,7 +186,8 @@ function shortName($name, int $max = 10, int $keep = 8) : string
  */
 function jsEscape($value)
 {
-    return json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    // Names that are not valid UTF-8 must not empty the whole payload
+    return json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
 }
 
 // Test if flags exists
@@ -200,7 +216,14 @@ function getFlag($flag, $type='url')
  */
 function valid_request($str, $numeric = false)
 {
-	$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/\\\\@{}дцьДЦЬ ]/");
+	// ?x[]=1 reaches this as an array
+	if (is_array($str)) {
+		$str = '';
+	}
+
+	// No backslash in this list: legacy queries interpolate the result, and a value
+	// ending in one would escape the closing quote of the SQL string
+	$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
 	$replace_pattern = array('');
 	$str = preg_replace($search_pattern, $replace_pattern, $str);
 
@@ -228,7 +251,7 @@ function valid_request($str, $numeric = false)
  */
 function valid_game_code($str)
 {
-	if (!is_string($str) || !preg_match('/^[A-Za-z0-9_.-]{1,32}$/', $str)) {
+	if (!is_string($str) || !preg_match('/^[A-Za-z0-9_.-]{1,32}\z/', $str) || strpos($str, '..') !== false) {
 		return '';
 	}
 
@@ -446,13 +469,13 @@ function getSortArrow($sort, $sortorder, $name, $longname, $var_sort = 'sort', $
  */
 function getSelect($name, $values, $currentvalue = '')
 {
-	$select = "<select name=\"$name\" style=\"width:300px;\">\n";
+	$select = '<select name="' . eHtml($name) . "\" style=\"width:300px;\">\n";
 
 	$gotcval = false;
 
 	foreach ($values as $k => $v)
 	{
-		$select .= "\t<option value=\"$k\"";
+		$select .= "\t<option value=\"" . eHtml($k) . '"';
 
 		if ($k == $currentvalue)
 		{
@@ -460,12 +483,12 @@ function getSelect($name, $values, $currentvalue = '')
 			$gotcval = true;
 		}
 
-		$select .= ">$v</option>\n";
+		$select .= '>' . eHtmlOnce($v) . "</option>\n";
 	}
 
 	if ($currentvalue && !$gotcval)
 	{
-		$select .= "\t<option value=\"$currentvalue\" selected=\"selected\">$currentvalue</option>\n";
+		$select .= "\t<option value=\"" . eHtml($currentvalue) . '" selected="selected">' . eHtmlOnce($currentvalue) . "</option>\n";
 	}
 
 	$select .= '</select>';
@@ -563,6 +586,11 @@ function getEmailLink(?string $email, int $maxLength = 40) : string
  */
 function getImage($filename)
 {
+	// Map, weapon and flag names come from game logs: stay inside IMAGE_PATH
+	if (strpos($filename, '..') !== false || strpos($filename, "\0") !== false) {
+		return false;
+	}
+
 	preg_match('/^(.*\/)(.+)$/', $filename, $matches);
 	$relpath = $matches[1];
 	$realfilename = $matches[2];
@@ -595,6 +623,76 @@ function getImage($filename)
 	}
 
     return false;
+}
+
+/**
+ * message()
+ *
+ * Prints a notice with an icon, on the admin and updater pages.
+ *
+ * @param string $icon Image name in IMAGE_PATH, without the extension
+ * @param string $msg HTML, already escaped by the caller
+ * @return void
+ */
+function message($icon, $msg)
+{
+	global $g_options;
+?>
+		<table width="60%" border="0" cellspacing="0" cellpadding="0">
+
+		<tr valign="top">
+			<td width="40"><img src="<?php echo IMAGE_PATH . "/$icon"; ?>.gif" width="16" height="16" border="0" hspace="5" alt="" /></td>
+			<td width="100%"><?php
+	echo "<b>$msg</b>";
+?></td>
+		</tr>
+
+		</table><br /><br />
+<?php
+}
+
+/**
+ * sendPageSecurityHeaders()
+ *
+ * Browser-side limits for the HTML pages. They carry no inline JavaScript, so
+ * scripts can be restricted to this site and injected markup can't run. Inline
+ * styles are still used everywhere.
+ *
+ * The Maps JavaScript API needs the sources listed in Google's CSP guide. They
+ * include 'unsafe-eval' and wildcard hosts serving user uploads, which weaken the
+ * policy, so they are only added on pages showing the map, when it is switched
+ * on. The guide's 'unsafe-inline' is left out: nothing here needs it.
+ *
+ * @param bool $frameable false for pages an admin acts on (clickjacking)
+ * @param bool $mapPage true for the pages that can show the Google map
+ * @return void
+ */
+function sendPageSecurityHeaders(bool $frameable = true, bool $mapPage = false) : void
+{
+	global $g_options;
+
+	$maps = $mapPage && ($g_options['show_google_map'] ?? 0) == 1;
+
+	$policy = array(
+		"default-src 'self'",
+		"script-src 'self'" . ($maps ? " 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:" : ''),
+		"style-src 'self' 'unsafe-inline'" . ($maps ? ' https://fonts.googleapis.com' : ''),
+		"img-src 'self' data: https:",
+		"font-src 'self' data:" . ($maps ? ' https://fonts.gstatic.com' : ''),
+		"connect-src 'self'" . ($maps ? ' https://*.googleapis.com https://*.google.com https://*.gstatic.com data: blob:' : ''),
+		"frame-src " . ($maps ? 'https://*.google.com' : "'none'"),
+		"worker-src " . ($maps ? 'blob:' : "'none'"),
+		"object-src 'none'",
+		"base-uri 'self'",
+		"form-action 'self'",
+	);
+
+	if (!$frameable) {
+		$policy[] = "frame-ancestors 'none'";
+		header('X-Frame-Options: DENY');
+	}
+
+	header('Content-Security-Policy: ' . implode('; ', $policy));
 }
 
 /**

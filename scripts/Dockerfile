@@ -1,8 +1,8 @@
 FROM ubuntu:24.04
 
+# DB_PASSWORD has no default: the entrypoints refuse to start without it
 ENV DB_NAME=hlxce \
     DB_USERNAME=hlxce \
-    DB_PASSWORD=hlxce \
     DB_HOST=db
 
 COPY docker-hlxce-daemon-entrypoint /usr/local/bin/
@@ -39,8 +39,8 @@ RUN --mount=type=secret,id=maxmind_license_key \
             libsyntax-keyword-try-perl \
             libgeoip2-perl \
             libmaxmind-db-reader-perl \
-        && groupadd hlxce \
-        && useradd  -d /home/hlxce/ -s /bin/bash -g hlxce hlxce \
+        && groupadd -g 10001 hlxce \
+        && useradd -u 10001 -d /home/hlxce/ -s /bin/bash -g hlxce hlxce \
         && chmod +x /usr/local/bin/docker-hlxce-daemon-entrypoint \
         && chmod +x /usr/local/bin/docker-hlxce-awards \
         && chmod +x hlstats-awards.pl hlstats.pl hlstats-resolve.pl run_hlstats \
@@ -48,7 +48,8 @@ RUN --mount=type=secret,id=maxmind_license_key \
         && ./GeoLiteCity/install_binary.sh \
         && chown hlxce:hlxce -R .
 
-COPY . /home/hlxce/
+# Owned by the runtime user: the entrypoints rewrite hlstats.conf in this folder
+COPY --chown=10001:10001 . /home/hlxce/
 
 RUN dos2unix /usr/local/bin/docker-hlxce-daemon-entrypoint \
     && dos2unix /usr/local/bin/docker-hlxce-awards
@@ -60,5 +61,8 @@ ARG BUILD_COMMIT=""
 ARG BUILD_DATE=""
 ENV HLX_BUILD_COMMIT=${BUILD_COMMIT} \
     HLX_BUILD_DATE=${BUILD_DATE}
+
+# Numeric, so Kubernetes can check runAsNonRoot
+USER 10001:10001
 
 ENTRYPOINT ["docker-hlxce-daemon-entrypoint"]

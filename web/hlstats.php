@@ -41,6 +41,9 @@ require('config.php');
 
 define('TITLE_IMAGE', IMAGE_PATH . "/downarrow.gif");
 
+// Refuse session ids this server did not hand out
+ini_set('session.use_strict_mode', '1');
+
 session_set_cookie_params([
 	'httponly' => true,
 	'samesite' => 'Lax',
@@ -62,8 +65,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['logout'] ?? '')
 // Several stuff added by Malte Bayer
 global $scripttime, $siteurlneo;
 $scripttime = microtime(true);
-$siteurlneo=((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strpos($_SERVER['PHP_SELF'],strrchr($_SERVER['PHP_SELF'],'/'))+1);
-$siteurlneo=str_replace('\\','/',$siteurlneo);
+$siteurlneo=((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://').preg_replace('/[^A-Za-z0-9.:\[\]-]/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')).rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/').'/';
 
 // Several Stuff end
 
@@ -84,7 +86,7 @@ foreach ($_SERVER as $key => $entry) {
 				(strrchr($entry, '/') !== '/config.php') &&
 				(strrchr($entry, '/') !== '/') &&
 				($entry !== '')) {
-				header('Location: ' . $siteurlneo . 'hlstats.php');    
+				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
 				exit;
 			}    
 		}
@@ -202,6 +204,17 @@ $valid_modes = array(
 	'profile'
 );
    
+if ( !in_array($mode, $valid_modes) )
+{
+	$mode = 'contents';
+}
+
+// The Google map is only shown on the game page ("contents") and the clan page
+sendPageSecurityHeaders(
+	!in_array($mode, array('admin', 'chat', 'updater', 'profile'), true),
+	in_array($mode, array('contents', 'claninfo'), true)
+);
+
 // The updater folder is deployed with the site, so only block pages while an update is pending
 $updatePending = version_compare($g_options['version'], '1.6.2', '<')
 	|| file_exists('./updater/' . ((int) $g_options['dbversion'] + 1) . '.php');
@@ -217,11 +230,6 @@ if ($updatePending && file_exists('./updater') && $mode != 'updater')
 	die();
 }
    
-if ( !in_array($mode, $valid_modes) )
-{
-	$mode = 'contents';
-}
-
 if ( file_exists(PAGE_PATH . "/$mode.php") )
 {
 	@include(PAGE_PATH . "/$mode.php");

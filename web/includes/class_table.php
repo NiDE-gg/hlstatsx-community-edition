@@ -280,7 +280,7 @@ class Table
 							$rowdata['flag'] = '0';
 							$alt_text        = 'No Country';
 						} else {
-							$alt_text        = ucfirst(strtolower($rowdata['country']));
+							$alt_text        = eHtml(ucfirst(strtolower($rowdata['country'])));
 						}
 
 						$cellbody .= '<img src="' . getFlag($rowdata['flag'])."\" class=\"tableicon\" alt=\"$alt_text\" title=\"$alt_text\" />";
@@ -298,7 +298,7 @@ class Table
                               $colval = '0';
                         }
 
-						$cellbody = '<img src="' . IMAGE_PATH  . "/mmranks/" . $colval . ".png\" class=\"tableicon\" alt=\"elorank\" style=\"height:20px;width:50px;\" />";
+						$cellbody = '<img src="' . IMAGE_PATH  . "/mmranks/" . (int) $colval . ".png\" class=\"tableicon\" alt=\"elorank\" style=\"height:20px;width:50px;\" />";
 						break;
 					case 'timestamp':
 						$cellbody  = timestamp_to_str($colval);
@@ -309,20 +309,20 @@ class Table
 						// check if image exists for game -- otherwise check realgame
 						if ($image)
 						{
-							$cellbody .= '<img src="' . $image['url'] . '" alt="' . $col->fname[$colval_lower] . '" title="' . $col->fname[$colval_lower] . '" />&nbsp;';
+							$cellbody .= '<img src="' . eHtml($image['url']) . '" alt="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" title="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" />&nbsp;';
 						}
 						elseif ($image = getImage("/games/$realgame/roles/" . $colval_lower))
 						{
-							$cellbody .= '<img src="' . $image['url'] . '" alt="' . $col->fname[$colval_lower] . '" title="' . $col->fname[$colval_lower] . '" />&nbsp;';
+							$cellbody .= '<img src="' . eHtml($image['url']) . '" alt="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" title="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" />&nbsp;';
 						}
 						
 						if (!empty($col->fname[$colval_lower]))
 						{
-							$cellbody .= '<b>' . $col->fname[$colval_lower] . '</b>';
+							$cellbody .= '<b>' . eHtmlOnce($col->fname[$colval_lower]) . '</b>';
 						}
 						else
 						{
-							$cellbody .= '<b>' . ucwords(preg_replace('/_/', ' ', $colval)) . '</b>';
+							$cellbody .= '<b>' . eHtml(ucwords(preg_replace('/_/', ' ', (string) $colval))) . '</b>';
 						}
 
 						break;
@@ -332,15 +332,15 @@ class Table
 						$image = getImage("/games/$game/weapons/" . $colval_lower);
 						if ($image)
 						{
-							$cellbody .= '<img src="' . $image['url'] . '" ' . $image['size'] . ' alt="' . $col->fname[$colval_lower] . '" title="' . $col->fname[$colval_lower] . '" />';
+							$cellbody .= '<img src="' . eHtml($image['url']) . '" ' . $image['size'] . ' alt="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" title="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" />';
 						}
 						elseif ($image = getImage("/games/$realgame/weapons/" . $colval_lower))
 						{
-							$cellbody .= '<img src="' . $image['url'] . '" ' . $image['size'] . ' alt="' . $col->fname[$colval_lower] . '" title="' . $col->fname[$colval_lower] . '" />';
+							$cellbody .= '<img src="' . eHtml($image['url']) . '" ' . $image['size'] . ' alt="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" title="' . eHtmlOnce($col->fname[$colval_lower] ?? '') . '" />';
 						}
 						else
 						{
-							$cellbody .= '<b>' . (!empty($col->fname[$colval_lower]) ? $col->fname[$colval_lower] : ucwords(preg_replace('/_/', ' ', $colval))) . '</b>';
+							$cellbody .= '<b>' . (!empty($col->fname[$colval_lower]) ? eHtmlOnce($col->fname[$colval_lower]) : eHtml(ucwords(preg_replace('/_/', ' ', (string) $colval)))) . '</b>';
 						}
 						break;
 
@@ -352,7 +352,7 @@ class Table
 						$heatmapthumb = getImage("/games/$game/heatmaps/$colval-kill-thumb");
 
 						if ($heatmap) {
-							$cellbody .= "<span style=\"text-align: center;\"><a href=\"" . $heatmap['url'] . "\" rel=\"boxed\"><img width=\"20\" height=\"16\" src=\"" . $heatmapthumb['url'] . "\" /></a></span>";
+							$cellbody .= "<span style=\"text-align: center;\"><a href=\"" . eHtml($heatmap['url']) . "\" rel=\"boxed\"><img width=\"20\" height=\"16\" src=\"" . eHtml($heatmapthumb['url'] ?? '') . "\" /></a></span>";
 						} else {
 							$cellbody .= "&nbsp;";
 						}

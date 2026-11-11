@@ -100,6 +100,8 @@
 				WHERE 
 					game = :game
 				AND 
+					hlstats_Players.hideranking = 0
+				AND 
 					name LIKE :search
 				LIMIT :limit
 			";
@@ -108,7 +110,8 @@
 				$stmt = $this->pdo->prepare($sql);
 
                 $stmt->bindValue(':game', $game, PDO::PARAM_STR);
-                $stmt->bindValue(':search', $search . '%', PDO::PARAM_STR);
+                // % and _ typed by a visitor are literals: a bare % would scan every name
+                $stmt->bindValue(':search', addcslashes($search, '%_\\') . '%', PDO::PARAM_STR);
                 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
                 $stmt->execute();
 

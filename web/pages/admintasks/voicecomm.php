@@ -47,7 +47,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist = new EditList('serverId', 'hlstats_Servers_VoiceComm', '', false);
 	$edlist->columns[] = new EditListColumn('name', 'Server Name', 45, true, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('addr', 'Server IP or Hostname (Discord: invite link or server ID)', 20, true, 'text', '', 64);
-	$edlist->columns[] = new EditListColumn('password', 'Password', 20, false, 'text', '', 64);
+	$edlist->columns[] = new EditListColumn('password', 'Join password (shown to all visitors)', 20, false, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('UDPPort', 'UDP Port (TS only)', 6, false, 'text', '8767', 64);
 	$edlist->columns[] = new EditListColumn('queryPort', 'Query Port (TS)/Connect Port (Vent)', 6, true, 'text', '51234', 64);
 	$edlist->columns[] = new EditListColumn('descr', 'Notes', 40, false, 'text', '', 64);

@@ -192,7 +192,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	</div>
 	<br /><br />
 <?php
-  echo '<img src="'.IMAGE_PATH."/games/$game/ribbons/$image\" alt=\"\" /> <b>$act_name</b>";
+  echo '<img src="'.IMAGE_PATH."/games/$game/ribbons/$image\" alt=\"\" /> <b>" . eHtmlOnce($act_name) . "</b>";
 	$table->draw($result, $numitems, 95, 'center');
 ?>
 </div>

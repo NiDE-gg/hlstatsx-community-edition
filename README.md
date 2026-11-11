@@ -49,6 +49,16 @@ The daemon identifies a game server by the source address of its UDP log packets
 
 The daemon then drops every line claiming to come from that server that is not signed with the secret. Leave LogSecret empty to keep the old behaviour. GoldSrc servers can't sign their logs.
 
+### :shield: Securing an installation
+
+The code cannot do these for you:
+
+- Serve only `web/` as the document root, and block `/pages`, `/classes`, `/includes` and `/updater/*.php` on servers that ignore `.htaccess` (nginx, Caddy).
+- Set `display_errors = off` in PHP.
+- Set a `LogSecret` on every Source server (see above). The daemon names the servers without one when it starts.
+- Firewall the daemon's UDP port (32578 by default) so only your game servers can reach it.
+- Give staff the *Restricted* access level (80) only for clan tags, weapons, teams, roles, ranks, ribbons, awards and actions, editing player and clan details, host statistics and the player IP search. Restricted accounts can see players' IP and e-mail addresses. Everything else needs *Administrator* (100).
+
 ### :book: Documentation
 * https://github.com/NomisCZ/hlstatsx-community-edition/wiki 🚧 Wiki - work in progress 🚧
 ### :speech_balloon: Help

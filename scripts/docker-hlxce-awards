@@ -1,5 +1,7 @@
 #!/bin/bash
 
+: "${DB_PASSWORD:?Set DB_PASSWORD: the image has no default password}"
+
 # Copy DB_HOST, DB_USERNAME, DB_PASSWORD and DB_NAME into hlstats.conf. Perl reads
 # them from the environment, so values containing / & \ or " are written as-is
 # (a sed replacement would interpret them).
@@ -7,5 +9,6 @@ perl -pi -e '
     BEGIN { %env = (DBHost => "DB_HOST", DBUsername => "DB_USERNAME", DBPassword => "DB_PASSWORD", DBName => "DB_NAME") }
     s/^(\s*(\w+)\s+).*$/$1"$ENV{$env{$2}}"/ if /^\s*(\w+)\s/ && exists $env{$1};
 ' /home/hlxce/hlstats.conf
+chmod 600 /home/hlxce/hlstats.conf
 
 exec perl hlstats-awards.pl

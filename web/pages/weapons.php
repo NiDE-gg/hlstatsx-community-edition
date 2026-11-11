@@ -186,7 +186,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<?php $tblWeapons->draw($result, $db->num_rows($result), 95); ?><br /><br />
 	<div class="subblock">
 		<div style="float:right;">
-			Go to: <a href="<?php echo $g_options["scripturl"] . "?game=$game"; ?>"><?php echo $gamename; ?></a>
+			Go to: <a href="<?php echo $g_options["scripturl"] . "?game=$game"; ?>"><?php echo eHtmlOnce($gamename); ?></a>
 		</div>
 	</div>
 </div>

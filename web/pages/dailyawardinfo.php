@@ -156,7 +156,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	{
 		$img = IMAGE_PATH.'/award.png';
 	}
-	echo "<img src=\"$img\" alt=\"$awardcode\" /> <strong>$awardname</strong>";
+	echo "<img src=\"$img\" alt=\"" . eHtmlOnce($awardcode) . "\" /> <strong>" . eHtmlOnce($awardname) . "</strong>";
 	$table->draw($result, $numitems, 95, 'center');
 ?>
 </div>

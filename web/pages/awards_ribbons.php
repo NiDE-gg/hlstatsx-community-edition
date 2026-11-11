@@ -128,7 +128,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		{
 			$image = IMAGE_PATH."/award.png";
 		}
-		$image = '<img src="'.$image.'" alt="'.$r['ribbonName'].'" />';
+		$image = '<img src="'.$image.'" alt="'.eHtmlOnce($r['ribbonName']).'" />';
 		$achvd = '';
 		if ($r['achievedcount'] > 0)
 		{
@@ -137,7 +137,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
 
 		echo "<td style=\"text-align:center;vertical-align:top;width:$colwidth%;\">
-			<strong>".$r['ribbonName'].'</strong><br /><br /><span class="fSmall">'
+			<strong>".eHtmlOnce($r['ribbonName']).'</strong><br /><br /><span class="fSmall">'
 			."$achvd</span><br />$image
 			</td>";
 		$i++;

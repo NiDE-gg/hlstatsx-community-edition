@@ -212,7 +212,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			$server_id = $rowdata['serverId'];
 			$c = ($i % 2) + 1;
 
-			$addr = $rowdata['addr'];
+			$addr = eHtmlOnce($rowdata['addr']);
 
 			$kills = $rowdata['kills'];
 			$headshots = $rowdata['headshots'];
@@ -353,7 +353,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 			$c = ($i % 2) + 1;
 
-			$addr = $rowdata['addr'];
+			$addr = eHtmlOnce($rowdata['addr']);
 			$kills = $rowdata['kills'];
 			$headshots = $rowdata['headshots'];
 			$player_string = $rowdata['act_players'] . "/" . $rowdata['max_players'];

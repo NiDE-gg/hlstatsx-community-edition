@@ -36,6 +36,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
+	if (!defined('IN_HLSTATS')) {
+		die('Do not access this file directly.');
+	}
+
 	global $game;
 	
 // Search
@@ -46,7 +50,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		array ('Search' => '')
 	);
 
-	$sr_query = $_GET['q'] ?? '';
+	$sr_query = is_string($_GET['q'] ?? null) ? $_GET['q'] : '';
 	$sr_type = valid_request(strval($_GET['st'] ?? ''), false) ?: 'player';
 	$sr_game = valid_game_code($_GET['game'] ?? $game);
 	$search = new Search($sr_query, $sr_type, $sr_game);

@@ -51,6 +51,14 @@ class Auth
 	const MAX_FAILURES_PER_IP = 5;
 	const MAX_FAILURES_PER_USER = 20;
 
+	// Checked against the password when the username doesn't exist, so a failed
+	// login takes the same time either way and usernames can't be probed
+	const DUMMY_HASH = '$2y$12$n5HhhK0sfo720WM/KKLUzOAK48CRwObZzZxibAkD82UQJXDXhREqi';
+
+	// bcrypt ignores everything past 72 bytes
+	const MIN_PASSWORD_LENGTH = 12;
+	const MAX_PASSWORD_LENGTH = 72;
+
 	public $ok = false;
 	public $error = false;
 	public $username = '';
@@ -66,8 +74,18 @@ class Auth
 		$authPassword = (isset($_POST['authpassword']) && is_string($_POST['authpassword'])) ? $_POST['authpassword'] : '';
 
 		if ($authUsername !== '') {
+			$csrfOk = self::checkCsrf();
 			// clear POST vars so as not to confuse the receiving page
 			$_POST = array();
+
+			if (!$csrfOk) {
+				// Another site can't sign the visitor in to an account of its choosing
+				$this->username = $authUsername;
+				$this->error = 'Your session has expired. Please try again.';
+				$this->printAuth();
+				return;
+			}
+
 			$this->login($authUsername, $authPassword);
 		} elseif (!empty($_SESSION['loggedin'])) {
 			$this->resume();
@@ -80,7 +98,10 @@ class Auth
 	{
 		$this->username = $username;
 
-		$failureKeys = self::failureKeys($username);
+		// The username collation ignores case and accents, so "ADMIN" and "ádmin" reach
+		// the same account: count their failures under the name it is stored with
+		$user = self::fetchUser($username);
+		$failureKeys = self::failureKeys($user !== null ? $user['username'] : $username);
 		$lockedFor = self::lockedFor($failureKeys);
 		if ($lockedFor > 0) {
 			// Checked before the password, so guesses made while locked tell nothing
@@ -89,8 +110,8 @@ class Auth
 			return;
 		}
 
-		$user = self::fetchUser($username);
-		if ($user === null || !self::verifyPassword($password, $user['password'])) {
+		$passwordOk = self::verifyPassword($password, $user !== null ? $user['password'] : self::DUMMY_HASH);
+		if ($user === null || !$passwordOk) {
 			// Counted for unknown usernames too, so a lockout doesn't reveal which ones exist
 			self::loginFailures()->record(array_keys($failureKeys), time(), time() - self::LOCKOUT_WINDOW);
 			// Same message for both cases, so valid usernames can't be guessed
@@ -157,6 +178,27 @@ class Auth
 		$this->ok = true;
 	}
 
+	// Access level of the signed-in admin, or 0. For pages that only need the level:
+	// the same checks as resume() (account deleted, password changed, session idle).
+	// A session opened with the install password counts for nothing until it is changed.
+	static function sessionLevel()
+	{
+		if (empty($_SESSION['loggedin']) || !empty($_SESSION['authdefaultpassword'])) {
+			return 0;
+		}
+
+		$user = self::fetchUser((string) ($_SESSION['username'] ?? ''));
+		$sessionHash = (string) ($_SESSION['authhash'] ?? '');
+		$sessionStart = (int) ($_SESSION['authsessionStart'] ?? 0);
+
+		if ($user === null || !hash_equals(self::fingerprint($user['password']), $sessionHash)
+			|| $sessionStart < time() - self::SESSION_TIMEOUT) {
+			return 0;
+		}
+
+		return (int) $user['acclevel'];
+	}
+
 	// hlstats_LoginFailures keys for this request and username, with their limits.
 	// Behind a reverse proxy, REMOTE_ADDR must be the client's address (Caddy's
 	// php_fastcgi does this; Apache needs mod_remoteip, nginx real_ip), or every
@@ -216,6 +258,101 @@ class Auth
 		$db->free_result($result);
 
 		return $users;
+	}
+
+	// Why $password can't be used for $username, or null when it can
+	static function passwordProblem($username, $password)
+	{
+		$password = (string) $password;
+
+		if (strlen($password) < self::MIN_PASSWORD_LENGTH) {
+			return 'Passwords must be at least ' . self::MIN_PASSWORD_LENGTH . ' characters long.';
+		}
+		if (strlen($password) > self::MAX_PASSWORD_LENGTH) {
+			return 'Passwords can be at most ' . self::MAX_PASSWORD_LENGTH . ' bytes long.';
+		}
+		if ($password === self::DEFAULT_PASSWORD || strcasecmp($password, (string) $username) === 0) {
+			return 'This password is too easy to guess.';
+		}
+
+		return null;
+	}
+
+	// Replaces the signed-in user's password and keeps their session valid.
+	// Returns an error message, or null on success.
+	function changeOwnPassword($password)
+	{
+		global $db;
+
+		$problem = self::passwordProblem($this->username, $password);
+		if ($problem !== null) {
+			return $problem;
+		}
+
+		if (!self::canStoreHash()) {
+			return 'This database cannot store a new password yet. Please run the database update first.';
+		}
+
+		$newHash = self::hashPassword($password);
+		$updated = $db->query("
+			UPDATE
+				hlstats_Users
+			SET
+				password = '" . $db->escape($newHash) . "'
+			WHERE
+				username = '" . $db->escape($this->username) . "'
+		", false);
+
+		if (!$updated) {
+			return 'The password could not be saved. Has the database update been run?';
+		}
+
+		$_SESSION['authhash'] = self::fingerprint($newHash);
+		$_SESSION['authdefaultpassword'] = false;
+		$this->userdata['password'] = $newHash;
+		$this->usesDefaultPassword = false;
+
+		return null;
+	}
+
+	// The install password is public: an account using it can do nothing else until it
+	// has a new one. Prints the form for that while it is needed, so call it after
+	// pageHeader(). Returns true when the page can go on.
+	function requireNewPassword($formAction)
+	{
+		if (!$this->usesDefaultPassword) {
+			return true;
+		}
+
+		if (isset($_POST['new_password']) && is_string($_POST['new_password'])) {
+			$repeat = (isset($_POST['new_password_repeat']) && is_string($_POST['new_password_repeat'])) ? $_POST['new_password_repeat'] : '';
+			$passwordError = ($_POST['new_password'] === $repeat)
+				? $this->changeOwnPassword($_POST['new_password'])
+				: 'The two passwords do not match.';
+
+			if ($passwordError === null) {
+				$_POST = array();
+				message('success', 'Password changed.');
+				return true;
+			}
+
+			message('warning', eHtml($passwordError));
+		}
+
+		message('warning', 'This account still uses the default password. Choose a new one to continue.');
+?>
+<form method="post" action="<?php echo eHtml($formAction); ?>">
+	<?php echo self::csrfField(); ?>
+	<table class="data-table">
+		<tr><td class="bg1">New password (<?php echo self::MIN_PASSWORD_LENGTH; ?> characters or more):</td>
+			<td class="bg1"><input type="password" name="new_password" size="30" maxlength="<?php echo self::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
+		<tr><td class="bg1">Repeat it:</td>
+			<td class="bg1"><input type="password" name="new_password_repeat" size="30" maxlength="<?php echo self::MAX_PASSWORD_LENGTH; ?>" autocomplete="new-password" class="textbox" /></td></tr>
+		<tr><td class="bg1">&nbsp;</td><td class="bg1"><input type="submit" value=" Change password " class="submit" /></td></tr>
+	</table>
+</form>
+<?php
+		return false;
 	}
 
 	static function csrfToken()
@@ -301,6 +438,10 @@ class Auth
 		$stored = (string) $stored;
 
 		if (self::isLegacyHash($stored)) {
+			// As slow as a bcrypt check, so failed logins can't single out the accounts
+			// still on MD5, the likeliest to have the default password
+			password_verify($password, self::DUMMY_HASH);
+
 			return hash_equals(strtolower($stored), md5($password));
 		}
 
@@ -317,13 +458,21 @@ class Auth
 		return (bool) preg_match('/^[0-9a-f]{32}$/i', (string) $stored);
 	}
 
+	// Before updater 110 the column is varchar(32) and would truncate a new hash,
+	// which locks the account out
+	static function canStoreHash()
+	{
+		global $g_options;
+
+		return (int) ($g_options['dbversion'] ?? 0) >= self::HASH_DBVERSION;
+	}
+
 	// Returns the hash now stored for the user
 	static function upgradeHash($username, $password, $oldHash)
 	{
-		global $db, $g_options;
+		global $db;
 
-		// Before updater 110 the column is varchar(32) and would truncate the new hash
-		if ((int) ($g_options['dbversion'] ?? 0) < self::HASH_DBVERSION) {
+		if (!self::canStoreHash()) {
 			return $oldHash;
 		}
 

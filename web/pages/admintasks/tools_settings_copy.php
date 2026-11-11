@@ -154,25 +154,18 @@ function scanCopyFiles($source,$dest) {
 }
 
 	if (isset($_POST['confirm'])) {
-		$game1 = '';
-		if (isset($_POST['game1']))
-			if ($_POST['game1']!='')
-				$game1 = $_POST['game1'];
-		
-		$game2 = '';
-		if (isset($_POST['game2']))
-			if ($_POST['game2']!='')
-				$game2 = $_POST['game2'];
-		
-		$game2name = '';
-		if (isset($_POST['game2name']))
-			if ($_POST['game2name']!='')
-				$game2name = $_POST['game2name'];
-		
+		// These become SQL strings and folder names under hlstatsimg/games
+		$game1 = valid_game_code($_POST['game1'] ?? '');
+		$game2 = is_string($_POST['game2'] ?? null) && preg_match('/^[A-Za-z0-9_-]{1,16}\z/', $_POST['game2']) ? $_POST['game2'] : '';
+		$game2name = $db->escape(valid_request($_POST['game2name'] ?? '', false));
+
+		$db->query("SELECT code FROM hlstats_Games WHERE code='" . $db->escape($game1) . "' LIMIT 1;");
+		if ($game1 === '' || $game2 === '' || $db->num_rows() == 0) {
+			die('Invalid game code!');
+		}
+
 		echo '<ul><br />';
 		check_writable();
-		$game2 = valid_request($game2, false);
-		$game2name = valid_request($game2name, false);
 		echo '<li>hlstats_Games ...';
 		$db->query("SELECT code FROM hlstats_Games WHERE code='$game2' LIMIT 1;");
 		if ($db->num_rows()!=0) {
@@ -223,7 +216,7 @@ function scanCopyFiles($source,$dest) {
 		$games[] = '<option value="" selected="selected">Please select</option>';
 		while ($rowdata = $db->fetch_row($result))
 		{
-			$games[] = "<option value=\"$rowdata[0]\">$rowdata[0] - $rowdata[1]</option>";
+			$games[] = '<option value="' . eHtml($rowdata[0]) . '">' . eHtml($rowdata[0]) . ' - ' . eHtmlOnce($rowdata[1]) . '</option>';
 		}
 
 ?>

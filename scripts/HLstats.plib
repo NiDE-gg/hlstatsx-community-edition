@@ -173,6 +173,30 @@ sub doConnect
 }
 
 #
+# void queryFailed (string message)
+#
+# Called when a query fails. An error about the values of this one statement is
+# the fault of the log line it came from, and anyone who can send a line can
+# make it happen, so it only dies and the main loop drops that line: 1048 null,
+# 1062 duplicate, 1264 and 1690 out of range, 1265, 1292 and 1366 bad value, 1267,
+# 1270 and 1271 collation of a value, 1365 division by zero, 1406 too long.
+# Anything else means the database can't be used (connection lost, a column
+# missing because the updater has not been run, no permission...). exit() ends the
+# program even from inside the main loop's eval, so whatever runs the daemon
+# restarts it, and it doesn't keep dropping every line.
+#
+
+sub queryFailed
+{
+	my ($message) = @_;
+
+	die("$message\n") if (($DBI::err // 0) =~ /^(?:1048|1062|1264|1265|1267|1270|1271|1292|1365|1366|1406|1690)\z/);
+
+	print STDERR "$message\n";
+	exit(1);
+}
+
+#
 # result doQuery (string query)
 #
 # Executes the SQL query 'query' and returns the result identifier.
@@ -186,8 +210,8 @@ sub doQuery
 		&doConnect();
 	}
 
-	my $result = $db_conn->prepare($query) or die("Unable to prepare query:\n$query\n$DBI::errstr\n$callref");
-	$result->execute or die("Unable to execute query:\n$query\n$DBI::errstr\n$callref");
+	my $result = $db_conn->prepare($query) or &queryFailed("Unable to prepare query:\n$query\n$DBI::errstr\n$callref");
+	$result->execute or &queryFailed("Unable to execute query:\n$query\n$DBI::errstr\n$callref");
 	
 	return $result;
 }
@@ -212,10 +236,10 @@ sub execCached {
 	}
 	
 	if(!$db_stmt_cache{$query_id}) {
-		$db_stmt_cache{$query_id} = $db_conn->prepare($query) or die("Unable to prepare query ($query_id):\n$query\n$DBI::errstr");
+		$db_stmt_cache{$query_id} = $db_conn->prepare($query) or &queryFailed("Unable to prepare query ($query_id):\n$query\n$DBI::errstr");
 		#&printEvent("HLSTATSX", "Prepared a statement ($query_id) for the first time.", 1);
 	} 
-	$db_stmt_cache{$query_id}->execute(@bind_args) or die ("Unable to execute query ($query_id):\n$query\n$DBI::errstr");
+	$db_stmt_cache{$query_id}->execute(@bind_args) or &queryFailed("Unable to execute query ($query_id):\n$query\n$DBI::errstr");
 	return $db_stmt_cache{$query_id};
 }
 
@@ -235,6 +259,9 @@ sub resolveIp
 	{
 		return "";
 	}
+
+	# The address comes from a log line, and inet_aton() would resolve a host name
+	return "" unless ($ip =~ /^\d{1,3}(?:\.\d{1,3}){3}\z/);
 	
 	
 	eval

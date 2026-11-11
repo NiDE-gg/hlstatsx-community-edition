@@ -121,6 +121,9 @@ function printMap($type = 'main')
 				INNER JOIN
 					hlstats_Servers
 					ON (hlstats_Servers.serverId=hlstats_Livestats.server_id)
+				INNER JOIN
+					hlstats_Players
+					ON (hlstats_Players.playerId=hlstats_Livestats.player_id AND hlstats_Players.hideranking=0)
 				WHERE
 					hlstats_Livestats.cli_lat IS NOT NULL
 					AND hlstats_Livestats.cli_lng IS NOT NULL
@@ -129,16 +132,17 @@ function printMap($type = 'main')
 		$players = array();
 		while ($row = $db->fetch_array())
 		{
-			//Skip this part, if we already have the location info (should be the same)
-			if (!isset($players[$row['cli_lat'] . ',' . $row['cli_lng']]))
+			// Grouped on the published position: players in the same place share one marker
+			$locationKey = mapPosition($row['cli_lat']) . ',' . mapPosition($row['cli_lng']);
+			if (!isset($players[$locationKey]))
 			{
-				$players[$row['cli_lat'] . ',' . $row['cli_lng']] = array('cli_lat' => $row['cli_lat'], 'cli_lng' => $row['cli_lng'], 'cli_city' => $row['cli_city'], 'cli_country' => $row['cli_country']);
+				$players[$locationKey] = array('cli_lat' => $row['cli_lat'], 'cli_lng' => $row['cli_lng'], 'cli_city' => $row['cli_city'], 'cli_country' => $row['cli_country']);
 			}
 			$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
 			$replace_pattern = array("");
 			$row['name'] = preg_replace($search_pattern, $replace_pattern, $row['name']);
 
-			$players[$row['cli_lat'] . ',' . $row['cli_lng']]['players'][] = array('playerId' => $row['player_id'], 'name' => $row['name'], 'kills' => $row['kills'], 'deaths' => $row['deaths'], 'connected' => $row['connected']);
+			$players[$locationKey]['players'][] = array('playerId' => $row['player_id'], 'name' => $row['name'], 'kills' => $row['kills'], 'deaths' => $row['deaths'], 'connected' => $row['connected']);
 		}
 
 		foreach ($players as $map_location)
@@ -162,9 +166,9 @@ function printMap($type = 'main')
 			}
 
 			$bootstrap['players'][] = array(
-				'lat' => (float) $map_location['cli_lat'],
-				'lng' => (float) $map_location['cli_lng'],
-				'city' => urldecode($map_location['cli_city']),
+				'lat' => mapPosition($map_location['cli_lat']),
+				'lng' => mapPosition($map_location['cli_lng']),
+				'city' => '',
 				'country' => urldecode($map_location['cli_country']),
 				'items' => $playerMarkers,
 			);
@@ -193,10 +197,11 @@ function printMap($type = 'main')
 		$players = array();
 		while ( $row = $db->fetch_array() )
 		{
-			//Skip this part, if we already have the location info (should be the same)
-			if ( !isset($players[ $row['lat'] . ',' . $row['lng'] ]) )
+			// Grouped on the published position: players in the same place share one marker
+			$locationKey = mapPosition($row['lat']) . ',' . mapPosition($row['lng']);
+			if ( !isset($players[$locationKey]) )
 			{
-				$players[ $row['lat'] . ',' . $row['lng'] ] = array(
+				$players[$locationKey] = array(
 					'lat' => $row['lat'],
 					'lng' => $row['lng'],
 					'city' => $row['city'],
@@ -207,7 +212,7 @@ function printMap($type = 'main')
 			$replace_pattern = array("");
 			$row['lastName'] = preg_replace($search_pattern, $replace_pattern, $row['lastName']);
 
-			$players[ $row['lat'] . ',' . $row['lng'] ]['players'][] = array(
+			$players[$locationKey]['players'][] = array(
 				'playerId' => $row['playerId'],
 				'name' => $row['lastName'],
 				'kills' => $row['kills'],
@@ -231,9 +236,9 @@ function printMap($type = 'main')
 			}
 
 			$bootstrap['players'][] = array(
-				'lat' => (float) $location['lat'],
-				'lng' => (float) $location['lng'],
-				'city' => urldecode($location['city']),
+				'lat' => mapPosition($location['lat']),
+				'lng' => mapPosition($location['lng']),
+				'city' => '',
 				'country' => urldecode($location['country']),
 				'items' => $playerMarkers,
 			);
@@ -244,6 +249,15 @@ function printMap($type = 'main')
 
 	echo '<script type="application/json" id="hlstats-map-data-' . htmlspecialchars($type, ENT_QUOTES) . '">' . jsEscape($bootstrap) . "</script>\n";
 	echo '<script type="text/javascript" src="' . asset_url(INCLUDE_PATH . '/js/maps.js') . '"></script>' . "\n";
+}
+
+// A player's coordinate as the public map shows it: about 10 km of precision
+function mapPosition($coordinate)
+{
+	$position = round((float) $coordinate, 1);
+
+	// -0 prints differently from 0, which would make two markers on one spot
+	return $position == 0 ? 0.0 : $position;
 }
 
 // Returns the {lat, lng, zoom} to center the map on for a given region name
