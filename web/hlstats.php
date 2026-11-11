@@ -44,6 +44,12 @@ define('TITLE_IMAGE', IMAGE_PATH . "/downarrow.gif");
 // Refuse session ids this server did not hand out
 ini_set('session.use_strict_mode', '1');
 
+// An admin session stays valid for an hour without activity (Auth::SESSION_TIMEOUT).
+// PHP's default is to delete session files after 24 minutes, which ended them early.
+if ((int) ini_get('session.gc_maxlifetime') < 3600) {
+	ini_set('session.gc_maxlifetime', '3600');
+}
+
 session_set_cookie_params([
 	'httponly' => true,
 	'samesite' => 'Lax',
@@ -69,35 +75,9 @@ $siteurlneo=((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https
 
 // Several Stuff end
 
-foreach ($_SERVER as $key => $entry) {
-	if ($key !== 'HTTP_COOKIE') {
-		$search_pattern  = array('/<script>/', '/<\/script>/', '/[^A-Za-z0-9.\-\/=:;_?#&~]/');
-		$replace_pattern = array('', '', '');
-		$entry = preg_replace($search_pattern, $replace_pattern, $entry);
-  
-		if ($key == "PHP_SELF") {
-			if ((strrchr($entry, '/') !== '/hlstats.php') &&
-				(strrchr($entry, '/') !== '/ingame.php') &&
-				(strrchr($entry, '/') !== '/sig.php') &&
-				(strrchr($entry, '/') !== '/sig2.php') &&
-				(strrchr($entry, '/') !== '/index.php') &&
-				(strrchr($entry, '/') !== '/status.php') &&
-				(strrchr($entry, '/') !== '/top10.php') &&
-				(strrchr($entry, '/') !== '/config.php') &&
-				(strrchr($entry, '/') !== '/') &&
-				($entry !== '')) {
-				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
-				exit;
-			}    
-		}
-		$_SERVER[$key] = $entry;
-	}
-}
+hlxFilterServerVars();
 
-@header('Content-Type: text/html; charset=utf-8');
-
-// do not report NOTICE warnings
-@error_reporting(E_ALL ^ E_NOTICE);
+header('Content-Type: text/html; charset=utf-8');
 
 ////
 //// Initialisation
@@ -163,7 +143,7 @@ if (!$realgame && $game)
 	$_SESSION['realgame_game'] = $game;
 }
 
-$mode = isset($_GET['mode']) ? $_GET['mode'] : '';
+$mode = (isset($_GET['mode']) && is_string($_GET['mode'])) ? $_GET['mode'] : '';
 
 $valid_modes = array(
 	'players',
@@ -187,24 +167,19 @@ $valid_modes = array(
 	'bans',
 	'servers',
 	'chathistory',
-	'ranks',
 	'rankinfo',
-	'ribbons',
 	'ribboninfo',
 	'chat',
-	'globalawards',
 	'awards',
 	'dailyawardinfo',
 	'countryclans',
 	'countryclansinfo',
-	'teamspeak',
-	'ventrilo',
 	'discord',
 	'updater',
 	'profile'
 );
    
-if ( !in_array($mode, $valid_modes) )
+if ( !in_array($mode, $valid_modes, true) )
 {
 	$mode = 'contents';
 }
@@ -232,13 +207,13 @@ if ($updatePending && file_exists('./updater') && $mode != 'updater')
    
 if ( file_exists(PAGE_PATH . "/$mode.php") )
 {
-	@include(PAGE_PATH . "/$mode.php");
+	include(PAGE_PATH . "/$mode.php");
 	pageFooter();
 }
 else
 {
 	header('HTTP/1.1 404 File Not Found', false, 404);
-	error('Unable to find ' . PAGE_PATH . "/$mode.php");
+	error('Page not found.');
 	pageFooter();
 }
 

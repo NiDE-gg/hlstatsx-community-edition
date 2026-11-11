@@ -91,6 +91,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	list($numteamjoins) = $db->fetch_row();
 
 	$result  = $db->query("SELECT `code`,`name` FROM hlstats_Roles WHERE game='$game'");
+	$fname = array();
 	while ($rowdata = $db->fetch_row($result)) 
     { 
         $code = preg_replace("/[ \r\n\t]+/", '', $rowdata[0]);

@@ -131,7 +131,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$weapon = '<a href="hlstats.php?mode=dailyawardinfo&amp;award='.$r['awardId']."&amp;game=$game\"><img src=\"$img\" alt=\"".eHtmlOnce($r['code']).'" /></a>';
 		if ($r['d_winner_id'] > 0) {
 			if ($g_options['countrydata'] == 1)	{
-				$imagestring = '<img src="'.getFlag($r['flag']).'" alt="'.$r['flag'].'" />&nbsp;&nbsp;';
+				$imagestring = '<img src="'.getFlag($r['flag']).'" alt="'.eHtml($r['flag']).'" />&nbsp;&nbsp;';
 			} else {
 				$imagestring = '';
 			}

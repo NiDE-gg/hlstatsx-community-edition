@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		die('Do not access this file directly.');
 	}
 
-	if ($auth->userdata["acclevel"] < 80) {
+	if ($auth->userdata["acclevel"] < 100) {
 		die ("Access denied!");
 	}
 ?>
@@ -56,7 +56,11 @@ For support and installation notes visit http://www.hlxcommunity.com
    $commands[2]["name"] = "Shut down the Daemon *";
    $commands[2]["cmd"] = "KILL";
 
-	if (isset($_POST['confirm'])) {
+	if (!function_exists('socket_create')) {
+		// Without it the calls below are a fatal error and the admin page stops half-drawn
+		message('warning', 'This tool needs the PHP sockets extension, which is not loaded on this server.');
+	}
+	elseif (isset($_POST['confirm'])) {
 		$host = is_string($_POST['masterserver'] ?? null) ? trim($_POST['masterserver']) : '';
 		$port = is_string($_POST['port'] ?? null) ? (int) $_POST['port'] : 0;
 		$command = is_string($_POST['command'] ?? null) ? ($commands[$_POST['command']]['cmd'] ?? '') : '';

@@ -41,6 +41,11 @@
 	}
 
 	// Player Chat History
+	// The "Show Chat nav-link" option hid the links to this page, but the page itself still answered
+	if (($g_options['nav_globalchat'] ?? 0) != 1) {
+		error('The chat history is not public on this site.');
+	}
+
 	$player = filter_input(INPUT_GET, 'player', FILTER_VALIDATE_INT);
 	if ($player === null || $player === false) {
 		error('No player ID specified or invalid ID.');
@@ -120,7 +125,7 @@
 			(
 				'message',
 				'Message',
-				'width=44&sort=no&append=.&embedlink=yes'
+				'width=44&sort=no&append=.'
 			),
 			new TableColumn
 			(

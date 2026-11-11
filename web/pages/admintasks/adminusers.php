@@ -49,7 +49,30 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn("password", "Password", 15, true, "password", "", 72);
 	$edlist->columns[] = new EditListColumn("acclevel", "Access Level", 25, true, "select", "0/No Access;80/Restricted;100/Administrator");
 
-	if ($_POST)
+	// True when the posted changes would leave no Administrator account: nobody could
+	// then reach this page, the options or the updater again
+	$removesLastAdministrator = function () use ($db) {
+		$rows = (isset($_POST['rows']) && is_array($_POST['rows'])) ? array_filter($_POST['rows'], 'is_string') : array();
+		$kept = (($_POST['new_acclevel'] ?? '') === '100' && ($_POST['new_username'] ?? '') !== '') ? 1 : 0;
+
+		$result = $db->query("SELECT username, acclevel FROM hlstats_Users");
+		while (list($username, $acclevel) = $db->fetch_row($result)) {
+			if (!in_array((string) $username, $rows, true)) {
+				// Not in the submitted form: stays as it is
+				$kept += ($acclevel >= 100) ? 1 : 0;
+			} elseif (empty($_POST[$username . '_delete']) && ($_POST[$username . '_acclevel'] ?? '') === '100') {
+				$kept++;
+			}
+		}
+
+		return $kept == 0;
+	};
+
+	if ($_POST && $removesLastAdministrator())
+	{
+		message("warning", "Nothing was changed: this would leave no Administrator account.");
+	}
+	elseif ($_POST)
 	{
 		if ($edlist->update())
 			message("success", "Operation successful.");

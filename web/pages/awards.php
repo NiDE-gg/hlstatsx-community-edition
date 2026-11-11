@@ -66,7 +66,7 @@
             $awardPath = PAGE_PATH . '/awards_' . $tab . '.php';
 
             if (file_exists($awardPath)) {
-                @include($awardPath);
+                include($awardPath);
             }
         }
 

@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	if ($auth->userdata['acclevel'] < 80) {
+	if ($auth->userdata['acclevel'] < 100) {
 		die ('Access denied!');
 	}
 ?>
@@ -54,7 +54,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		echo "<ul>\n";
 
 		$gamefilter = '';
-		if (isset($_POST['game']) && $_POST['game'] != '')
+		if (isset($_POST['game']) && is_string($_POST['game']) && $_POST['game'] != '')
 		{
 			$gamefilter = " WHERE game='".$db->escape($_POST['game'])."'";
 		}

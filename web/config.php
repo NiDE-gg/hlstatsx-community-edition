@@ -51,6 +51,37 @@ if (PHP_VERSION_ID < 80512) {
 // Errors go to the log, never to the visitor: PHP's built-in default is to display them
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
+error_reporting(E_ALL);
+
+/**
+ * Legacy pages print $_SERVER values and build links from them, so only harmless
+ * characters are kept in them. A request whose path does not end with one of the
+ * entry points (extra path after the script name) is sent back to hlstats.php.
+ * Called once by every entry point, right after this file is loaded.
+ */
+function hlxFilterServerVars()
+{
+	foreach ($_SERVER as $key => $entry) {
+		if ($key === 'HTTP_COOKIE' || !is_string($entry)) {
+			continue;
+		}
+
+		$_SERVER[$key] = (string) preg_replace(
+			array('/<script>/', '/<\/script>/', '/[^A-Za-z0-9.\-\/=:;_?#&~]/'),
+			'',
+			$entry
+		);
+	}
+
+	$self = (string) ($_SERVER['PHP_SELF'] ?? '');
+	$last = (string) strrchr($self, '/');
+	$entryPoints = array('/hlstats.php', '/ingame.php', '/sig.php', '/status.php', '/index.php', '/');
+
+	if ($self !== '' && !in_array($last, $entryPoints, true)) {
+		header('Location: ' . rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/'))), '/') . '/hlstats.php');
+		exit;
+	}
+}
 
 // Sent by every entry point: this file is always loaded first
 header_remove('X-Powered-By');

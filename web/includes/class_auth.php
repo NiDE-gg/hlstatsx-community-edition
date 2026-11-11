@@ -102,25 +102,46 @@ class Auth
 		// the same account: count their failures under the name it is stored with
 		$user = self::fetchUser($username);
 		$failureKeys = self::failureKeys($user !== null ? $user['username'] : $username);
-		$lockedFor = self::lockedFor($failureKeys);
-		if ($lockedFor > 0) {
-			// Checked before the password, so guesses made while locked tell nothing
-			$this->error = 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
-			$this->printAuth();
-			return;
+		$failures = self::loginFailures();
+		$now = time();
+
+		// Each attempt is counted before the password is checked, in one statement per
+		// key, so requests sent in parallel can't all pass a check made before any of
+		// them is counted. A refused attempt is checked before the password too, so
+		// guesses made while locked tell nothing.
+		$counted = array();
+		foreach ($failureKeys as $key => $limit) {
+			if (!$failures->take($key, $limit, $now, $now - self::LOCKOUT_WINDOW)) {
+				foreach ($counted as $countedKey) {
+					$failures->giveBack($countedKey);
+				}
+				$lockedFor = max(1, self::lockedFor($failureKeys));
+				$this->error = 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+				$this->printAuth();
+				return;
+			}
+			$counted[] = $key;
 		}
 
+		// Unknown usernames are counted too, so a lockout doesn't reveal which ones exist
 		$passwordOk = self::verifyPassword($password, $user !== null ? $user['password'] : self::DUMMY_HASH);
 		if ($user === null || !$passwordOk) {
-			// Counted for unknown usernames too, so a lockout doesn't reveal which ones exist
-			self::loginFailures()->record(array_keys($failureKeys), time(), time() - self::LOCKOUT_WINDOW);
 			// Same message for both cases, so valid usernames can't be guessed
 			$this->error = 'The username or password you supplied is incorrect.';
 			$this->printAuth();
 			return;
 		}
 
-		self::loginFailures()->clear(array_keys($failureKeys));
+		// A good login ends the count for its own account. The address only gets this one
+		// attempt back: any account holder could otherwise reset the count for an address
+		// that is guessing another account's password.
+		foreach ($failureKeys as $key => $limit) {
+			if (strncmp($key, 'user:', 5) === 0) {
+				$failures->clear(array($key));
+			} else {
+				$failures->giveBack($key);
+			}
+		}
 
 		if (self::needsRehash($user['password'])) {
 			$user['password'] = self::upgradeHash($user['username'], $password, $user['password']);
@@ -206,9 +227,21 @@ class Auth
 	static function failureKeys($username)
 	{
 		return array(
-			'ip:' . (string) ($_SERVER['REMOTE_ADDR'] ?? '') => self::MAX_FAILURES_PER_IP,
+			'ip:' . self::addressKey((string) ($_SERVER['REMOTE_ADDR'] ?? '')) => self::MAX_FAILURES_PER_IP,
 			'user:' . mb_strtolower(mb_substr($username, 0, 64)) => self::MAX_FAILURES_PER_USER,
 		);
+	}
+
+	// An IPv6 client usually owns a whole /64 and can use any address in it, so those
+	// are counted together. IPv4 addresses are counted one by one.
+	static function addressKey($address)
+	{
+		$packed = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? inet_pton($address) : false;
+		if ($packed === false || strlen($packed) !== 16) {
+			return $address;
+		}
+
+		return inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
 	}
 
 	// Seconds until a login is allowed again, 0 when it is allowed now

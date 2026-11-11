@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Weapon Details
 	
-	$weapon = $db->escape(valid_request($_GET['weapon'], false)) or error('No weapon ID specified.');
+	$weapon = $db->escape(valid_request($_GET['weapon'] ?? '', false)) or error('No weapon ID specified.');
         
 	$db->query("
 		SELECT

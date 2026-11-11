@@ -18,12 +18,18 @@
         }
 
         /**
-         * Raw load samples for a server, newest first. Mirrors the query used by
-         * show_graph.php's type=0 (per-server load/uptime/fps) PNG renderer.
+         * Raw load samples for a server, newest first, handed to $onSample one row
+         * at a time. Mirrors the query used by show_graph.php's type=0 (per-server
+         * load/uptime/fps) PNG renderer.
          *
-         * @return array<int, array{timestamp:string, act_players:string, min_players:string, max_players:string, map:?string, uptime:string, fps:string}>|null
+         * The long ranges read the server's whole history (a year of 5-minute
+         * samples is about 105,000 rows): the rows are streamed instead of being
+         * loaded into one array, which took tens of megabytes per request.
+         *
+         * @param callable(array{timestamp:string, act_players:string, min_players:string, max_players:string, map:?string, uptime:string, fps:string}):void $onSample
+         * @return bool false when the query failed
          */
-        public function getServerLoadSamples(int $serverId, bool $limitToRecent) : ?array
+        public function eachServerLoadSample(int $serverId, bool $limitToRecent, callable $onSample) : bool
         {
             $sql = "
                 SELECT
@@ -36,15 +42,30 @@
                     timestamp DESC
             " . ($limitToRecent ? ' LIMIT 0, 2500' : '');
 
+            $buffered = $this->pdo->getAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY);
+            $stmt = null;
+
             try {
+                $this->pdo->setAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY, false);
+
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':server_id', $serverId, PDO::PARAM_INT);
                 $stmt->execute();
 
-                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+                while (($row = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
+                    $onSample($row);
+                }
+
+                return true;
             } catch (PDOException $e) {
                 $this->logger->error('Failed to get server load samples: ' . $e->getMessage());
-                return null;
+                return false;
+            } finally {
+                // The connection can't run another query until this result is closed
+                if ($stmt !== null) {
+                    $stmt->closeCursor();
+                }
+                $this->pdo->setAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY, $buffered);
             }
         }
 
