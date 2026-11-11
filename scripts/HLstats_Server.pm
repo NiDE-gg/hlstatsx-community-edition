@@ -40,7 +40,7 @@ use Socket;
 use Encode;
 use Syntax::Keyword::Try;
 
-do "$::opt_libdir/HLstats_GameConstants.plib";
+do "$::opt_libdir/HLstats_GameConstants.plib" or die("Can't load $::opt_libdir/HLstats_GameConstants.plib: " . ($@ || $!) . "\n");
 
 # Cache player counts by game for 5 seconds.
 # GetPlayerCount() uses this cache to avoid executing the same expensive
@@ -1149,7 +1149,7 @@ sub flushDB
 			serverId=?
 	";
 	my @vals = (
-		&::quoteSQL($self->{name}),
+		$self->{name},
 		$self->{rounds},
 		$self->{kills},
 		$self->{suicides},
@@ -1161,7 +1161,7 @@ sub flushDB
 		$self->{ts_wins},
 		$self->{numplayers},
 		$self->{maxplayers},
-		&::quoteSQL($self->{map}),
+		$self->{map},
 		$self->{map_rounds},
 		$self->{map_ct_wins},
 		$self->{map_ts_wins},
@@ -1212,7 +1212,7 @@ sub GetPlayerCount
 	my $result = &::execCached(
 		"get_player_count",
 		"SELECT COUNT(*) as players FROM hlstats_Players WHERE game=? AND hideranking<>2",
-		&::quoteSQL($game)
+		$game
 	);
 
 	my ($count) = $result->fetchrow_array();
@@ -1293,7 +1293,8 @@ sub update_server_loc
 			$servlng = $longitude;
 		}
 	
-	} else {
+	} elsif ($server_ip =~ /^\d{1,3}(?:\.\d{1,3}){3}\z/) {
+		# Only a dotted IPv4 address, or $ip_number could be "Inf" or "NaN" in the query
 		my @ipp = split (/\./,$server_ip);
 		my $ip_number = $ipp[0]*16777216+$ipp[1]*65536+$ipp[2]*256+$ipp[3];
 		my $query = "

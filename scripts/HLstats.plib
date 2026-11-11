@@ -34,6 +34,8 @@
 # For support and installation notes visit http://www.hlxcommunity.com
 
 
+use POSIX ();	# sigaction() in resolveIp()
+
 # HLstatsX CE release version number
 
 $g_version = "<Unable to Detect>";
@@ -156,7 +158,7 @@ sub doConnect
 {
 	$db_conn = DBI->connect(
 		"DBI:mysql:$db_name:$db_host",
-		$db_user, $db_pass, { mysql_enable_utf8 => 1 }
+		$db_user, $db_pass, { mysql_enable_utf8mb4 => 1 }
 	);
 	while(!$db_conn) {
 		&printEvent("MYSQL", "\nCan't connect to MySQL database '$db_name' on '$db_host'\n" .
@@ -164,7 +166,7 @@ sub doConnect
 		sleep(5);
 		$db_conn = DBI->connect(
 			"DBI:mysql:$db_name:$db_host",
-			$db_user, $db_pass, { mysql_enable_utf8 => 1 }
+			$db_user, $db_pass, { mysql_enable_utf8mb4 => 1 }
 		);
 	}
 	$db_conn->do("SET NAMES 'utf8mb4'");
@@ -224,7 +226,8 @@ sub execNonQuery
 		&doConnect();
 	}
 	#&printEvent("DEBUG","execNonQuery:\n".$query);
-	$db_conn->do($query);
+	# undef when the statement failed: see flushEventTable() in hlstats.pl
+	return $db_conn->do($query);
 }
 
 sub execCached {
@@ -264,17 +267,30 @@ sub resolveIp
 	return "" unless ($ip =~ /^\d{1,3}(?:\.\d{1,3}){3}\z/);
 	
 	
+	# Perl only runs a %SIG handler between two of its own operations, so alarm()
+	# could not interrupt gethostbyaddr(): a nameserver that doesn't answer held
+	# the daemon for as long as the system resolver waits (10 seconds or more),
+	# whatever DNSTimeout says. A handler installed with sigaction() is called
+	# at once, inside the lookup.
+	my $oldaction = POSIX::SigAction->new();
+	POSIX::sigaction(POSIX::SIGALRM(), POSIX::SigAction->new(sub { die "DNS Timeout\n" }, POSIX::SigSet->new(POSIX::SIGALRM())), $oldaction);
+	my $oldalarm = 0;
 	eval
 	{
-		$SIG{ALRM} = sub { die "DNS Timeout\n" };
-		alarm $g_dns_timeout;	# timeout after $g_dns_timeout sec
-		$host = gethostbyaddr(inet_aton($ip), AF_INET);
+		eval
+		{
+			$oldalarm = alarm $g_dns_timeout;	# timeout after $g_dns_timeout sec
+			$host = gethostbyaddr(inet_aton($ip), AF_INET);
+		};
 		alarm 0;
+		die $@ if ($@);
 	};
-	
-	if ($@)
+	my $error = $@;
+	POSIX::sigaction(POSIX::SIGALRM(), $oldaction);
+	alarm $oldalarm if ($oldalarm);
+
+	if ($error)
 	{
-		my $error = $@;
 		chomp($error);
     	printEvent("DNS", "Resolving hostname (timeout $g_dns_timeout sec) for IP \"$ip\" - $error ", 1);
 		$host = "";		# some error occurred

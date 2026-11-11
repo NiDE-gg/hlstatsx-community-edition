@@ -1,0 +1,7 @@
+# Not needed in the image (build context is this folder)
+Dockerfile
+.dockerignore
+Readme.md
+deploy/
+logs/
+*.pid
