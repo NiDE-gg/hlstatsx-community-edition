@@ -1,3 +1,8 @@
+#if defined _loghelper_included
+ #endinput
+#endif
+#define _loghelper_included
+
 #define LOGHELPER_VERSION 5
 
 #include <sourcemod>

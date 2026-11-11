@@ -35,6 +35,7 @@
 #define IGNORE_SHOTS_START 35
 #define MAX_WEAPON_LEN 32
 #define CLANTAG_LEN 192
+#define CLANTAG_MAX_CHARS 16
 
 EngineVersion g_evCurrentVersion;
 
@@ -186,6 +187,7 @@ public void OnClientPostAdminCheck(int client)
 		char sClan[CLANTAG_LEN];
 
 		CS_GetClientClanTag(client, sClan, sizeof(sClan));
+		SanitizeClanTag(sClan);
 		LogPlayerProps(client, "triggered", "clantag", sClan);
 
 		g_sPlayerClanTag[client] = sClan;
@@ -471,6 +473,7 @@ public Action OnClientCommandKeyValues(int client, KeyValues kv)
 		float fNewTime = fCurTime + 10.0;
 
 		kv.GetString("tag", sClan, sizeof(sClan), "");
+		SanitizeClanTag(sClan);
 
 		// Flood protection 10s + ignore same tag
 		if ((g_fPlayerLastClanTagChange[client] <= fCurTime) && strcmp(sClan, "") != 0 && !StrEqual(g_sPlayerClanTag[client], sClan, false)) {
@@ -492,6 +495,39 @@ bool IsValidClient(int client, bool allowBots = true, bool allowDead = true)
 	}
 
 	return true;
+}
+
+// The tag is whatever the client sent: keep at most what a clan tag can hold (the characters may
+// be multi-byte) and drop quotes and control bytes, which do not belong in a quoted log field.
+void SanitizeClanTag(char[] tag)
+{
+	int out = 0;
+	int chars = 0;
+	int i = 0;
+
+	while (tag[i] != '\0' && chars < CLANTAG_MAX_CHARS)
+	{
+		int c = tag[i] & 0xFF;
+		int bytes = GetCharBytes(tag[i]);
+		bool keep = (c >= 0x20 && c != 0x7F && c != '"');
+
+		if (keep)
+		{
+			chars++;
+		}
+
+		// in place: out never gets ahead of i
+		for (int j = 0; j < bytes && tag[i] != '\0'; j++)
+		{
+			if (keep)
+			{
+				tag[out++] = tag[i];
+			}
+			i++;
+		}
+	}
+
+	tag[out] = '\0';
 }
 
 void LogPlayerProps(int client, char[] verb, const char[] event, const char[] properties)

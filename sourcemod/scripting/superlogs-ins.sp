@@ -343,7 +343,10 @@ public Action Command_Chat(int client, int args)
 			message[lastchar] = '\0';
 			startidx += 1;
 		}
-		
+
+		// the text goes into a quoted log field
+		ReplaceString(message[startidx], sizeof(message) - startidx, "\"", "'");
+
 		if (message[0] == '1')
 		{
 			LogPlayerEvent(client, "say", message[startidx], false);

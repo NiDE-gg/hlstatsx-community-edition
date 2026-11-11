@@ -17,7 +17,11 @@ Add your HLstatsX MySQL information to sourcemod/configs/databases.cfg
 
 #include <sourcemod>
 
+// Seconds a player waits after saving a rank before the menu opens again (each save is a query)
+#define RANK_COOLDOWN 10.0
+
 int iRank[MAXPLAYERS+1] = {0,...};
+float fNextRankChange[MAXPLAYERS+1];
 Database hDatabase = null;
 EngineVersion g_evCurrentVersion;
 
@@ -80,8 +84,14 @@ void setRank(int rank, const char[] auth)
 
 public Action Command_EloMenu(int client, int args)
 {
-	if (IsClientInGame(client))
+	if (client > 0 && IsClientInGame(client))
 	{
+		if (GetEngineTime() < fNextRankChange[client])
+		{
+			PrintToChat(client, "Please wait a few seconds before changing your rank again.");
+			return Plugin_Handled;
+		}
+
 		Menu elo = CreateMenu(EloHandler);
 		elo.SetTitle("Your competitive rank?");
 		elo.AddItem("0", "No Rank");
@@ -121,8 +131,13 @@ public int EloHandler(Handle elo, MenuAction action, int client, int itemNum)
 			char text[20];
 			
 			GetMenuItem(elo, itemNum, info, sizeof(info));
+			if (hDatabase == null || !GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth)))
+			{
+				PrintToChat(client, "Your rank could not be saved, please try again later.");
+				return 0;
+			}
 			iRank[client] = StringToInt(info);
-			GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
+			fNextRankChange[client] = GetEngineTime() + RANK_COOLDOWN;
 			setRank(iRank[client], auth);
 			Format(text, sizeof(text), "Your rank is now ");
 			switch(iRank[client])
@@ -153,4 +168,5 @@ public int EloHandler(Handle elo, MenuAction action, int client, int itemNum)
 			delete elo;
 		}
 	}
+	return 0;
 }

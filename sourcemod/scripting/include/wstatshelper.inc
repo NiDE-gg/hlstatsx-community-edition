@@ -1,3 +1,8 @@
+#if defined _wstatshelper_included
+ #endinput
+#endif
+#define _wstatshelper_included
+
 #define HITGROUP_GENERIC   0
 #define HITGROUP_HEAD      1
 #define HITGROUP_CHEST     2
@@ -37,10 +42,8 @@ void CreatePopulateWeaponTrie()
 	{
 		if (g_weapon_list[i][0] == 0)
 		{
-			// some games have a couple blanks as place holders (so array indexes match with weapon ids)
-			char randomKey[6];
-			Format(randomKey, sizeof(randomKey), "%c%c%c%c%c%c", GetURandomInt(), GetURandomInt(), GetURandomInt(), GetURandomInt(), GetURandomInt(), GetURandomInt());
-			SetTrieValue(g_weapon_trie, randomKey, i);
+			// some games have a couple blanks as place holders (so array indexes match with weapon ids):
+			// they get no key, no weapon name may ever resolve to them
 			continue;
 		}
 		
