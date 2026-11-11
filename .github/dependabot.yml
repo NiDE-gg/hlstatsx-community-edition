@@ -4,3 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  # Base image of the daemon (scripts/Dockerfile)
+  - package-ecosystem: "docker"
+    directory: "/scripts"
+    schedule:
+      interval: "weekly"
