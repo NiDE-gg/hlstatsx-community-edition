@@ -118,7 +118,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 					'player' => 'Player Names',
 					'uniqueid' => 'Player' . $this->uniqueid_string_plural
 				);
-				if ($g_options['Mode'] != 'LAN' && Auth::sessionLevel() >= 100) {
+				if ($g_options['Mode'] != 'LAN' && Auth::sessionLevel() >= 80) {
 					$searchtypes['ip'] = 'Player IP Addresses';
 				}
 				$searchtypes['clan'] = 'Clan Names';
@@ -415,7 +415,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			}
 			elseif ($this->type == 'ip')
 			{
-				if (Auth::sessionLevel() < 100) {
+				if (Auth::sessionLevel() < 80) {
 					die ("Access denied!");
 				}
 				$table = new Table

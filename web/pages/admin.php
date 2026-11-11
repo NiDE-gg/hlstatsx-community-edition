@@ -863,8 +863,9 @@ $selGame = valid_game_code($_GET['game'] ?? '');
 
 // General Settings
 // Level 80 ("Restricted") covers the areas listed on the Admin Users page: clan tags, weapons,
-// teams, roles, ranks, ribbons, awards and actions. Anything that reaches the servers, the
-// daemon, player IP addresses or other accounts needs level 100.
+// teams, roles, ranks, ribbons, awards and actions, plus the player tools (player and clan
+// details, host statistics, the player IP search). Staff at that level are trusted with player
+// IP addresses. Anything that reaches the servers, the daemon or other accounts needs level 100.
 $admintasks['options'] = new AdminTask('HLstatsX:CE Settings', 100);
 $admintasks['adminusers'] = new AdminTask('Admin Users', 100);
 $admintasks['games'] = new AdminTask('Games', 100);
@@ -889,16 +890,16 @@ $admintasks['ribbons'] = new AdminTask('Ribbons (triggered by Awards)', 80, 'gam
 
 // Tools
 $admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 100, 'tool', 'Reload or stop your HLX: CE Daemons');
-$admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 100, 'tool', 'Edit a player or clan\'s profile information.');
+$admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 80, 'tool', 'Edit a player or clan\'s profile information.');
 $admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 100, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
-$admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 100, 'tool', 'See which ISPs your players are using.');
+$admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');
 $admintasks['tools_optimize'] = new AdminTask('Optimize Database', 100, 'tool', 'This operation tells the MySQL server to clean up the database tables, optimizing them for better performance. It is recommended that you run this at least once a month.');
 //$admintasks['tools_synchronize'] = new AdminTask('Synchronize Statistics', 80, 'tool', 'Sychronize all players with the offical global ELstatsNEO banlist with catched VAC cheaters.');
 $admintasks['tools_resetdbcollations'] = new AdminTask('Reset All DB Collations to UTF8', 100, 'tool', 'Reset DB Collations to UTF-8 if you receive collation errors after an upgrade from another HLstats(X)-based system.');
 
 // Sub-Tools
-$admintasks['tools_editdetails_player'] = new AdminTask('Edit Player Details', 100, 'subtool', 'Edit a player\'s profile information.');
-$admintasks['tools_editdetails_clan'] = new AdminTask('Edit Clan Details', 100, 'subtool', 'Edit a clan\'s profile information.');
+$admintasks['tools_editdetails_player'] = new AdminTask('Edit Player Details', 80, 'subtool', 'Edit a player\'s profile information.');
+$admintasks['tools_editdetails_clan'] = new AdminTask('Edit Clan Details', 80, 'subtool', 'Edit a clan\'s profile information.');
 
 // Reset Tools
 $admintasks['tools_reset'] = new AdminTask('Full or Partial Reset', 100, 'tool', 'Resets chosen data globally or for selected game', 'reset');
