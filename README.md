@@ -53,7 +53,7 @@ The daemon then drops every line claiming to come from that server that is not s
 
 The code cannot do these for you:
 
-- Serve only `web/` as the document root, and block `/pages`, `/classes`, `/includes` and `/updater/*.php` on servers that ignore `.htaccess` (nginx, Caddy).
+- Serve only `web/` as the document root, and block `/pages`, `/classes`, `/includes/*.php` and `/updater/*.php` (all but `index.php`) on servers that ignore `.htaccess` (nginx, Caddy).
 - Set `display_errors = off` in PHP.
 - Set a `LogSecret` on every Source server (see above). The daemon names the servers without one when it starts.
 - Firewall the daemon's UDP port (32578 by default) so only your game servers can reach it.
