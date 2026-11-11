@@ -36,6 +36,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
+if (!defined('IN_HLSTATS')) {
+	die('Do not access this file directly.');
+}
+
 	require('livestats.php');     
     $db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
     if ($db->num_rows() < 1) error("No such game '$game'.");
@@ -111,6 +115,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$db->query($query);
 	$servers   = array();
 	$servers[] = $db->fetch_array();
+
+	if (!$servers[0]) {
+		error("No such server.", 0);
+		pageFooter();
+		die();
+	}
         
 ?>
 

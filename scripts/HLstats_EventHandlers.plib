@@ -2976,6 +2976,10 @@ sub doEvent_Rcon
 {
 	my ($type, $command, $password, $ipAddr) = @_;
 	
+	# The command is stored and shown in the admin event history: keep the name of a
+	# command that sets a password, the log secret or the Steam login token, not its value
+	$command =~ s/^(\s*(?:(?:sm|amx|ma)_(?:cvar|rcon)\s+)?"?\w*(?:password|logsecret|setsteamaccount)"?)\s+\S.*$/$1 <hidden>/i;
+	
 	if ($g_rcon_record)
 	{
 		&recordEvent(

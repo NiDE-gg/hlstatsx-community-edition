@@ -101,7 +101,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		if ($r['g_winner_id'] > 0)
 		{
 			if ($g_options['countrydata'] == 1) {
-				$imagestring = '<img src="'.getFlag($r['flag']).'" alt="'.$r['country'].'" />&nbsp;&nbsp;';
+				$imagestring = '<img src="'.getFlag($r['flag']).'" alt="'.eHtml($r['country']).'" />&nbsp;&nbsp;';
 			} else {
 				$imagestring = '';
 			}

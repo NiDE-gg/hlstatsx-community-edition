@@ -72,92 +72,52 @@
 				$discord_servers[] = $row;
 			}
 		}
-		if (isset($ts_servers))
+		// TeamSpeak and Ventrilo servers are listed with their connect link only. Their
+		// live viewers were removed: they spoke the TeamSpeak 2 and Ventrilo 3 status
+		// protocols, queried the server on every page view, and had been a fatal error
+		// since PHP 8 (one Ventrilo row cut the whole game page short).
+		$static_servers = array();
+		foreach ($ts_servers ?? array() as $ts_server) {
+			$static_servers[] = array(
+				'icon' => '/teamspeak/teamspeak.gif',
+				'name' => trim((string) $ts_server['name']),
+				'link' => 'teamspeak://' . $ts_server['addr'] . ':' . $ts_server['UDPPort'] . '/?channel=?password=' . rawurlencode((string) $ts_server['password']),
+				'addr' => $ts_server['addr'] . ':' . $ts_server['UDPPort'],
+				'password' => $ts_server['password'],
+				'descr' => $ts_server['descr'],
+			);
+		}
+		foreach ($vent_servers ?? array() as $vent_server) {
+			$static_servers[] = array(
+				'icon' => '/ventrilo/ventrilo.png',
+				'name' => trim((string) $vent_server['name']),
+				'link' => 'ventrilo://' . $vent_server['addr'] . ':' . $vent_server['queryPort'] . '/servername=' . rawurlencode((string) $vent_server['name']),
+				'addr' => $vent_server['addr'] . ':' . $vent_server['queryPort'],
+				'password' => $vent_server['password'],
+				'descr' => $vent_server['descr'],
+			);
+		}
+		foreach ($static_servers as $static_server)
 		{
-			require_once(PAGE_PATH . '/teamspeak_class.php');
-			foreach($ts_servers as $ts_server)
-			{
-				$settings = $teamspeakDisplay->getDefaultSettings();
-				$settings['serveraddress'] = $ts_server['addr'];
-				$settings['serverqueryport'] = $ts_server['queryPort'];
-				$settings['serverudpport'] = $ts_server['UDPPort'];
-				$ts_info = $teamspeakDisplay->queryTeamspeakServerEx($settings);
-				if ($ts_info['queryerror'] != 0) {
-					$ts_channels = 'err';
-					$ts_slots = $ts_info['queryerror'];
-				} else {
-					$ts_channels = count($ts_info['channellist']);
-					$ts_slots = count($ts_info['playerlist']).'/'.$ts_info['serverinfo']['server_maxusers'];
-				}
 ?>
         <tr class="bg1">
 			<td class="fHeading">
-				<img src="<?php echo IMAGE_PATH; ?>/teamspeak/teamspeak.gif" alt="tsicon" />
-				&nbsp;<a href="<?php echo $g_options['scripturl'] . "?mode=teamspeak&amp;game=$game&amp;tsId=".$ts_server['serverId']; ?>"><?php echo eHtml(trim($ts_server['name'])); ?></a>
+				<img src="<?php echo IMAGE_PATH . $static_server['icon']; ?>" alt="" />
+				&nbsp;<?php echo eHtml($static_server['name']); ?>
 			</td>
 			<td>
-				<a href="<?php echo eHtml('teamspeak://' . $ts_server['addr'] . ':' . $ts_server['UDPPort'] . '/?channel=?password=' . rawurlencode((string)$ts_server['password'])); ?>"><?php echo eHtml($ts_server['addr'] . ':' . $ts_server['UDPPort']); ?></a>
+				<a href="<?php echo eHtml($static_server['link']); ?>"><?php echo eHtml($static_server['addr']); ?></a>
 			</td>
 			<td>
-				<?php echo eHtml($ts_server['password']); ?>
+				<?php echo eHtml($static_server['password']); ?>
 			</td>
-			<td style="text-align:right;">
-				<?php echo eHtml($ts_channels); ?>
-			</td>
-			<td style="text-align:right;">
-				<?php echo eHtml($ts_slots); ?>
-			</td>
+			<td style="text-align:right;">-</td>
+			<td style="text-align:right;">-</td>
 			<td>
-				<?php echo eHtml($ts_server['descr']); ?>
+				<?php echo eHtml($static_server['descr']); ?>
 			</td>
 		</tr>
 <?php
-			}
-		}
-		if (isset($vent_servers))
-		{
-			require_once(PAGE_PATH . '/ventrilostatus.php');
-			foreach($vent_servers as $vent_server)
-			{
-				$ve_info = new CVentriloStatus;
-				$ve_info->m_cmdcode	= 2;					// Detail mode.
-				$ve_info->m_cmdhost = $vent_server['addr'];
-				$ve_info->m_cmdport = $vent_server['queryPort'];
-				/////////
-				$rc = $ve_info->Request();
-				if ($rc) {
-					// Same display as an unreachable TeamSpeak server
-					$ve_channels = 'err';
-					$ve_slots = $rc;
-				} else {
-					$ve_channels = $ve_info->m_channelcount;
-					$ve_slots = $ve_info->m_clientcount.'/'.$ve_info->m_maxclients;
-				}
-		?>  
-			<tr class="bg1">
-				<td class="fHeading">
-					<img src="<?php echo IMAGE_PATH; ?>/ventrilo/ventrilo.png" alt="venticon" />
-					&nbsp;<a href="<?php echo $g_options['scripturl'] . "?mode=ventrilo&amp;game=$game&amp;veId=".$vent_server['serverId']; ?>"><?php echo eHtml($vent_server['name']); ?></a>
-				</td>
-				<td>
-					<a href="<?php echo eHtml('ventrilo://' . $vent_server['addr'] . ':' . $vent_server['queryPort'] . '/servername=' . rawurlencode((string)$ve_info->m_name)); ?>">
-					<?php echo eHtml($vent_server['addr'] . ':' . $vent_server['queryPort']); ?>
-					</a></td>
-				<td>
-					<?php echo eHtml($vent_server['password']); ?>
-				</td>
-				<td style="text-align:right;">
-					<?php echo eHtml($ve_channels); ?>
-				</td>
-				<td style="text-align:right;">
-					<?php echo eHtml($ve_slots); ?>
-				</td>
-				<td>
-					<?php echo eHtml($vent_server['descr']); ?>
-				</td>
-			</tr>
-<?php
-			}
 		}
 		if (isset($discord_servers))
 		{

@@ -41,7 +41,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 	// Clan Details
 	
-	$clan = valid_request(intval($_GET['clan']), true) or error('No clan ID specified.');
+	$clan = valid_request(intval($_GET['clan'] ?? ''), true) or error('No clan ID specified.');
 	
 	$db->query("
 		SELECT
@@ -61,6 +61,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Players.clan = hlstats_Clans.clanId
 		WHERE
 			hlstats_Clans.clanId=$clan
+			AND hlstats_Clans.hidden <> 1
 			AND hlstats_Players.hideranking = 0
 		GROUP BY
 			hlstats_Clans.clanId

@@ -38,37 +38,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 Originally idea for sig.php by Tankster
 */
 
-foreach ($_SERVER as $key => $entry) {
-	if ($key !== 'HTTP_COOKIE') {
-		$search_pattern  = array('/<script>/', '/<\/script>/', '/[^A-Za-z0-9.\-\/=:;_?#&~]/');
-		$replace_pattern = array('', '', '');
-		$entry = preg_replace($search_pattern, $replace_pattern, $entry);
-  
-		if ($key == 'PHP_SELF') {
-			if ((strrchr($entry, '/') !== '/hlstats.php') &&
-				(strrchr($entry, '/') !== '/sig.php') &&
-				(strrchr($entry, '/') !== '/sig2.php') &&
-				(strrchr($entry, '/') !== '/index.php') &&
-				(strrchr($entry, '/') !== '/status.php') &&
-				(strrchr($entry, '/') !== '/top10.php') &&
-				(strrchr($entry, '/') !== '/config.php') &&
-				(strrchr($entry, '/') !== '/') &&
-				($entry !== '')) {
-				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
-				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
-				exit;
-			}    
-		}
-		$_SERVER[$key] = $entry;
-	}
-}
-  
 define('IN_HLSTATS', true);
-header("Content-Type: image/png");
 
 // Load database classes
 require ('config.php');
+hlxFilterServerVars();
+header("Content-Type: image/png");
 require (INCLUDE_PATH . '/class_db.php');
 require (INCLUDE_PATH . '/functions.php');
 
@@ -91,7 +66,6 @@ if (empty($g_options)) {
 	error('Warning: Could not find any options in the database. Check HLStats configuration.');
 }
 
-@error_reporting(E_ALL ^ E_NOTICE);
 
 function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct){
 	$opacity=$pct;
@@ -112,27 +86,16 @@ function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, 
 	imagecopymerge($dst_im, $cut, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $opacity);
 }
 
-function f_num($number) {
-	if (($number >= 10) &&($number < 20))
-		return $number.'th';
-	else {
-		switch ($number % 10) {
-			case 1:
-				return $number.'st';
-				break;
-			case 2:
-				return $number.'nd';
-				break;
-			case 3:
-				return $number.'rd';
-				break;
-			default:
-				return $number.'th';
-				break;
-		}
-	}
+// This script answers with an image: the HTML error box of error() would be sent
+// as a broken PNG
+function sigError($message)
+{
+	http_response_code(404);
+	header('Content-Type: text/plain; charset=utf-8');
+	exit($message);
 }
 
+	$realgame = '';
 	$player_id = 0;  
 	if (isset($_GET['player_id'])) {
 		$player_id = valid_request($_GET['player_id'], true);
@@ -153,7 +116,7 @@ function f_num($number) {
 			WHERE
 				code = '$game_escaped'
 		");
-		$realgame = $db->fetch_row();
+		list($realgame) = $db->fetch_row() ?: array('');
 		
 		// Obtain player_id from the steam_id and game code
 		$db->query("
@@ -167,30 +130,13 @@ function f_num($number) {
 		");
 		
 		if ($db->num_rows() != 1)
-		error('No such player.');
+			sigError('No such player.');
 		list($player_id) = $db->fetch_row();
 	}
 	
 	$show_flags = $g_options['countrydata'];
 	if (isset($_GET['show_flags']) && is_numeric($_GET['show_flags'])) {
 		$show_flags = valid_request($_GET['show_flags'], true);
-	}
-
-	if (file_exists(IMAGE_PATH.'/progress/sig_'.$player_id.'.png')) {
-		$file_timestamp = @filemtime(IMAGE_PATH.'/progress/sig_'.$player_id.'.png');
-		if ($file_timestamp + IMAGE_UPDATE_INTERVAL > time()) {
-			if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-				$browser_timestamp = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
-				if ($browser_timestamp + IMAGE_UPDATE_INTERVAL > time()) {
-					header('HTTP/1.0 304 Not Modified');
-					exit; 
-				}
-			}
-
-			$mod_date = date('D, d M Y H:i:s \G\M\T', $file_timestamp);
-			header('Last-Modified:'.$mod_date);
-			exit;
-		}  
 	}
 
 	////
@@ -207,7 +153,7 @@ if ($player_id > 0) {
 		SELECT
 			playerId, 
 			game, 
-			FROM_UNIXTIME((last_event), '%a %D %b %k:%H') as lastevent, 
+			FROM_UNIXTIME((last_event), '%a %D %b %H:%i') as lastevent, 
 			connection_time,
 			last_skill_change,
                         unhex(replace(hex(lastName), 'E280AE', '')) as lastName,
@@ -230,10 +176,15 @@ if ($player_id > 0) {
 			playerId='$player_id'
 	");
 	if ($db->num_rows() != 1)
-		error('No such player.');
+		sigError('No such player.');
 
 	$playerdata = $db->fetch_array();
 	$db->free_result();
+
+	if ($realgame === '') {
+		// player_id requests carry no game: the fallback backgrounds are those of the realgame
+		$realgame = (string) $container->get(\Repository\GameRepository::class)->getGameByCode($playerdata['game'], 'realgame');
+	}
 
 	$pl_name = $playerdata['lastName'];
     
@@ -256,7 +207,7 @@ if ($player_id > 0) {
 		FROM
 			hlstats_Players
 		WHERE
-			game='".$playerdata['game']."'");
+			game='" . $db->escape($playerdata['game']) . "'");
 	$pl_count = $db->fetch_array();
 	$db->free_result();
 
@@ -442,7 +393,8 @@ if ($player_id > 0) {
     
 	if(function_exists('imagettftext'))
 	{
-		$font = IMAGE_PATH.'/sig/font/DejaVuSans.ttf';
+		// GD only finds a font given by its full path
+		$font = ROOT_PATH . '/hlstatsimg/sig/font/DejaVuSans.ttf';
 		imagettftext($image, 10, 0, 30, 15, $caption_color, $font, $pl_name);
 	}
 	else
@@ -476,10 +428,13 @@ if ($player_id > 0) {
 	$watermark = imagecreatefrompng(IMAGE_PATH.'/watermark.png');
 	imagecopymerge_alpha($image, $watermark, 334, 58, 0, 0, 60, 12, 50);
 	
-	$mod_date = date('D, d M Y H:i:s \G\M\T', time());
-	Header('Last-Modified:'.$mod_date);
+	// Signatures sit in forum threads and are requested on every page view there:
+	// let browsers and proxies keep them for a while
+	header('Cache-Control: public, max-age=' . (int) IMAGE_UPDATE_INTERVAL);
+	header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 
 	imagepng($image);
 
-}   
-?>
+} else {
+	sigError('No player specified.');
+}

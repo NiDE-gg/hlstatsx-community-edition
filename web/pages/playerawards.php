@@ -41,7 +41,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 
     // Player Awards History
-	$player = valid_request($_GET['player'], true) or error("No player ID specified.");
+	$player = valid_request($_GET['player'] ?? '', true) or error("No player ID specified.");
 
 	$db->query("
 		SELECT

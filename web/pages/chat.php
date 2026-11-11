@@ -280,7 +280,7 @@
 			return [
 				new TableColumn('eventTime', 'Date', 'width=16'),
 				new TableColumn('lastName', 'Player', 'width=17&sort=no&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')),
-				new TableColumn('message', 'Message', 'width=34&sort=no&embedlink=yes'),
+				new TableColumn('message', 'Message', 'width=34&sort=no'),
 				new TableColumn('serverName', 'Server', 'width=23&sort=no'),
 				new TableColumn('map', 'Map', 'width=10&sort=no')
 			];
@@ -289,7 +289,7 @@
 		return [
 			new TableColumn('eventTime', 'Date', 'width=16'),
 			new TableColumn('lastName', 'Player', 'width=24&sort=no&flag=1&link=' . urlencode('mode=playerinfo&amp;player=%k')),
-			new TableColumn('message', 'Message', 'width=44&sort=no&embedlink=yes'),
+			new TableColumn('message', 'Message', 'width=44&sort=no'),
 			new TableColumn('map', 'Map', 'width=16&sort=no')
 		];
 	}

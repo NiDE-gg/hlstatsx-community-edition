@@ -65,6 +65,8 @@ class Table
 	var $columnlist;
 	var $startitem;
 
+	const MAX_PAGE = 1000000;
+
 	var $maxpagenumbers = 20;
 	public $sort_default_order;
 
@@ -91,10 +93,9 @@ class Table
 		$this->sort = valid_request($_GET[$var_sort] ?? '', false);
 		$this->sortorder = valid_request($_GET[$var_sortorder] ?? '', false);
 
-		if ($this->page < 1)
-		{
-			$this->page = 1;
-		}
+		// Capped: a huge page number turned the LIMIT offset into a float and the
+		// query into a syntax error
+		$this->page = max(1, min($this->page, self::MAX_PAGE));
 		$this->startitem = ($this->page - 1) * $this->numperpage;
 
 		foreach ($columns as $col)
@@ -105,7 +106,7 @@ class Table
 			}
 		}
 
-		if (!is_array($this->columnlist) || !in_array($this->sort, $this->columnlist))
+		if (!is_array($this->columnlist) || !in_array($this->sort, $this->columnlist, true))
 		{
 			$this->sort = $sort_default;
 		}
@@ -238,7 +239,7 @@ class Table
 				$class = "";
 
 				$cellbody = '';
-				$colval = $rowdata[$col->name];
+				$colval = $rowdata[$col->name] ?? '';
                 $colval_lower = (!empty($rowdata[$col->name])) ? strtolower($rowdata[$col->name]) : null;
 
 				if ($col->align != 'left')
@@ -280,7 +281,7 @@ class Table
 							$rowdata['flag'] = '0';
 							$alt_text        = 'No Country';
 						} else {
-							$alt_text        = eHtml(ucfirst(strtolower($rowdata['country'])));
+							$alt_text        = eHtml(ucfirst(strtolower((string) ($rowdata['country'] ?? ''))));
 						}
 
 						$cellbody .= '<img src="' . getFlag($rowdata['flag'])."\" class=\"tableicon\" alt=\"$alt_text\" title=\"$alt_text\" />";
@@ -362,7 +363,7 @@ class Table
 							$cellbody .= '<b>';
 						if ((is_numeric($colval)) && ($colval >= 1000))
 							$colval = number_format($colval);
-						$colval = nl2br(htmlspecialchars($colval, ENT_COMPAT));
+						$colval = nl2br(htmlspecialchars((string) $colval, ENT_COMPAT));
 
 						if ($col->embedlink == 'yes')
 							{
@@ -391,12 +392,13 @@ class Table
 
 				if ($col->append)
 				{
-					$cellbody .= $col->append;
+					// Plain text in every caller; one of them appends an award verb set
+					// from the admin panel
+					$cellbody .= eHtmlOnce($col->append);
 				}
 				
 				if ($col->skill_change) {
-					if ($rowdata['last_skill_change'] == '')
-						$rowdata['last_skill_change'] = 0;
+					$rowdata['last_skill_change'] = (int) ($rowdata['last_skill_change'] ?? 0);
 					if ($rowdata['last_skill_change'] == 0)
 						$cellbody .= "&nbsp;<img src=\"" . IMAGE_PATH
 							. "/t1.gif\" alt=\"".$rowdata['last_skill_change']." Points\" />";

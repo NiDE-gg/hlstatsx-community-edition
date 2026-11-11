@@ -46,12 +46,16 @@ For support and installation notes visit http://www.hlxcommunity.com
     $container = $container ?? require ROOT_PATH . '/bootstrap.php';
     $playerRepo = $container->get(\Repository\PlayerRepository::class);
 
-	$player = valid_request(intval($_GET['player']), true);
-	$uniqueid  = valid_request(strval($_GET['uniqueid']), false);
+	$player = valid_request(intval($_GET['player'] ?? ''), true);
+	$uniqueid  = valid_request($_GET['uniqueid'] ?? '', false);
 	$game = valid_game_code($_GET['game'] ?? '');
 
 	if (!$player && $uniqueid) {
 		if (!$game) {
+			// ingame.php has already printed the page header: without output buffering no redirect is possible
+			if (headers_sent()) {
+				error('Invalid or no game specified.');
+			}
 			header('Location: ' . $g_options['scripturl'] . '?' . http_build_query(['mode' => 'search', 'st' => 'uniqueid', 'q' => $uniqueid]));
 			exit;
 		}
@@ -106,6 +110,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Players.shots,
 			hlstats_Players.hits,
 			hlstats_Players.teamkills,
+			hlstats_Players.hideranking,
 			hlstats_Players.kill_streak,
 			hlstats_Players.death_streak,
 			IFNULL(ROUND((hits / shots * 100), 1), 0.0) AS acc,
@@ -173,7 +178,7 @@ For support and installation notes visit http://www.hlxcommunity.com
                 <?php
                     $rank = 'Unknown';
 
-                    if ($playerdata['activity'] > 0) {
+                    if ($playerdata['activity'] > 0 && $playerdata['hideranking'] == 0) {
                         $plGame = $playerdata['game'];
                         $rankType = $g_options['rankingtype'];
                         $plValue = $playerdata[$rankType];
@@ -186,7 +191,8 @@ For support and installation notes visit http://www.hlxcommunity.com
                             $rank = 'Unknown';
                         }
                     } else {
-                        $rank = 'Not active';
+                        // Same wording as the public player page: a hidden player has no public rank
+                        $rank = ($playerdata['hideranking'] == 1) ? 'Hidden' : (($playerdata['hideranking'] == 2) ? 'Banned' : 'Not active');
                     }
 
                     if (is_numeric($rank))

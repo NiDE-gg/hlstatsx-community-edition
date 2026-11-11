@@ -114,14 +114,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$link = '<a href="hlstats.php?mode=rankinfo&amp;rank='.$r['rankId']."&amp;game=$game\">";
 		if ($image)
 		{
-			$imagestring = '<img src="'.$image['url'].'" alt="'.$r['image'].'" />';
+			$imagestring = '<img src="'.eHtml($image['url']).'" alt="'.eHtml($r['image']).'" />';
 		}
 		else
 		{
 			$imagestring = 'Player List';
 		}
 		$achvd = '';
-		if ($ranks[$r['rankId']] > 0)
+		if (($ranks[$r['rankId']] ?? 0) > 0)
 		{
 			$imagestring = "$link$imagestring</a>";
 			$achvd = 'Achieved by '.$ranks[$r['rankId']].' Players';

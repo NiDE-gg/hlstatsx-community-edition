@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	if ($auth->userdata['acclevel'] < 80) {
+	if ($auth->userdata['acclevel'] < 100) {
         die ('Access denied!');
 	}
 
@@ -83,14 +83,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			
 			foreach ($this->options as $opt)
 			{
-				if (($this->title == 'Fonts') || ($this->title == 'General')) {
-					$optval = (isset($_POST[$opt->name]) && is_string($_POST[$opt->name])) ? $_POST[$opt->name] : '';
-					$search_pattern  = array('/script/i', '/;/', '/%/');
-					$replace_pattern = array('', '', '');
-					$optval = preg_replace($search_pattern, $replace_pattern, $optval);
-				} else {
-					$optval = valid_request($_POST[$opt->name] ?? '', false);
- 	 			}
+				$optval = valid_request($_POST[$opt->name] ?? '', false);
 				
 				$optval = $db->escape((string) $optval);
 

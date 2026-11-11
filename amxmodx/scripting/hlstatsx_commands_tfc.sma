@@ -218,11 +218,11 @@ psay (client_id[], client_message[192])
 
 			static display_message[192]
 			static message_prefix[64]
-			get_pcvar_string(g_hlx_message_prefix, message_prefix, 64)
+			get_pcvar_string(g_hlx_message_prefix, message_prefix, charsmax(message_prefix))
 			if (strcmp(message_prefix, "") == 0) {
-				format(display_message, 192, "%s", client_message)
+				format(display_message, charsmax(display_message), "%s", client_message)
 			} else {
-				format(display_message, 192, "%s %s", message_prefix, client_message)
+				format(display_message, charsmax(display_message), "%s %s", message_prefix, client_message)
 			}
 
 			message_begin(MSG_ONE, g_msgSayText, {0,0,0}, player_index)
@@ -404,11 +404,11 @@ public hlx_amx_psay2(id, level, cid)
 
 			static display_message[192]
 			static message_prefix[64]
-			get_pcvar_string(g_hlx_message_prefix, message_prefix, 64)
+			get_pcvar_string(g_hlx_message_prefix, message_prefix, charsmax(message_prefix))
 			if (strcmp(message_prefix, "") == 0) {
-				format(display_message, 192, "%s", client_message)
+				format(display_message, charsmax(display_message), "%s", client_message)
 			} else {
-				format(display_message, 192, "%s %s", message_prefix, client_message)
+				format(display_message, charsmax(display_message), "%s %s", message_prefix, client_message)
 			}
 
 			message_begin(MSG_ONE, g_msgSayText, {0,0,0}, player_index)
@@ -431,7 +431,7 @@ public hlx_amx_say(id, level, cid)
 	remove_quotes(message)
 
 	static message_prefix[64]
-	get_pcvar_string(g_hlx_message_prefix, message_prefix, 64)
+	get_pcvar_string(g_hlx_message_prefix, message_prefix, charsmax(message_prefix))
 	if (strcmp(message_prefix, "") == 0) {
 		client_print(0, print_chat, "%s", message)
 	} else {
@@ -617,7 +617,7 @@ public handle_internal_menu(id, key)
 			static player_event[192]
 			new slot = key
 			slot++
-			num_to_str(slot, player_event, 192)
+			num_to_str(slot, player_event, charsmax(player_event))
 			log_player_event(client, "selected", player_event, 0)
 		} else {
 			new player_event[192] = "cancel"
@@ -855,7 +855,7 @@ public hlx_block_commands(client)
 		new block_chat_commands = get_pcvar_num(g_hlx_block_commands)
 		
 		static user_command[192]
-		read_args(user_command, 192)
+		read_args(user_command, charsmax(user_command))
 		static origin_command[192]
 		
 		new start_index = 0
@@ -872,7 +872,7 @@ public hlx_block_commands(client)
 				start_index++
 			}
 
-			copy(origin_command, 192, user_command[start_index])
+			copy(origin_command, charsmax(origin_command), user_command[start_index])
 		}
 		
 		if (command_length > 0) {

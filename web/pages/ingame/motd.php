@@ -246,12 +246,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 			LIMIT 0, $servers
         ";
 	$db->query($query);
-	$this_server = array();
 	$servers = array();
 	while ($rowdata = $db->fetch_array()) {
 		$servers[] = $rowdata;
-		if ($rowdata['serverId'] == $server_id)
-			$this_server = $rowdata;
 	}
           
 	$i=0;

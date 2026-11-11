@@ -24,7 +24,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	RegConsoleCmd("sm_stats_test", Command_ApiGetTest);
+	RegAdminCmd("sm_stats_test", Command_ApiGetTest, ADMFLAG_ROOT);
 }
 
 public void OnAllPluginsLoaded()
@@ -51,7 +51,7 @@ public Action Command_ApiGetTest(int client, int args)
 	if (!g_bHLStatsApi) {
 
 		PrintToConsole(client, "HLStatsX API plugin is not loaded!");
-		return;
+		return Plugin_Handled;
 	}
 
 	bool request = HLStatsX_Api_GetStats("playerinfo", client, _GetTest_Response, 0);
@@ -61,6 +61,8 @@ public Action Command_ApiGetTest(int client, int args)
 	} else {
 		PrintToConsole(client, "[FAILED] API request: GetStats > %N", client);
 	}
+
+	return Plugin_Handled;
 }
 
 public void _GetTest_Response(int command, int payload, int client, DataPack &datapack)
@@ -68,19 +70,17 @@ public void _GetTest_Response(int command, int payload, int client, DataPack &da
 	if (IsValidClient(client)) {
 
 		// https://sm.alliedmods.net/new-api/datapack/DataPack
-		DataPack pack = view_as<DataPack>(CloneHandle(datapack));
+		// The pack belongs to the API plugin, which frees it when this callback returns: read it
+		// here and never delete it (CloneHandle it to keep the data longer).
 
 		// You can also set position eg. to 5 and get values from that position - kd and others
-		// pack.Position = view_as<DataPackPos>(5);
+		// datapack.Position = view_as<DataPackPos>(5);
 
-		int rank = pack.ReadCell();
-		int skill = pack.ReadCell();
-		int kills = pack.ReadCell();
-		int deaths = pack.ReadCell();
-		float kd = pack.ReadFloat();
-		
-		delete datapack;
-		delete pack;
+		int rank = datapack.ReadCell();
+		int skill = datapack.ReadCell();
+		int kills = datapack.ReadCell();
+		int deaths = datapack.ReadCell();
+		float kd = datapack.ReadFloat();
 
 		PrintToConsole(client, "[DONE] API response: Stats > %N (%i): %i, %i, %i, %i, %f", client, client, rank, skill, kills, deaths, kd);
 	}

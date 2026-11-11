@@ -116,11 +116,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
    
 		$link = '<a href="hlstats.php?mode=ribboninfo&amp;ribbon='.$r['ribbonId']."&amp;game=$game\">";
-		if (file_exists(IMAGE_PATH."/games/$game/ribbons/".$r['image']))
+		// A file name set in the admin panel: it must stay inside the ribbons folder
+		if (!preg_match('/^[A-Za-z0-9_.-]+\z/', (string) $r['image']) || strpos($r['image'], '..') !== false) {
+			$r['image'] = '';
+		}
+		if ($r['image'] !== '' && file_exists(IMAGE_PATH."/games/$game/ribbons/".$r['image']))
 		{
 			$image = IMAGE_PATH."/games/$game/ribbons/".$r['image'];
 		}
-		elseif (file_exists(IMAGE_PATH."/games/$realgame/ribbons/".$r['image']))
+		elseif ($r['image'] !== '' && file_exists(IMAGE_PATH."/games/$realgame/ribbons/".$r['image']))
 		{
 			$image = IMAGE_PATH."/games/$realgame/ribbons/".$r['image'];
 		}

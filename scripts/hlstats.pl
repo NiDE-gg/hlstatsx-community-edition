@@ -74,9 +74,11 @@ require "$opt_libdir/BASTARDrcon.pm";
 require "$opt_libdir/HLstats_Server.pm";
 require "$opt_libdir/HLstats_Player.pm";
 require "$opt_libdir/HLstats_Game.pm";
-do "$opt_libdir/HLstats_GameConstants.plib";
-do "$opt_libdir/HLstats.plib";
-do "$opt_libdir/HLstats_EventHandlers.plib";
+# do() only returns undef (with the reason in $@ or $!) when a file can't be read or
+# compiled, and the daemon would start anyway with some of its subs missing
+foreach my $plib ("HLstats_GameConstants.plib", "HLstats.plib", "HLstats_EventHandlers.plib") {
+	do "$opt_libdir/$plib" or die("Can't load $opt_libdir/$plib: " . ($@ || $!) . "\n");
+}
 
 $|=1;
 Getopt::Long::Configure ("bundling");
@@ -200,7 +202,7 @@ sub track_hlstats_trend
 					WHERE
 						game=?
 				";
-				my $data = &execCached("get_game_stat_counts", $query, &quoteSQL($game));
+				my $data = &execCached("get_game_stat_counts", $query, $game);
 				my ($total_kills, $total_headshots, $total_servers, $act_slots, $max_slots) = $data->fetchrow_array;
 				if ($max_slots > 0) {
 					if ($act_slots > $max_slots) {
@@ -291,15 +293,15 @@ my %g_eventtable_data = ();
 
 sub buildEventInsertData
 {
-	my $insertType = "";
-	$insertType = " DELAYED" if ($db_lowpriority);
+	# Plain INSERT: DELAYED is deprecated, only ever worked on MyISAM, and MySQL 5.7
+	# and later ignore it (DBLowPriority has no effect any more)
 	while ( my ($table, $colsref) = each(%g_eventTables) )
 	{
 		$g_eventtable_data{$table}{queue} = [];
 		$g_eventtable_data{$table}{nullallowed} = 0;
 		$g_eventtable_data{$table}{lastflush} = $ev_daemontime;
 		$g_eventtable_data{$table}{query} = "
-		INSERT$insertType INTO
+		INSERT INTO
 			hlstats_Events_$table
 			(
 				eventTime,
@@ -368,9 +370,19 @@ sub flushEventTable
 		$query .= $_.",";
 	}
 	$query =~ s/,$//;
-	execNonQuery($query);
+	my $queued = scalar(@{$g_eventtable_data{$table}{queue}});
+	# Emptied before the insert: a batch the database refuses is dropped, not sent
+	# again at every flush
 	$g_eventtable_data{$table}{lastflush} = $ev_daemontime;
 	$g_eventtable_data{$table}{queue} = [];
+	if (!defined(execNonQuery($query))) {
+		# Same rule as the other queries (queryFailed() in HLstats.plib): a value the
+		# database rejects costs this batch, anything else stops the daemon. The flush
+		# also runs from the signal handlers, so it must not die.
+		eval { &queryFailed("Dropped $queued queued $table event(s), the database refused them: $DBI::errstr"); };
+		chomp(my $flushError = $@);
+		&printEvent("MYSQL", $flushError, 1);
+	}
 }
 
 
@@ -1192,7 +1204,7 @@ sub getPlayerInfo
 		} else {
 			if ($g_mode eq "LAN" && !$bot && $userid > 0) {
 				if ($ipAddr ne "") {
-					$g_lan_noplayerinfo->{"$s_addr/$userid/$name"} = {
+					$g_lan_noplayerinfo{"$s_addr/$userid/$name"} = {
 						ipaddress => $ipAddr,
 						userid => $userid,
 						name => $name,
@@ -1231,7 +1243,6 @@ sub getPlayerInfo
 					$md5->add($name);
 					$md5->add($s_addr);
 					$uniqueid = "BOT:" . $md5->hexdigest;
-					$unique_id = $uniqueid if ($g_mode eq "LAN");
 				}
 			
 				if ($uniqueid eq "UNKNOWN"
@@ -1879,7 +1890,7 @@ GetOptions(
 	"server-port=i"		=> \$copts{g_server_port},
 	"timestamp!"		=> \$copts{g_timestamp},
 	"t"					=> \$copts{g_timestamp},
-	"event-queue-size"  => \$copts{g_event_queue_size}
+	"event-queue-size=i" => \$copts{g_event_queue_size}
 ) or die($usage);
 
 
@@ -1926,9 +1937,9 @@ if ($opt_version) {
 	$result->finish;
 	print "\nhlstats.pl (HLstatsX Community Edition) Version $g_version\n"
 		. "Real-time player and clan rankings and statistics for Half-Life 2\n"
-		. "Modified (C) 2008-20XX  Nicholas Hastings (nshastings@gmail.com)\n"
+		. "Modified (C) 2008-20XX  Nicholas Hastings (nshastings\@gmail.com)\n"
 		. "Copyleft (L) 2007-2008  Malte Bayer\n"
-		. "Modified (C) 2005-2007  Tobias Oetzel (Tobi@hlstatsx.com)\n"
+		. "Modified (C) 2005-2007  Tobias Oetzel (Tobi\@hlstatsx.com)\n"
 		. "Original (C) 2001 by Simon Garner \n\n";
 	
 	print "Using ConfigReaderSimple module version $ConfigReaderSimple::VERSION\n";
@@ -2012,7 +2023,7 @@ if ($g_log_chat > 0) {
 
 if ($g_global_chat == 1) {
 	&printEvent("HLSTATSX", "Broadcasting public chat to all players is enabled", 1);
-} elsif ($g_gloabl_chat == 2) {
+} elsif ($g_global_chat == 2) {
 	&printEvent("HLSTATSX", "Broadcasting public chat to admins is enabled", 1);
 } else {
 	&printEvent("HLSTATSX", "Broadcasting public chat is disabled", 1);
@@ -2095,7 +2106,9 @@ while ($loop = &getLine()) {
 	} else {
 		if(IO::Select->new($s_socket)->can_read(2)) {  # 2 second timeout
 			$s_socket->recv($s_output, 1024);
-			$s_output = decode( 'utf8', $s_output );
+			# "UTF-8" is the strict decoder: unlike "utf8" it also replaces surrogates and
+			# code points above U+10FFFF, which MySQL refuses or stores as invalid UTF-8
+			$s_output = decode( 'UTF-8', $s_output, Encode::FB_DEFAULT );
 			$timeout = 0;
 		} else {
 			$timeout++;
@@ -2117,7 +2130,7 @@ while ($loop = &getLine()) {
 
 			$proxy_s_peerhost = $s_socket->peerhost;
 			$proxy_s_peerport  = $s_socket->peerport;
-			&printEvent("PROXY", "Detected proxy call from $proxy_s_peerhost:$proxy_s_peerport") if ($d_debug > 2);
+			&printEvent("PROXY", "Detected proxy call from $proxy_s_peerhost:$proxy_s_peerport") if ($g_debug > 2);
 
 
 			if ($proxy_key eq $rproxy_key) {
@@ -2132,7 +2145,11 @@ while ($loop = &getLine()) {
 					&printEvent("PROXY", $s_output);
 				}
 			} else {
-				&printEvent("PROXY", "proxy_key mismatch, dropping package");
+				# At most one line a minute: any host on the internet can send these
+				if (($g_proxykey_warned // 0) < time() - 60) {
+					$g_proxykey_warned = time();
+					&printEvent("PROXY", "proxy_key mismatch, dropping package");
+				}
 				&printEvent("PROXY", $s_output) if ($g_debug > 2);
 				$s_output = "";
 				next;
@@ -3054,8 +3071,12 @@ while ($loop = &getLine()) {
 				my $ipAddr = $ev_obj_a;
 				my $playerinfo;
 				
-				if ($ipAddr =~ /([\d\.]+):(\d+)/) {
+				# The address is stored, resolved and used in the GeoIP lookup, and the line can
+				# claim anything: only an IPv4 address goes on ("none" for bots, "loopback"...)
+				if ($ipAddr =~ /^(\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?\z/) {
 					$ipAddr = $1;
+				} else {
+					$ipAddr = "";
 				}
 				
 				$playerinfo = &getPlayerInfo($ev_player, 1, $ipAddr);
@@ -3620,7 +3641,7 @@ EOT
 					&printEvent("BAN", "Global Ban - ignored");
 				} elsif (!$g_servers{$s_addr}->{ignore_nextban}->{$playerinfo->{"uniqueid"}}) {
 					my $p_steamid  = $playerinfo->{"uniqueid"};
-					my $player_obj = lookupPlayer($s_addr, $playerId, $p_steamid);
+					my $player_obj = lookupPlayer($s_addr, $playerinfo->{"userid"}, $p_steamid);
 					&printEvent("BAN", "Steamid: ".$p_steamid);
 
 					if ($player_obj) {
@@ -3633,9 +3654,10 @@ EOT
 								&execNonQuery("UPDATE hlstats_Players SET hideranking=2 WHERE playerId IN (SELECT playerId FROM hlstats_PlayerUniqueIds WHERE uniqueId='".&quoteSQL($p_steamid)."')");
 								$ev_bantime = 0;
 							}
-							my $pl_steamid  = $playerinfo->{"plain_uniqueid"};
+							# The SteamID as the game server logged it (getPlayerInfo() doesn't return it)
+							my $pl_steamid  = ($player_obj) ? $player_obj->{plain_uniqueid} : "";
 							while (my($addr, $server) = each(%g_servers)) {
-								if ($addr ne $s_addr) {
+								if ($addr ne $s_addr && $pl_steamid =~ /^(?:STEAM_\d+:\d+:\d+|\[U:\d+:\d+\])\z/) {
 									&printEvent("BAN", "Global banning on ".$addr);
 									$server->{ignore_nextban}->{$p_steamid} = 1;
 									$server->dorcon("banid ".$ev_bantime." $pl_steamid");

@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Ribbon Statistics
 
-	$ribbon =  valid_request($_GET['ribbon'], true) or error('No ribbon ID specified.');
+	$ribbon =  valid_request($_GET['ribbon'] ?? '', true) or error('No ribbon ID specified.');
 
 	$db->query("
 		SELECT
@@ -58,10 +58,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	$actiondata = $db->fetch_array();
 	$db->free_result();
+	if (!$actiondata) {
+		error('No such ribbon.');
+	}
 	$act_name = $actiondata['ribbonName'];
-	$awardmin = $actiondata['awardCount'];
-	$awardcode = $actiondata['awardCode'];
-	$image = $actiondata['image'];
+	// Both values are set from the admin panel and go into the queries below
+	$awardmin = (int) $actiondata['awardCount'];
+	$awardcode = $db->escape($actiondata['awardCode']);
+	// A file name set in the admin panel: it must stay inside the ribbons folder
+	$image = (preg_match('/^[A-Za-z0-9_.-]+\z/', (string) $actiondata['image']) && strpos($actiondata['image'], '..') === false) ? $actiondata['image'] : '';
 
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
 	if ($db->num_rows() < 1) {
@@ -75,7 +80,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		array($gamename, 'Ribbon Details', $act_name),
 		array(
 			$gamename => $g_options['scripturl']."?game=$game",
-			'Ribbons' => $g_options['scripturl']."mode=awards&game=$game&tab=ribbons",
+			'Ribbons' => $g_options['scripturl']."?mode=awards&game=$game&tab=ribbons",
 			'Ribbon Details' => ''
 		),
 		$act_name
@@ -192,7 +197,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	</div>
 	<br /><br />
 <?php
-  echo '<img src="'.IMAGE_PATH."/games/$game/ribbons/$image\" alt=\"\" /> <b>" . eHtmlOnce($act_name) . "</b>";
+  echo '<img src="' . IMAGE_PATH . "/games/$game/ribbons/" . eHtml($image) . '" alt="" /> <b>' . eHtmlOnce($act_name) . '</b>';
 	$table->draw($result, $numitems, 95, 'center');
 ?>
 </div>

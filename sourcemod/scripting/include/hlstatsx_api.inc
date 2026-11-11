@@ -22,6 +22,7 @@ public void __pl_hlstatsx_api_SetNTVOptional()
 	MarkNativeAsOptional("HLStatsX_Api_GetStats");
 }
 
+// dataPack is owned by the API plugin and freed as soon as the callback returns: do not delete it.
 typedef HLStatsX_Api_StatsCallback = function void(int command, int payload, int client, DataPack &dataPack);
 
 /**
