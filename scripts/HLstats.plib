@@ -193,6 +193,8 @@ sub queryFailed
 	my ($message) = @_;
 
 	die("$message\n") if (($DBI::err // 0) =~ /^(?:1048|1062|1264|1265|1267|1270|1271|1292|1365|1366|1406|1690)\z/);
+	# Shutting down (flushAll(1)): the caller catches it and flushes what it still can
+	die("$message\n") if ($g_shutting_down);
 
 	print STDERR "$message\n";
 	exit(1);

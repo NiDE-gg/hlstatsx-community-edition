@@ -30,7 +30,15 @@ spec:
             image: ghcr.io/nide-gg/hlstatsx-deamon:latest
             imagePullPolicy: Always
             name: hlstatx-daemon-awards
-            resources: {}
+            # Measured 2026-11-15 (image of this branch, MariaDB 10.11, test database):
+            # 20 MiB peak RSS. The work is done by the database; the limit leaves room
+            # for result sets of a large install. No CPU limit (it runs once a day).
+            resources:
+              requests:
+                cpu: 50m
+                memory: 32Mi
+              limits:
+                memory: 256Mi
             securityContext:
               allowPrivilegeEscalation: false
               capabilities:

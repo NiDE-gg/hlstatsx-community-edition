@@ -26,6 +26,16 @@ spec:
       - name: hlstatx-daemon
         image: ghcr.io/nide-gg/hlstatsx-deamon:latest
         imagePullPolicy: Always
+        # Measured 2026-11-15 (image of this branch, MariaDB 10.11, test database):
+        # 32 MiB idle. Players and servers are held in memory, so a busy daemon needs
+        # more: the limit leaves room for that. No CPU limit, throttling would delay
+        # reading the UDP log stream.
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

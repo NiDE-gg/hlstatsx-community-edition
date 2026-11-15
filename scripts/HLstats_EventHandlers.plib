@@ -2977,8 +2977,10 @@ sub doEvent_Rcon
 	my ($type, $command, $password, $ipAddr) = @_;
 	
 	# The command is stored and shown in the admin event history: keep the name of a
-	# command that sets a password, the log secret or the Steam login token, not its value
-	$command =~ s/^(\s*(?:(?:sm|amx|ma)_(?:cvar|rcon)\s+)?"?\w*(?:password|logsecret|setsteamaccount)"?)\s+\S.*$/$1 <hidden>/i;
+	# command that sets a password, the log secret or the Steam login token, not its value.
+	# The HL1 format passes "a; b" commands whole, so the command can start after a ";".
+	# Everything after it is hidden, not only up to the next ";": a quoted value may hold one.
+	$command =~ s/((?:^|;)\s*(?:(?:sm|amx|ma)_(?:cvar|rcon)\s+)?"?\w*(?:password|logsecret|setsteamaccount)"?)\s+\S.*$/$1 <hidden>/is;
 	
 	if ($g_rcon_record)
 	{

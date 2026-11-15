@@ -85,7 +85,9 @@ Getopt::Long::Configure ("bundling");
 
 $last_trend_timestamp = 0;
 
-binmode STDIN, ":utf8";
+# Raw bytes: --stdin lines are decoded in the main loop with the same strict decoder
+# as UDP packets (the ":utf8" layer does not validate, so an invalid name got through)
+binmode STDIN, ":raw";
 binmode STDOUT, ":utf8";
 
 ##
@@ -1498,11 +1500,25 @@ sub flushAll
 {
 	# we only need to flush events if we're about to shut down. they are unaffected by server/player deletion
 	my ($flushevents) = @_;
+
+	# On the way out (SIGTERM/SIGINT, KILL from the frontend, end of a --stdin import),
+	# a failed query must not exit() half-way: queryFailed() dies instead, and each
+	# table, player and server is flushed on its own, so one error does not lose the rest.
+	local $g_shutting_down = $flushevents ? 1 : 0;
+	my $flushStep = sub {
+		my ($what, $code) = @_;
+		return $code->() if (!$g_shutting_down);
+		eval { $code->(); 1 } or do {
+			chomp(my $flushError = $@);
+			&printEvent("MYSQL", "Flush of $what failed: $flushError", 1);
+		};
+	};
+
 	if ($flushevents)
 	{
-		while ( my ($table, $colsref) = each(%g_eventTables) )
+		foreach my $table (keys(%g_eventTables))
 		{
-			flushEventTable($table);
+			$flushStep->("$table events", sub { flushEventTable($table); });
 		}
 	}
 	
@@ -1512,10 +1528,10 @@ sub flushAll
 		{
 			if ($player)
 			{
-				$player->playerCleanup();
+				$flushStep->("player $pl on $se", sub { $player->playerCleanup(); });
 			}
 		}
-		$server->flushDB();
+		$flushStep->("server $se", sub { $server->flushDB(); });
 	}
 }
 
@@ -2094,7 +2110,7 @@ while ($loop = &getLine()) {
 	$ev_daemontime = $ev_unixtime; #time()
 
 	if ($g_stdin) {
-		$s_output = $loop;
+		$s_output = decode( 'UTF-8', $loop, Encode::FB_DEFAULT );
 		if (($import_logs_count > 0) && ($import_logs_count % 500 == 0)) {
 			$parse_time = $ev_unixtime - $start_parse_time;
 			if ($parse_time == 0) {
