@@ -114,6 +114,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Clans
 		ON
 			hlstats_Clans.clanId = hlstats_Players.clan
+			AND hlstats_Clans.hidden <> 1
 		WHERE
 			hlstats_Players.playerId = '$player'
 		LIMIT

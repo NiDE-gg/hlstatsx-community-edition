@@ -120,6 +120,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Players
 		LEFT JOIN hlstats_Clans ON
 			hlstats_Clans.clanId = hlstats_Players.clan
+			AND hlstats_Clans.hidden <> 1
 		WHERE
 			playerId='$player'
 	");
@@ -163,7 +164,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         <tr class="bg2">
 			<td class="fSmall">Member of Clan:</td>
 			<td colspan="2" class="fSmall"><?php
-				if ($playerdata['clan']) {
+				if ($playerdata['clan'] && $playerdata['clan_name'] !== null) {
 					echo '&nbsp;<a href="' . $g_options['scripturl']
 					. '?mode=claninfo&amp;clan=' . $playerdata['clan']
 					. '">'

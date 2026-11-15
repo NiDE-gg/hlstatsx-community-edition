@@ -241,6 +241,15 @@ class Auth
 			return $address;
 		}
 
+		// IPv4-mapped (::ffff:a.b.c.d, what a dual-stack listener reports for IPv4
+		// clients) and IPv4-compatible (::a.b.c.d) addresses carry an IPv4 address in
+		// their last 4 bytes, with zeros in the first 8: as a /64 they would all share
+		// one key, so one client could use up the limit of every IPv4 client.
+		$prefix = substr($packed, 0, 12);
+		if ($prefix === str_repeat("\0", 10) . "\xff\xff" || $prefix === str_repeat("\0", 12)) {
+			return inet_ntop(substr($packed, 12));
+		}
+
 		return inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
 	}
 

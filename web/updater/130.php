@@ -11,7 +11,7 @@
     // daemon and plugin fixes, removal of the TeamSpeak 2 / Ventrilo live viewers.
 
     // Perform database schema update notification
-    print "Updating database and verion schema numbers.<br />";
+    print "Updating database and version schema numbers.<br />";
     $db->query("UPDATE hlstats_Options SET `value` = '$version' WHERE `keyname` = 'version'");
     $db->query("UPDATE hlstats_Options SET `value` = '$dbversion' WHERE `keyname` = 'dbversion'");
 ?>

@@ -156,7 +156,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td style="width:50%;">Member of Clan:</td>
 					<td style="width:50%;">
 						<?php
-							if ($playerdata['clan'])
+							// clan_name is NULL when the clan is hidden
+							if ($playerdata['clan'] && $playerdata['clan_name'] !== null)
 							{
 								echo '&nbsp;<a href="' . $g_options['scripturl'] . '?mode=claninfo&amp;clan=' . $playerdata['clan'] . '">' . htmlspecialchars($playerdata['clan_name'], ENT_COMPAT) . '</a>';
 							}

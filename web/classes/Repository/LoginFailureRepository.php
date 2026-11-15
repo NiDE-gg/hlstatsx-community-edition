@@ -81,7 +81,11 @@
 
                 return $stmt->rowCount() > 0;
             } catch (PDOException $e) {
-                $this->logger->error("Failed to count a login attempt: " . $e->getMessage());
+                // Fails open on purpose: the password check reads the same database, so
+                // with it down nobody can log in anyway, and an error in this table alone
+                // (missing after a skipped update, for example) must not lock out every
+                // admin. The error is logged, so the limit being off does not go unseen.
+                $this->logger->error("Failed to count a login attempt, attempt not limited: " . $e->getMessage());
                 return true;
             }
         }

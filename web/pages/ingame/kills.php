@@ -110,6 +110,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Players
 		LEFT JOIN hlstats_Clans ON
 			hlstats_Clans.clanId = hlstats_Players.clan
+			AND hlstats_Clans.hidden <> 1
 		WHERE
 			playerId='$player'
 	");
