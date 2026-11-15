@@ -498,7 +498,8 @@ bool IsValidClient(int client, bool allowBots = true, bool allowDead = true)
 }
 
 // The tag is whatever the client sent: keep at most what a clan tag can hold (the characters may
-// be multi-byte) and drop quotes and control bytes, which do not belong in a quoted log field.
+// be multi-byte) and drop quotes, control bytes and broken UTF-8, which do not belong in a quoted
+// log field.
 void SanitizeClanTag(char[] tag)
 {
 	int out = 0;
@@ -511,19 +512,31 @@ void SanitizeClanTag(char[] tag)
 		int bytes = GetCharBytes(tag[i]);
 		bool keep = (c >= 0x20 && c != 0x7F && c != '"');
 
-		if (keep)
+		// GetCharBytes() only looks at the lead byte: a multi-byte character is kept when its
+		// lead byte is valid (0xC2-0xF4) and every following byte is a continuation byte
+		// (10xxxxxx). Otherwise "\xC2\"" would copy the quote as part of the character.
+		if (keep && c >= 0x80)
 		{
-			chars++;
+			keep = (c >= 0xC2 && c <= 0xF4);
+			for (int j = 1; keep && j < bytes; j++)
+			{
+				keep = ((tag[i + j] & 0xC0) == 0x80);
+			}
 		}
 
-		// in place: out never gets ahead of i
-		for (int j = 0; j < bytes && tag[i] != '\0'; j++)
+		if (!keep)
 		{
-			if (keep)
-			{
-				tag[out++] = tag[i];
-			}
+			// drop this byte only: the next one is checked on its own
 			i++;
+			continue;
+		}
+
+		chars++;
+
+		// in place: out never gets ahead of i
+		for (int j = 0; j < bytes; j++)
+		{
+			tag[out++] = tag[i++];
 		}
 	}
 
