@@ -97,7 +97,12 @@ if (!defined('IN_HLSTATS')) {
 		var $uniqueid_string = 'Unique ID';
 		var $uniqueid_string_plural = 'Unique IDs';
 
-		function __construct($query, $type, $game)
+		// The searches use LIKE '%...%', which reads every row: a one-character search
+		// matched nearly everything, and counting beyond this many matches only costs time
+		const MIN_QUERY_LENGTH = 2;
+		const MAX_COUNTED = 1000;
+
+				function __construct($query, $type, $game)
 		{
 			global $g_options;
 
@@ -210,6 +215,10 @@ if (!defined('IN_HLSTATS')) {
 	<br /><br />
 
 <?php
+			if (mb_strlen($this->query) < self::MIN_QUERY_LENGTH) {
+				echo '<div class="subblock" style="text-align:center;">Type at least ' . self::MIN_QUERY_LENGTH . ' characters to search.</div></div>';
+				return;
+			}
 			$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
 			$sr_query = $db->escape(addcslashes($sr_query, '%_\\'));
 			$sr_query = preg_replace('/\s/', '%', $sr_query);
@@ -255,6 +264,33 @@ if (!defined('IN_HLSTATS')) {
 				else
 					$andgame = '';
 				// Filter names first: the optimizer otherwise scans every player. hidden = '0' already makes these inner joins.
+				// Counted first, up to MAX_COUNTED matches: the scan stops there, and the
+				// page itself is only read when something matched
+				$resultCount = $db->query
+				("
+					SELECT COUNT(*) FROM (
+					SELECT
+						1
+					FROM
+						hlstats_PlayerNames
+					STRAIGHT_JOIN
+						hlstats_Players
+					ON
+						hlstats_Players.playerId = hlstats_PlayerNames.playerId
+					STRAIGHT_JOIN
+						hlstats_Games
+					ON
+						hlstats_Games.code = hlstats_Players.game
+					WHERE
+						hlstats_Games.hidden = '0'
+						AND hlstats_PlayerNames.name LIKE '%$sr_query%'
+						$andgame
+					LIMIT " . self::MAX_COUNTED . "
+					) AS matches
+				");
+				list($numitems) = $db->fetch_row($resultCount);
+				$numitems = (int) $numitems;
+				if ($numitems > 0) {
 				$result = $db->query
 				("
 					SELECT
@@ -284,27 +320,8 @@ if (!defined('IN_HLSTATS')) {
 						$table->startitem,
 						$table->numperpage
 				");
-				$resultCount = $db->query
-				("
-					SELECT
-						COUNT(*)
-					FROM
-						hlstats_PlayerNames
-					STRAIGHT_JOIN
-						hlstats_Players
-					ON
-						hlstats_Players.playerId = hlstats_PlayerNames.playerId
-					STRAIGHT_JOIN
-						hlstats_Games
-					ON
-						hlstats_Games.code = hlstats_Players.game
-					WHERE
-						hlstats_Games.hidden = '0'
-						AND hlstats_PlayerNames.name LIKE '%$sr_query%'
-						$andgame
-				");
-				list($numitems) = $db->fetch_row($resultCount);
 				$table->draw($result, $numitems, 95);
+				}
 			}
 			elseif ($this->type == 'uniqueid')
 			{
@@ -374,6 +391,28 @@ if (!defined('IN_HLSTATS')) {
 					$andgame = "AND hlstats_PlayerUniqueIds.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = '';
+				// Counted first, up to MAX_COUNTED matches: the scan stops there, and the
+				// page itself is only read when something matched
+				$resultCount = $db->query
+				("
+					SELECT COUNT(*) FROM (
+					SELECT
+						1
+					FROM
+						hlstats_PlayerUniqueIds
+					LEFT JOIN
+						hlstats_Players
+					ON
+						hlstats_Players.playerId = hlstats_PlayerUniqueIds.playerId
+					WHERE
+						hlstats_PlayerUniqueIds.uniqueId LIKE '%$sr_query%'
+						$andgame
+					LIMIT " . self::MAX_COUNTED . "
+					) AS matches
+				");
+				list($numitems) = $db->fetch_row($resultCount);
+				$numitems = (int) $numitems;
+				if ($numitems > 0) {
 				$result = $db->query
 				("
 					SELECT
@@ -404,22 +443,8 @@ if (!defined('IN_HLSTATS')) {
 						$table->startitem,
 						$table->numperpage
 				");
-				$resultCount = $db->query
-				("
-					SELECT
-						COUNT(*)
-					FROM
-						hlstats_PlayerUniqueIds
-					LEFT JOIN
-						hlstats_Players
-					ON
-						hlstats_Players.playerId = hlstats_PlayerUniqueIds.playerId
-					WHERE
-						hlstats_PlayerUniqueIds.uniqueId LIKE '%$sr_query%'
-						$andgame
-				");
-				list($numitems) = $db->fetch_row($resultCount);
 				$table->draw($result, $numitems, 95);
+				}
 			}
 			elseif ($this->type == 'ip')
 			{
@@ -464,6 +489,44 @@ if (!defined('IN_HLSTATS')) {
 					$andgame = "AND hlstats_Players.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = '';
+				// Counted first, up to MAX_COUNTED matches: the scan stops there, and the
+				// page itself is only read when something matched
+				$resultCount = $db->query
+				("
+					SELECT COUNT(*) FROM (
+					SELECT
+						1
+					FROM
+						(
+							SELECT
+								playerId,
+								ipAddress
+							FROM
+								`hlstats_Events_Connects`
+							WHERE
+								ipAddress LIKE '$sr_query%'
+							GROUP BY
+								playerId,
+								ipAddress
+						) AS connects
+					LEFT JOIN
+						hlstats_Players
+					ON
+						hlstats_Players.playerId = connects.playerId
+					LEFT JOIN
+						hlstats_Games
+					ON
+						hlstats_Games.code = hlstats_Players.game
+					WHERE
+						hlstats_Games.hidden = '0'
+						AND connects.ipAddress LIKE '$sr_query%'
+						$andgame
+					LIMIT " . self::MAX_COUNTED . "
+					) AS matches
+				");
+				list($numitems) = $db->fetch_row($resultCount);
+				$numitems = (int) $numitems;
+				if ($numitems > 0) {
 				$result = $db->query
 				("
 					SELECT
@@ -479,6 +542,8 @@ if (!defined('IN_HLSTATS')) {
 								ipAddress
 							FROM
 								`hlstats_Events_Connects`
+							WHERE
+								ipAddress LIKE '$sr_query%'
 							GROUP BY
 								playerId,
 								ipAddress
@@ -502,36 +567,8 @@ if (!defined('IN_HLSTATS')) {
 						$table->startitem,
 						$table->numperpage
 				");
-				$resultCount = $db->query
-				("
-					SELECT
-						COUNT(*)
-					FROM
-						(
-							SELECT
-								playerId,
-								ipAddress
-							FROM
-								`hlstats_Events_Connects`
-							GROUP BY
-								playerId,
-								ipAddress
-						) AS connects
-					LEFT JOIN
-						hlstats_Players
-					ON
-						hlstats_Players.playerId = connects.playerId
-					LEFT JOIN
-						hlstats_Games
-					ON
-						hlstats_Games.code = hlstats_Players.game
-					WHERE
-						hlstats_Games.hidden = '0'
-						AND connects.ipAddress LIKE '$sr_query%'
-						$andgame
-				");
-				list($numitems) = $db->fetch_row($resultCount);
 				$table->draw($result, $numitems, 95);
+				}
 			}
 			elseif ($this->type == 'clan')
 			{
@@ -579,6 +616,31 @@ if (!defined('IN_HLSTATS')) {
 					$andgame = "AND hlstats_Clans.game='" . $db->escape($this->game) . "'";
 				else
 					$andgame = "";
+				// Counted first, up to MAX_COUNTED matches: the scan stops there, and the
+				// page itself is only read when something matched
+				$resultCount = $db->query
+				("
+					SELECT COUNT(*) FROM (
+					SELECT
+						1
+					FROM
+						hlstats_Clans
+					LEFT JOIN hlstats_Games ON
+						hlstats_Games.code = hlstats_Clans.game
+					WHERE
+						hlstats_Games.hidden = '0'
+						AND (
+							hlstats_Clans.tag LIKE '%$sr_query%'
+							OR hlstats_Clans.name LIKE '%$sr_query%'
+						)
+						$andgame
+						$andhidden
+					LIMIT " . self::MAX_COUNTED . "
+					) AS matches
+				");
+				list($numitems) = $db->fetch_row($resultCount);
+				$numitems = (int) $numitems;
+				if ($numitems > 0) {
 				$result = $db->query
 				("
 					SELECT
@@ -605,30 +667,13 @@ if (!defined('IN_HLSTATS')) {
 						$table->startitem,
 						$table->numperpage
 				");
-				$resultCount = $db->query
-				("
-					SELECT
-						COUNT(*)
-					FROM
-						hlstats_Clans
-					LEFT JOIN hlstats_Games ON
-						hlstats_Games.code = hlstats_Clans.game
-					WHERE
-						hlstats_Games.hidden = '0'
-						AND (
-							hlstats_Clans.tag LIKE '%$sr_query%'
-							OR hlstats_Clans.name LIKE '%$sr_query%'
-						)
-						$andgame
-						$andhidden
-				");
-				list($numitems) = $db->fetch_row($resultCount);
 				$table->draw($result, $numitems, 95);
+				}
 			}
 ?>
 	<br /><br />
 	<div class="subblock" style="text-align:center;">
-		Search results: <strong><?php echo $numitems; ?></strong> items matching
+		Search results: <strong><?php echo $numitems >= self::MAX_COUNTED ? 'more than ' . self::MAX_COUNTED . '</strong> items matching (only the first ' . self::MAX_COUNTED . ' can be shown: try a longer search)' : $numitems . '</strong> items matching'; ?>
 	</div>
 </div>
 <?php
