@@ -41,7 +41,19 @@ require('config.php');
 
 define('TITLE_IMAGE', IMAGE_PATH . "/downarrow.gif");
 
-hlxStartSession();
+// A session is only needed to sign in or for someone already holding one (an admin,
+// or a visitor whose session remembers the game). Starting it for every anonymous
+// visitor and crawler wrote a session file per request and made every page
+// uncacheable (session_start() sends no-cache headers).
+$hlxSessionModes = array('admin', 'chat', 'updater');
+if (isset($_COOKIE[session_name()])
+	|| ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
+	|| in_array($_GET['mode'] ?? '', $hlxSessionModes, true)) {
+	hlxStartSession();
+} else {
+	// Read with "?? default" by the pages; nothing written to it is kept
+	$_SESSION = array();
+}
 
 // Logout is a POST carrying the CSRF token, so another site can't log the admin out
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['logout'] ?? '') === '1') {
