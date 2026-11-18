@@ -223,6 +223,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 RewriteEngine On
 RewriteRule sig-(.*)-(.*).png$ sig.php?player_id=$1&background=$2 [L]</textarea>', 'select');
 	
+	$optiongroups[0]->options[] = new Option('passkey_required', 'Administrators who have a passkey can only sign in with it (password login refused for them)', 'select');
+
 	$optiongroups[1] = new OptionGroup('GeoIP data & Google Map settings');
 	$optiongroups[1]->options[] = new Option('countrydata', 'Show features requiring GeoIP data', 'select');
 	$optiongroups[1]->options[] = new Option('show_google_map', 'Show Google worldmap', 'select');

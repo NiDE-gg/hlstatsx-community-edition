@@ -47,6 +47,10 @@ scripts/hlstats-awards.pl  -- daily cron: awards, ranks, cleanup
 - **No inline JavaScript**: no inline `<script>` or `on*=""` attribute in pages (the site must work under `script-src 'self'`). Use `data-*` attributes handled by `includes/js/hlstats.js` (site-wide behaviors) or a page-scoped JS file; pass data as `<script type="application/json">` or a `data-` attribute built with `eHtml(json_encode(...))`. AJAX tabs: `data-tabs` on the container, `data-tab-refresh` on links (see `includes/js/tabs.js`).
 - **Config**: `web/config.php` defines constants (`DB_*`, `INCLUDE_PATH`, `PAGE_PATH`, `IMAGE_PATH`, `ROOT_PATH`, `CHAT_DELAY_*`). It is tracked and overwritten on every deploy, so it holds no secrets: DB credentials and API keys are read from an untracked `.env` at the repository root (one level above `web/`, outside the web root; see `.env.example`, same variable names as the Docker daemon). Never commit real credentials, and never put `.env` inside `web/` (it would be served as plain text). Behind a TLS-terminating proxy, set `SITE_URL` (https:// address of the site) or `TRUSTED_PROXIES` in `.env`: `hlxIsHttps()` / `hlxSiteUrl()` in `config.php` use them for the session cookie's `Secure` flag and absolute links. Don't read `$_SERVER['HTTPS']` directly.
 
+## Admin login
+
+`includes/class_auth.php` (`Auth`) handles password logins, sessions (idle `SESSION_TIMEOUT`, absolute `SESSION_MAX_AGE`), CSRF (`Auth::csrfField()` in every form, `Auth::postAllowed()` before every write) and the login throttle (`hlstats_LoginFailures`: hard limit per address, growing delay per username, skipped by known browsers). Passkeys (WebAuthn) are in `includes/class_passkeys.php`, `api/passkey.php` and `includes/js/passkeys.js`, on top of the vendored `includes/vendor/webauthn` (lbuchs/WebAuthn, MIT; see its README to update it). The relying party comes from `SITE_URL` in `.env`, never the Host header; the browser's origin must equal it exactly. Every sign-in goes through `Auth::startSession()`.
+
 ## Database schema changes
 
 Schema changes must be applied in **both** places:

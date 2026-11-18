@@ -10,6 +10,7 @@
     use Repository\DiscordCacheRepository;
     use Repository\GameRepository;
     use Repository\LoginFailureRepository;
+    use Repository\PasskeyRepository;
     use Repository\PlayerRepository;
     use Repository\ServerLoadRepository;
     use Repository\SteamProfileRepository;
@@ -100,6 +101,10 @@
 
     $container->set(LoginFailureRepository::class, function($c) {
         return new LoginFailureRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(PasskeyRepository::class, function($c) {
+        return new PasskeyRepository($c->get('pdo'), $c->get('logger'));
     });
 
     $container->set(SteamProfileService::class, function($c) {

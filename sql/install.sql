@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="145";
-SET @VERSION="1.17.6";
+SET @DBVERSION="146";
+SET @VERSION="1.18.0";
 
 -- --------------------------------------------------------
 
@@ -3881,6 +3881,27 @@ CREATE TABLE IF NOT EXISTS `hlstats_LoginFailures` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `hlstats_Passkeys`
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_Passkeys` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `username` varchar(16) NOT NULL,
+  `credential_id` varbinary(255) NOT NULL,
+  `user_handle` varbinary(64) NOT NULL,
+  `public_key` text NOT NULL,
+  `sign_count` int(10) unsigned NOT NULL default '0',
+  `label` varchar(64) NOT NULL default '',
+  `created` int(10) unsigned NOT NULL default '0',
+  `last_used` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `credential_id` (`credential_id`),
+  KEY `username` (`username`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `hlstats_Options`
 --
 
@@ -3953,6 +3974,7 @@ INSERT INTO `hlstats_Options` (`keyname`, `value`, `opttype`) VALUES
 ('countrydata', '1',2),
 ('gamehome_show_awards', '0',2),
 ('show_google_map', '1',2),
+('passkey_required', '0', 2),
 ('google_map_region', 'NORTH AMERICA',2),
 ('google_map_type', 'HYBRID',2),
 ('slider', '1',2),
@@ -3998,6 +4020,8 @@ INSERT INTO `hlstats_Options_Choices` (`keyname`, `value`, `text`, `isDefault`) 
 ('countrydata', '0', 'Hide', 0),
 ('gamehome_show_awards', '1', 'Show', 0),
 ('gamehome_show_awards', '0', 'Hide', 1),
+('passkey_required', '0', 'No', 1),
+('passkey_required', '1', 'Yes', 0),
 ('show_google_map', '0', 'Hide', 0),
 ('show_google_map', '1', 'Show', 1),
 ('google_map_region', 'EUROPE', 'Europe', 0),

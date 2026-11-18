@@ -41,21 +41,7 @@ require('config.php');
 
 define('TITLE_IMAGE', IMAGE_PATH . "/downarrow.gif");
 
-// Refuse session ids this server did not hand out
-ini_set('session.use_strict_mode', '1');
-
-// An admin session stays valid for an hour without activity (Auth::SESSION_TIMEOUT).
-// PHP's default is to delete session files after 24 minutes, which ended them early.
-if ((int) ini_get('session.gc_maxlifetime') < 3600) {
-	ini_set('session.gc_maxlifetime', '3600');
-}
-
-session_set_cookie_params([
-	'httponly' => true,
-	'samesite' => 'Lax',
-	'secure'   => hlxIsHttps(),
-]);
-session_start();
+hlxStartSession();
 
 // Logout is a POST carrying the CSRF token, so another site can't log the admin out
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['logout'] ?? '') === '1') {
