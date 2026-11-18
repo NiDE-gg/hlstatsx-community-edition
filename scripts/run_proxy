@@ -79,7 +79,7 @@ fi
 origdir=`pwd`
 
 # Move into configured directory
-cd ${confdir}
+cd "${confdir}" || exit 1
 
 case "$1" in
 	start)
@@ -90,7 +90,7 @@ case "$1" in
 		fi
 		echo "Starting HLstatsX:CE...";
 		if [ -f ${piddir}/proxy-daemon.pid ]; then
-			kill -0 `cat ${piddir}/proxy-daemon.pid` >/dev/null 2>&1
+			kill -0 "$(cat "${piddir}/proxy-daemon.pid")" >/dev/null 2>&1
 			if [ "$?" == "0" ]; then
 				echo "HLstatsX:CE already running!"
 			else
@@ -110,7 +110,7 @@ case "$1" in
 	
 	stop)
 		echo "Stopping HLstatsX:CE..."
-		kill -9 `cat ${piddir}/proxy-daemon.pid` >/dev/null 2>&1
+		kill -9 "$(cat "${piddir}/proxy-daemon.pid")" >/dev/null 2>&1
 		if [ "$?" == "0" ]; then
 			rm -rf ${piddir}/proxy-daemon.pid
 			echo "Stopped successfully"
@@ -121,7 +121,7 @@ case "$1" in
 
 	restart)
 		echo "Restarting HLstatsX:CE..."
-		kill -9 `cat ${piddir}/proxy-daemon.pid` >/dev/null 2>&1
+		kill -9 "$(cat "${piddir}/proxy-daemon.pid")" >/dev/null 2>&1
 		if [ "$?" == "0" ]; then
 			rm -rf ${piddir}/proxy-daemon.pid
 			./${daemonfile} --configfile=${conffile} > ${logdir}/${logfile} 2>&1 &
@@ -146,6 +146,6 @@ case "$1" in
 esac
 
 # Return to original directory
-cd ${origdir}
+cd "${origdir}" || exit 1
 
 exit 0

@@ -29,7 +29,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Only errors fail the build; the legacy scripts still have many style warnings.
+      # Errors and warnings fail the build (all fixed 2026-11-18); style notes don't.
       - name: Run ShellCheck on shell scripts
         run: |
           mapfile -t files < <(
@@ -42,6 +42,6 @@ jobs:
           )
           printf 'Checking:\n'; printf '  %s\n' "${files[@]}"
           shellcheck --version
-          shellcheck --severity=error --format=gcc "${files[@]}" \
+          shellcheck --severity=warning --format=gcc "${files[@]}" \
             | sed -E 's/^([^:]+):([0-9]+):([0-9]+): (error|warning|note): (.*)$/::\4 file=\1,line=\2,col=\3::\5/'
           exit "${PIPESTATUS[0]}"
