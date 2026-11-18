@@ -156,7 +156,7 @@ class Heatmap {
                 }
 
                 // The image copy
-                imagecopy($dst_im, $src_im, (int) $dst_x, (int) $dst_y, $src_x, $src_y, $src_w, $src_h);
+                imagecopy($dst_im, $src_im, (int) $dst_x, (int) $dst_y, (int) $src_x, (int) $src_y, (int) $src_w, (int) $src_h);
         }
 
 		public static function generate($code, $map, $mode) {
@@ -282,6 +282,11 @@ class Heatmap {
               $x = ($row['pos_x'] + $mapinfo[$code][$map]['xoffset']) / $mapinfo[$code][$map]['scale'];
               $y = ($row['pos_y'] + $mapinfo[$code][$map]['yoffset']) / $mapinfo[$code][$map]['scale'];
 
+              // A kill outside the image (offsets that don't fit this map) has no pixel
+              if ($x < 0 || $y < 0 || $x >= imagesx($overlay) || $y >= imagesy($overlay)) {
+                      continue;
+              }
+
               $rgb = imagecolorat($overlay, (int) $x, (int) $y);
               $colors = imagecolorsforindex($overlay, $rgb);
 
@@ -298,17 +303,17 @@ class Heatmap {
       }
 
 
+			// Heat colour for each red value of the overlay (0-255): blue to green, then
+			// green to red. The old steps of 2 went to 256 and -1, which GD refuses
+			// (ValueError) as soon as a spot was hot enough, and left 255 undefined.
 			$colorarr = array();
-			$colors = array(0, 0, 255);
-
 			for ($line = 0; $line < 128; ++$line) {
-				$colors = array(0, $colors[1] + 2, $colors[2] -2);
-				$colorarr[$line] = $colors;
+				$step = min(255, 2 * ($line + 1));
+				$colorarr[$line] = array(0, $step, 255 - $step);
 			}
-
-			for ($line = 128; $line < 255; ++$line) {
-				$colors = array($colors[0] + 2, $colors[1] -2, 0);
-				$colorarr[$line] = $colors;
+			for ($line = 128; $line < 256; ++$line) {
+				$step = min(255, 2 * ($line - 127));
+				$colorarr[$line] = array($step, 255 - $step, 0);
 			}
 
 			for ($x = 0; $x < imagesx($overlay); ++$x) {
@@ -317,7 +322,7 @@ class Heatmap {
 					$rgb = imagecolorsforindex($overlay, $index);
 					$alpha = ( imagecolorat( $overlay, $x, $y ) >> 24 ) & 0xFF;
 
-					$color = imagecolorallocatealpha($img, $colorarr[$rgb['red']][0], $colorarr[$rgb['red']][1], $colorarr[$rgb['red']][2], 127 - ($rgb['red'] / 2));
+					$color = imagecolorallocatealpha($img, $colorarr[$rgb['red']][0], $colorarr[$rgb['red']][1], $colorarr[$rgb['red']][2], 127 - intdiv($rgb['red'], 2));
 				if (!imagesetpixel($img, $x, $y, $color)) echo ".";
 				}
 			}
