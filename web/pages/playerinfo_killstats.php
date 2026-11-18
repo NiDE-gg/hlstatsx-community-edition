@@ -132,115 +132,43 @@ For support and installation notes visit http://www.hlxcommunity.com
 		'desc',
 		true
 	);
-// This would be better done with a UNION query, I think, but MySQL doesn't
-// support them yet. (NOTE you need MySQL 3.23 for temporary table support.)
-	$db->query("DROP TABLE IF EXISTS hlstats_Frags_Kills");
-
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_Frags_Kills
-		(
-			playerId INT(10),
-			kills INT(10),
-			deaths INT(10),
-			headshot INT(10),
-			country varchar(128),
-			flag char(2)
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
-	";
-
-	$db->query($sql_create_temp_table);
-
-	$db->query
-	("
-		INSERT INTO
-			hlstats_Frags_Kills
-			(
-				playerId,
-				kills,
-				headshot
-			)
-		SELECT
-			hlstats_Events_Frags.victimId,
-			hlstats_Events_Frags.killerId,
-			hlstats_Events_Frags.headshot
-		FROM
-			hlstats_Events_Frags
-		WHERE
-			hlstats_Events_Frags.killerId = $player
-		GROUP BY
-			hlstats_Events_Frags.id
-	");
-	$db->query
-	("
-		INSERT INTO
-			hlstats_Frags_Kills
-			(
-				playerId,
-				deaths
-			)
-		SELECT
-			hlstats_Events_Frags.killerId,
-			hlstats_Events_Frags.victimId
-		FROM
-			hlstats_Events_Frags
-		WHERE
-			hlstats_Events_Frags.victimId = $player
-	");
+	$victimStats = killStatsByOpponentSql((int) $player, (int) $killLimit);
 	$result = $db->query
 	("
-			SELECT
-				SUM(hlstats_Frags_Kills.headshot) AS headshots
-			FROM
-				hlstats_Frags_Kills
-			GROUP BY
-				hlstats_Frags_Kills.playerId
-			HAVING
-				COUNT(hlstats_Frags_Kills.kills) >= $killLimit
-	");
-	$realheadshots = 0;
-	while ($rowdata = $db->fetch_array($result))
-	{
-		$realheadshots += $rowdata['headshots'];
-	}	
-	$db->query
-	("
 		SELECT
-			hlstats_Players.lastName AS name
+			SUM(victimStats.headshots) AS headshots,
+			SUM(hlstats_Players.playerId IS NOT NULL) AS victims
 		FROM
-			hlstats_Frags_Kills,
+			($victimStats) AS victimStats
+		LEFT JOIN
 			hlstats_Players
-		WHERE
-			hlstats_Frags_Kills.playerId = hlstats_Players.playerId
-		GROUP BY
-			hlstats_Frags_Kills.playerId
-		HAVING
-			COUNT(hlstats_Frags_Kills.kills) >= $killLimit
+		ON
+			hlstats_Players.playerId = victimStats.opponentId
 	");
-	$numitems = $db->num_rows();
+	$rowdata = $db->fetch_array($result);
+	$realheadshots = (int) ($rowdata['headshots'] ?? 0);
+	$numitems = (int) ($rowdata['victims'] ?? 0);
 	$result = $db->query
 	("
 		SELECT
 			hlstats_Players.lastName AS name,
 			hlstats_Players.flag AS flag,
 			hlstats_Players.country AS country,
-			COUNT(hlstats_Frags_Kills.kills) AS kills,
-			COUNT(hlstats_Frags_Kills.deaths) AS deaths,
-			ROUND(COUNT(hlstats_Frags_Kills.kills) / $realkills * 100, 2) AS kpercent,
-			ROUND(COUNT(hlstats_Frags_Kills.deaths) / $realdeaths * 100, 2) AS dpercent,
-			hlstats_Frags_Kills.playerId AS victimId,
-			ROUND(COUNT(hlstats_Frags_Kills.kills) / IF(COUNT(hlstats_Frags_Kills.deaths) = 0, 1, COUNT(hlstats_Frags_Kills.deaths)), 2) AS kpd,
-			SUM(hlstats_Frags_Kills.headshot = 1) AS headshots,
-			ROUND(SUM(hlstats_Frags_Kills.headshot = 1) / IF(COUNT(hlstats_Frags_Kills.kills) = 0, 1, COUNT(hlstats_Frags_Kills.kills)), 2) AS hpk,
-			ROUND(SUM(hlstats_Frags_Kills.headshot = 1) / $realheadshots * 100, 2) AS hpercent
+			victimStats.kills,
+			victimStats.deaths,
+			ROUND(victimStats.kills / $realkills * 100, 2) AS kpercent,
+			ROUND(victimStats.deaths / $realdeaths * 100, 2) AS dpercent,
+			victimStats.opponentId AS victimId,
+			ROUND(victimStats.kills / IF(victimStats.deaths = 0, 1, victimStats.deaths), 2) AS kpd,
+			victimStats.headshots,
+			ROUND(victimStats.headshots / IF(victimStats.kills = 0, 1, victimStats.kills), 2) AS hpk,
+			ROUND(victimStats.headshots / $realheadshots * 100, 2) AS hpercent
 		FROM
-			hlstats_Frags_Kills,
+			($victimStats) AS victimStats
+		INNER JOIN
 			hlstats_Players
-		WHERE
-			hlstats_Frags_Kills.playerId = hlstats_Players.playerId
-		GROUP BY
-			hlstats_Frags_Kills.playerId
-		HAVING
-			Count(hlstats_Frags_Kills.kills) >= $killLimit
+		ON
+			hlstats_Players.playerId = victimStats.opponentId
 		ORDER BY
 			$tblPlayerKillStats->sort $tblPlayerKillStats->sortorder,
 			$tblPlayerKillStats->sort2 $tblPlayerKillStats->sortorder

@@ -197,100 +197,29 @@ For support and installation notes visit http://www.hlxcommunity.com
 		 $killLimit = valid_request($_GET['killLimit'], 1);
 	 }
 
-	//there might be a better way to do this, but I could not figure one out.
-
-	$db->query("DROP TABLE IF EXISTS hlstats_Frags_Kills");
-
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_Frags_Kills
-		(
-			playerId INT(10),
-			kills INT(10),
-			deaths INT(10),
-			headshot INT(10)
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
-	";
-
-	$db->query($sql_create_temp_table);
-
-	$db->query("
-		INSERT INTO
-			hlstats_Frags_Kills
-			(
-				playerId,
-				kills,
-				headshot		
-			)
-			SELECT
-				victimId,
-				killerId,
-				headshot
-			FROM
-				hlstats_Events_Frags
-			LEFT JOIN hlstats_Servers ON
-				hlstats_Servers.serverId=hlstats_Events_Frags.serverId
-			WHERE
-				hlstats_Servers.game='$game' AND killerId = $player
-			GROUP BY
-				hlstats_Events_Frags.id
-	");
-
-	$db->query("
-		INSERT INTO
-			hlstats_Frags_Kills
-			(
-				playerId,
-				deaths
-			)
-			SELECT
-				killerId,
-				victimId
-			FROM
-				hlstats_Events_Frags
-			LEFT JOIN hlstats_Servers ON
-				hlstats_Servers.serverId=hlstats_Events_Frags.serverId
-			WHERE
-				hlstats_Servers.game='$game' AND victimId = $player
-	");
-		
-	$result = $db->query("
-			SELECT
-				SUM(hlstats_Frags_Kills.headshot) as headshots
-			FROM
-				hlstats_Frags_Kills
-			GROUP BY
-				hlstats_Frags_Kills.playerId
-			HAVING
-				COUNT(hlstats_Frags_Kills.kills) >= $killLimit
-	");
-
-	$realheadshots = 0;
-	while ($rowdata = $db->fetch_array($result))  {
-		$realheadshots += $rowdata['headshots'];
-	}	
+	$victimStats = killStatsByOpponentSql((int) $player, (int) $killLimit, $game);
+	$result = $db->query("SELECT SUM(victimStats.headshots) FROM ($victimStats) AS victimStats");
+	list($realheadshots) = $db->fetch_row($result);
+	$realheadshots = (int) $realheadshots;
 
 	$result = $db->query("
 			SELECT
 				hlstats_Players.lastName AS name,
 				hlstats_Players.flag AS flag,
 				hlstats_Players.country AS country,
-				Count(hlstats_Frags_Kills.kills) AS kills,
-				Count(hlstats_Frags_Kills.deaths) AS deaths,
-				hlstats_Frags_Kills.playerId as victimId,
-				IFNULL(Count(hlstats_Frags_Kills.kills)/Count(hlstats_Frags_Kills.deaths),
-				IFNULL(FORMAT(Count(hlstats_Frags_Kills.kills), 2), '-')) AS kpd,
-				SUM(hlstats_Frags_Kills.headshot=1) AS headshots,
-				IFNULL(SUM(hlstats_Frags_Kills.headshot=1) / Count(hlstats_Frags_Kills.kills), '-') AS hpk,
-				ROUND(CONCAT(SUM(hlstats_Frags_Kills.headshot=1)) / $realheadshots * 100, 2) AS hpercent
+				victimStats.kills,
+				victimStats.deaths,
+				victimStats.opponentId as victimId,
+				IFNULL(victimStats.kills / NULLIF(victimStats.deaths, 0), FORMAT(victimStats.kills, 2)) AS kpd,
+				victimStats.headshots,
+				IFNULL(victimStats.headshots / NULLIF(victimStats.kills, 0), '-') AS hpk,
+				ROUND(victimStats.headshots / $realheadshots * 100, 2) AS hpercent
 			FROM
-				hlstats_Frags_Kills,
+				($victimStats) AS victimStats
+			INNER JOIN
 				hlstats_Players
-			WHERE
-				hlstats_Frags_Kills.playerId = hlstats_Players.playerId
-			GROUP BY
-				hlstats_Frags_Kills.playerId
-			HAVING
-				Count(hlstats_Frags_Kills.kills) >= $killLimit
+			ON
+				hlstats_Players.playerId = victimStats.opponentId
 			ORDER BY
 				$tblPlayerKillStats->sort $tblPlayerKillStats->sortorder,
 				$tblPlayerKillStats->sort2 $tblPlayerKillStats->sortorder
