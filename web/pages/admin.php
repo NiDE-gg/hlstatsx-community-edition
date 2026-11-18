@@ -237,6 +237,11 @@ class EditList
 	{
 		global $db;
 
+		if (!Auth::postAllowed()) {
+			$this->errors[] = 'Your session has expired. Please try again.';
+			return false;
+		}
+
 		$okcols = 0;
 		$qcols = '';
 		$qvals = '';
@@ -778,6 +783,11 @@ class PropertyPage
 	function update()
 	{
 		global $db;
+
+		if (!Auth::postAllowed()) {
+			message('warning', 'Your session has expired. Please try again.');
+			return false;
+		}
 
 		$setstrings = array();
 		foreach ($this->propertygroups as $group)

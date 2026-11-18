@@ -49,7 +49,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 
-	if (isset($_POST['confirm']))
+	if (isset($_POST['confirm']) && Auth::postAllowed())
 	{
 		echo "<ul>\n";
 

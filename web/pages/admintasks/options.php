@@ -80,6 +80,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 		function update ()
 		{
 			global $db;
+
+			if (!Auth::postAllowed()) {
+				return;
+			}
 			
 			foreach ($this->options as $opt)
 			{

@@ -44,7 +44,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die ("Access denied!");
 	}
 	
-	if ( count($_POST) > 0 ) {
+	if ( count($_POST) > 0 && Auth::postAllowed() ) {
 		$db->query("SELECT * FROM `hlstats_Servers` WHERE `address` = '" . $db->escape(clean_data($_POST['server_address'])) . "' AND `port` = '" . $db->escape(clean_data($_POST['server_port'])) . "'");
 		
 		if ( $row = $db->fetch_array() )

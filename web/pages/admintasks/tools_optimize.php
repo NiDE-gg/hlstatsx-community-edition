@@ -50,7 +50,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 		// A long table-locking job: only ever started by this form, never by a link
-		if (!isset($_POST['confirm']))
+		if (!isset($_POST['confirm']) || !Auth::postAllowed())
 		{
 ?>
 <form method="post">
