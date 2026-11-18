@@ -87,6 +87,15 @@ For support and installation notes visit http://www.hlxcommunity.com
 			
 			foreach ($this->options as $opt)
 			{
+				// The page views since the form was loaded are counted meanwhile: the
+				// counters are only written when the admin asks to reset them
+				if ($opt->type === 'counter') {
+					if (!empty($_POST[$opt->name . '_reset'])) {
+						$db->query("UPDATE hlstats_Options SET value='0' WHERE keyname='" . $db->escape($opt->name) . "'");
+					}
+					continue;
+				}
+
 				$optval = valid_request($_POST[$opt->name] ?? '', false);
 				
 				$optval = $db->escape((string) $optval);
@@ -191,6 +200,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 					echo '</select>';
 					break;
 					
+				case 'counter':
+					echo '<strong>' . number_format((int) ($optiondata[$this->name] ?? 0)) . '</strong>'
+						. " &nbsp; <label><input type=\"checkbox\" name=\"{$this->name}_reset\" value=\"1\" /> reset to 0</label>";
+					break;
+
 				default:
 					echo "<input type=\"text\" name=\"$this->name\" size=\"35\" value=\"";
 					echo eHtmlOnce($optiondata[$this->name]);
@@ -242,8 +256,8 @@ RewriteRule sig-(.*)-(.*).png$ sig.php?player_id=$1&background=$2 [L]</textarea>
 	$optiongroups[3] = new OptionGroup('Hit counter settings');
 	$optiongroups[3]->options[] = new Option('counter_enabled', 'Count page hits and visits (one database write per page view; crawlers are never counted)', 'select');
 	$optiongroups[3]->options[] = new Option('counter_visit_timeout', 'Visit cookie timeout in minutes', 'text');
-	$optiongroups[3]->options[] = new Option('counter_visits', 'Current Visits', 'text');
-	$optiongroups[3]->options[] = new Option('counter_hits', 'Current Page Hits', 'text');
+	$optiongroups[3]->options[] = new Option('counter_visits', 'Current Visits', 'counter');
+	$optiongroups[3]->options[] = new Option('counter_hits', 'Current Page Hits', 'counter');
 	
 	$optiongroups[20] = new OptionGroup('Paths');
 	$optiongroups[20]->options[] = new Option('map_dlurl', 'Map Download URL<br /><span class="fSmall">(%MAP% = map, %GAME% = gamecode)</span>. Leave blank to suppress download link.', 'text');
