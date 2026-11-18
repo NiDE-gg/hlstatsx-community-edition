@@ -113,7 +113,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		
 		$result = $db->query("OPTIMIZE TABLE $dbtables");
 
-		$tableOptimize->draw($result, mysqli_num_rows($result), 80);
+		$tableOptimize->draw($result, $db->num_rows($result), 80);
 ?>
 <br /><br />
 
@@ -157,5 +157,5 @@ For support and installation notes visit http://www.hlxcommunity.com
 		
 		$result = $db->query("ANALYZE TABLE $dbtables");
 
-		$tableAnalyze->draw($result, mysqli_num_rows($result), 80);
+		$tableAnalyze->draw($result, $db->num_rows($result), 80);
 ?>

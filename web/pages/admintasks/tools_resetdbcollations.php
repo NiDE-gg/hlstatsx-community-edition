@@ -81,7 +81,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 				$rs = $db->query("SHOW FULL FIELDS FROM `$table` WHERE collation is not null AND collation <> '{$convert_to}'") or die ("DB:> Cannot SHOW FULL FIELDS");
 
-				while ($row = mysqli_fetch_assoc($rs))
+				while ($row = $db->fetch_assoc($rs))
 				{
 					if ($row['Collation'] == '')
 						continue;
@@ -110,7 +110,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 				$rs = $db->query("SHOW FULL FIELDS FROM `$table` WHERE collation is not null AND collation <> '{$convert_to}'") or die("DB:> Cannot SHOW FULL FIELDS");
 
-				while ($row=mysqli_fetch_assoc($rs))
+				while ($row=$db->fetch_assoc($rs))
 				{
 					if ($row['Collation'] == '')
 						continue;
