@@ -1,3 +1,5 @@
+use warnings;
+
 # HLstatsX Community Edition - Real-time player and clan rankings and statistics
 # Copyleft (L) 2008-20XX Nicholas Hastings (nshastings@gmail.com)
 # http://www.hlxcommunity.com
@@ -57,7 +59,7 @@ sub get_fav_weapon  {
 	my ($fav_weapon, $fav_weapon_kills, $fav_weapon_headshots) = $result->fetchrow_array;
 	$result->finish;
 
-	my $result = &doQuery("
+	$result = &doQuery("
 		SELECT
 			IFNULL(ROUND((SUM(hlstats_Events_Statsme.hits) / SUM(hlstats_Events_Statsme.shots) * 100), 0), 0) AS acc
 		FROM
@@ -71,7 +73,7 @@ sub get_fav_weapon  {
 	my ($fav_weapon_sm_acc) = $result->fetchrow_array;
 	$result->finish;
 
-	my $result = &doQuery("
+	$result = &doQuery("
 		SELECT
 			hlstats_Events_Frags.weapon,
 			COUNT(hlstats_Events_Frags.weapon) AS kills,
@@ -94,7 +96,7 @@ sub get_fav_weapon  {
 	my $s_fav_weapon_sm_acc = 0;
    
 	if (($s_fav_weapon ne "") && ($s_fav_weapon_kills > 0)) {
-		my $result = &doQuery("
+		$result = &doQuery("
 			SELECT
 				IFNULL(ROUND((SUM(hlstats_Events_Statsme.hits) / SUM(hlstats_Events_Statsme.shots) * 100), 0), 0) AS acc
 			FROM
@@ -142,7 +144,7 @@ sub get_next_ranks
 	}
 	my $osd_message = "->1 - Next Players\\n".sprintf("   %02d  %s%s        -      %s", $ranknumber, &number_format($base), $rankword, $playerName)."\\n";
    
-	my $result = &doQuery("
+	$result = &doQuery("
 		SELECT
 			playerId,
 			lastName,
@@ -175,7 +177,7 @@ sub get_next_ranks
 	$result->finish;
 
 	if ($player_count < 11)  {
-		my $result = &doQuery("
+		$result = &doQuery("
 			SELECT
 				playerId,
 				lastName,
@@ -420,7 +422,7 @@ sub doEvent_Connect
 {	
 	my ($playerId, $playerUniqueId, $ipAddr) = @_;
 
-	my $desc;
+	my $desc = "";
 	my $player            = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr         = &getPlayerInfoString($player, $playerId);
     my $min_players_rank  = $g_servers{$s_addr}->{min_players_rank};
@@ -476,7 +478,7 @@ sub doEvent_Connect
 	}
 	
 	return $desc . $playerstr . " connected, address \"$ipAddr\","
-		. " hostname \"$hostname\", hostgroup \"$hostgroup\"";
+		. " hostname \"" . ($hostname // "") . "\", hostgroup \"" . ($hostgroup // "") . "\"";
 }
 
 
@@ -488,7 +490,7 @@ sub doEvent_EnterGame
 {
 	my ($playerId, $playerUniqueId) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	return "(IGNORED) NOPLAYERINFO: $playerId" unless ($player);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
@@ -604,7 +606,7 @@ sub doEvent_Disconnect
 {
 	my ($pUserId, $playerUniqueId, $ev_properties) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $pUserId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $pUserId);
 	
@@ -704,7 +706,7 @@ sub doEvent_Clan
 {
 	my ($playerId, $playerUniqueId, $clantag) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $info;
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
@@ -784,7 +786,7 @@ sub doEvent_Suicide
 {	
 	my ($playerId, $playerUniqueId, $weapon, $x, $y, $z) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	return "(IGNORED) NOPLAYERINFO: $playerId" unless ($player);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
@@ -871,7 +873,7 @@ sub doEvent_TeamSelection
 {
 	my ($playerId, $playerUniqueId, $team) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 	
@@ -917,7 +919,7 @@ sub doEvent_RoleSelection
 {
 	my ($playerId, $playerUniqueId, $role) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 	
@@ -964,7 +966,7 @@ sub doEvent_ChangeName
 {
 	my ($playerId, $playerUniqueId, $newname) = @_;
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 	
@@ -1053,7 +1055,7 @@ sub doEvent_Frag
 	# currently only applicable to TF2's "Dead Ringer"
 	my $isfake = (defined($properties{customkill}) && $properties{customkill} eq "feign_death")?1:0;
 	
-	my $desc;
+	my $desc = "";
 	my $killer = lookupPlayer($s_addr, $killerId, $killerUniqueId);
 	my $victim = lookupPlayer($s_addr, $victimId, $victimUniqueId);
 	my $killerstr = &getPlayerInfoString($killer, $killerId);
@@ -1466,7 +1468,7 @@ sub doEvent_PlayerPlayerAction
 	my ($playerId, $playerUniqueId, $victimId, $victimUniqueId, $action, $x, $y, $z, $vx, $vy, $vz, %properties) = @_;
 	$rcmd = $g_servers{$s_addr}->{broadcasting_command};
 	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $victim = lookupPlayer($s_addr, $victimId, $victimUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
@@ -1658,7 +1660,7 @@ sub doEvent_PlayerAction
 {
 	$rcmd = $g_servers{$s_addr}->{broadcasting_command};
 	my ($playerId, $playerUniqueId, $action, $x, $y, $z, %properties) = @_;	
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 	
@@ -1932,8 +1934,7 @@ sub doEvent_TeamAction
 {
 	$rcmd = $g_servers{$s_addr}->{broadcasting_command};
 	my ($team, $action, %properties) = @_;
-	my $desc;
-
+	my $desc = "";
 	my $team_bonuspoints = 0;
 	if (defined($properties{hlx_team_bonuspoints})) {
 		$team_bonuspoints = $properties{hlx_team_bonuspoints} if ($properties{hlx_team_bonuspoints} =~ /^-?\d{1,4}\z/);
@@ -2008,8 +2009,7 @@ sub doEvent_WorldAction
 {
 	my $rcmd = $g_servers{$s_addr}->{broadcasting_command};
 	my ($action) = @_;
-	my $desc;
-
+	my $desc = "";
 	# Always update player count on round start
 	if ($action eq "Round_Start") {
 		$g_servers{$s_addr}->updatePlayerCount();
@@ -2754,7 +2754,7 @@ sub doEvent_Chat
 				$limit = $1;
 			}
 			if ($g_servers{$s_addr}->{player_command_osd} ne "") {
-				my $result = &doQuery("
+				$result = &doQuery("
 					SELECT
 						$g_ranktype, lastName, 
 						kills / IF(deaths=0,1,deaths) AS kpd
@@ -3043,7 +3043,7 @@ sub validCounts
 sub doEvent_Statsme
 {
 	my ($playerId, $playerUniqueId, $weapon, $shots, $hits, $headshots, $damage, $kills, $deaths) = @_;
-	my $desc;
+	my $desc = "";
 	my $player    = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 
@@ -3133,7 +3133,7 @@ sub doEvent_Statsme2
 {
     my ($playerId, $playerUniqueId, $weapon, $head, $chest, $stomach, $leftarm, $rightarm, $leftleg, $rightleg) = @_;
 
-    my $desc;
+    my $desc = "";
     my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
     my $playerstr = &getPlayerInfoString($player, $playerId);
 
@@ -3184,7 +3184,7 @@ sub doEvent_Statsme_Latency
 {
 	my ($playerId, $playerUniqueId, $ping) = @_;
 
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 
@@ -3212,7 +3212,7 @@ sub doEvent_Statsme_Time
 {
 	my ($playerId, $playerUniqueId, $time) = @_;
 
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 
@@ -3257,7 +3257,7 @@ sub doEvent_ApiReqestPlayerInfo
 {
 	my ($playerId, $playerUniqueId, $queryId) = @_;
 
-	my $desc;
+	my $desc = "";
 	my $player = lookupPlayer($s_addr, $playerId, $playerUniqueId);
 	my $playerstr = &getPlayerInfoString($player, $playerId);
 

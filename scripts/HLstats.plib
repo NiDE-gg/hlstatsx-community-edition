@@ -1,3 +1,5 @@
+use warnings;
+
 # HLstatsX Community Edition - Real-time player and clan rankings and statistics
 # Copyleft (L) 2008-20XX Nicholas Hastings (nshastings@gmail.com)
 # http://www.hlxcommunity.com
@@ -520,7 +522,10 @@ sub doConf
         if ($directive eq "Servers") {
  	      %$variable = $conf->get($directive);
         } else {
-  		  $$variable = $conf->get($directive);
+		  # A directive missing from the file keeps the script's default: it used to
+		  # become undef (for example DNSTimeout in hlstats-resolve.pl: no DNS timeout)
+		  my $value = $conf->get($directive);
+  		  $$variable = $value if (defined($value));
 	    }
 	}
 
@@ -580,16 +585,16 @@ sub abbreviate
 sub printEvent
 {
 	my ($code, $description, $update_timestamp, $force_output) = @_;
-	if ( (($g_debug > 0) && ($g_stdin == 0))|| (($g_stdin == 1) && ($force_output == 1)) ) {
+	if ( (($g_debug > 0) && ($g_stdin == 0))|| (($g_stdin == 1) && (($force_output // 0) == 1)) ) {
 		my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time());
 		my $timestamp = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year+1900, $mon+1, $mday, $hour, $min, $sec);
-		if ($update_timestamp == 0) {
+		if (!$update_timestamp) {
 			$timestamp = $ev_timestamp; 
 		}  
 		if (is_number($code)) {
-			printf("%s: %21s - E%03d: %s\n", $timestamp, $s_addr, $code, $description);
+			printf("%s: %21s - E%03d: %s\n", $timestamp, $s_addr // "", $code, $description);
 		} else {
-			printf("%s: %21s - %s: %s\n", $timestamp, $s_addr, $code, $description);
+			printf("%s: %21s - %s: %s\n", $timestamp, $s_addr // "", $code, $description);
 		}  
 	}
 }

@@ -38,7 +38,7 @@ package TRcon;
 # For support and installation notes visit http://www.hlxcommunity.com
 
 use strict;
-no strict 'vars';
+use warnings;
 
 use Sys::Hostname;
 use IO::Socket;
@@ -243,6 +243,7 @@ sub recieve_rcon
           # A server that keeps sending other ids must not hold the single-threaded daemon
           while ($last_packet_id != $SPLIT_END_PACKET_ID && ++$split_packets <= 256 && length($tmp) <= 262144) {
             if(IO::Select->new($r_socket)->can_read($TIMEOUT)) {
+              my $split_data;
               $r_socket->recv($split_data, 1500);
               my $split_size    = unpack("V",  substr($split_data, 0, 4));
               my $split_id      = unpack("V",  substr($split_data, 4, 4));

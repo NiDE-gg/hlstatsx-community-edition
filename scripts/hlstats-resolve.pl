@@ -54,6 +54,7 @@ $opt_libdir = "./";
 ##
 
 
+use warnings;
 use Getopt::Long;
 use IO::Socket;
 use DBI;
@@ -83,28 +84,7 @@ sub is_number
 # Logs event information to stdout.
 #
 
-sub printEvent
-{
-	my ($code, $description, $update_timestamp) = @_;
-	
-	if ($g_debug > 0)
-	{
-	    if ($update_timestamp > 0)
-	    {
-  		  my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time());
-		  my $timestamp = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year+1900, $mon+1, $mday, $hour, $min, $sec);
-	    } else {
-	      my $timestamp = $ev_timestamp;
-	    }
-		print localtime(time) . "" unless ($timestamp);
-		if (is_number($code))
-		{
-  		  printf("%s: %21s - E%03d: %s\n", $timestamp, $s_addr, $code, $description);
-  		} else {
-  		  printf("%s: %21s - %s: %s\n", $timestamp, $s_addr, $code, $description);
-  		}  
-	}
-}
+# printEvent() comes from HLstats.plib (it replaced the copy this script had)
 
 
 
@@ -125,6 +105,9 @@ $db_name = "hlstats";
 
 $g_dns_timeout = 5;
 $g_debug = 0;
+$g_nodebug = 0;
+# Read by HLstats.plib
+our $g_stdin = 0;
 
 # Usage message
 
@@ -226,7 +209,7 @@ else
 	$opt_quiet = 1;	# quiet name resolution
 }
 
-$g_dns_resolveip = 1;
+our $g_dns_resolveip = 1;
 
 
 # Startup

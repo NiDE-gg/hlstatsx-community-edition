@@ -1,4 +1,5 @@
 package HLstats_Player;
+use warnings;
 # HLstatsX Community Edition - Real-time player and clan rankings and statistics
 # Copyleft (L) 2008-20XX Nicholas Hastings (nshastings@gmail.com)
 # http://www.hlxcommunity.com
@@ -180,11 +181,11 @@ sub set
 	
 	if (defined($self->{$key}))
 	{
-		if ($no_updatetime == 0) {
+		if (!$no_updatetime) {
 			$self->{timestamp} = $::ev_daemontime;
 		}
 		
-		if ($self->{$key} eq $value)
+		if (($self->{$key} // "") eq ($value // ""))
 		{
 			if ($::g_debug > 2)
 			{
@@ -246,7 +247,7 @@ sub check_history
 
     #my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time());
     my ($sec,$min,$hour,$mday,$mon,$year) = localtime($::ev_unixtime);
-    my $date = sprintf("%04d-%02d-%02d", $year+1900, $mon+1, $mday, $hour, $min, $sec);
+    my $date = sprintf("%04d-%02d-%02d", $year+1900, $mon+1, $mday);
 	my $srv_addr  = $self->{server};
 	my $is_bot = 0;
 	my $playerId = $self->{playerid};
@@ -627,7 +628,7 @@ sub flushDB
 	# and why no Players_History if stdin?
 	#my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time());
 	my ($sec,$min,$hour,$mday,$mon,$year) = localtime($::ev_unixtime);
-    my $date = sprintf("%04d-%02d-%02d", $year+1900, $mon+1, $mday, $hour, $min, $sec);
+    my $date = sprintf("%04d-%02d-%02d", $year+1900, $mon+1, $mday);
 
 	if ($::g_stdin == 0 || $::g_timestamp > 0) {
 		my $last_history_day = $self->{last_history_day};

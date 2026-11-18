@@ -34,6 +34,7 @@
 #
 # For support and installation notes visit http://www.hlxcommunity.com
 
+use warnings;
 use strict;
 use DBI;
 use IO::Socket;
@@ -54,6 +55,8 @@ $opt_configfile = "./hlstats.conf";
 #               (our *.plib, *.pm files).
 $opt_libdir = "./";
 $heartbeat = 30;
+# Overridden by DebugLevel in the config file or -d
+$g_debug = 0;
 
 ##
 ##
@@ -261,7 +264,7 @@ sub reloadDaemon
 	foreach my $key (keys(%$daemon)) {
 		if ($$daemon{$key}{'curstate'} eq "up") {
 			&printEvent("CONTROL", "Sending RELOAD packet to $$daemon{$key}{'ip'}:$$daemon{$key}{'port'}", 1);
-			$msg = $msg . &theTime() . "Sending RELOAD packet to $daemon{$key}{'ip'}:$daemon{$key}{'port'}\n";
+			$msg = $msg . &theTime() . "Sending RELOAD packet to $$daemon{$key}{'ip'}:$$daemon{$key}{'port'}\n";
 
         		# Sedning actual message to the daemon.
         		my $cmd = IO::Socket::INET->new(	Proto=>"udp",
@@ -323,7 +326,7 @@ sub is_number
 
 
 ############## Main program ##############
-$g_stdin = 0;
+our $g_stdin = 0;
 
 # Connect yo mysql DB to get required settings
 &doConnect();

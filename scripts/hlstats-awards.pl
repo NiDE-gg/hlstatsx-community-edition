@@ -54,6 +54,7 @@ my $opt_libdir = "./";
 ##
 
 
+use warnings;
 use Getopt::Long;
 use DBI;
 use Encode;
@@ -86,6 +87,9 @@ my $opt_prune = 0;
 my $opt_optimize = 0;
 my $opt_verbose = 0;
 our $opt_cpanelhack = 0;
+our $opt_clans = 0;
+# Read by HLstats.plib (printEvent, doConnect, the event table list)
+our ($g_debug, $g_stdin, $db_conn, %g_eventTables) = (0, 0);
 
 our $db_host = "localhost";
 our $db_user = "";
@@ -221,7 +225,7 @@ if ($opt_version)
 	print "\nhlstats-awards.pl (HLX:CE Awards Script) Version $g_version\n"
 		. "Real-time player and clan rankings and statistics for Half-Life\n\n"
 		. "Copyright (C) 2001  Simon Garner\n"
-		. "Modified & Enhanced in 2005 by Tobias Oetzel (Tobi@gameme.de)\n\n";
+		. "Modified & Enhanced in 2005 by Tobias Oetzel (Tobi\@gameme.de)\n\n";
 
 	print "\nThis is free software; see the source for copying conditions.  There is NO\n"
 		. "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n";
@@ -293,7 +297,6 @@ sub DoInactive
 			($g_timestamp) = $result->fetchrow_array;
 		}
 		
-		%last_events = ();
 		
 		if ($g_timestamp > 0)
 		{
@@ -1108,7 +1111,7 @@ sub DoGeoIP
 					$country_name = $geoCountryRec->name();
 					$region = $geoMostSpecificSubdivision->name();
 					$city = $geoCityRec->name();
-					$postal_code = $geoPostalRec->code();
+					my $postal_code = $geoPostalRec->code();
 					$lat = $geoLocationRec->latitude();
 					$lng = $geoLocationRec->longitude();
 				}	
