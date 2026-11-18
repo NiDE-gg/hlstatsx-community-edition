@@ -49,6 +49,16 @@ docker push <your-docker-registry>/hlstatsx-daemon:latest
 
 Then, modify the `Deployment.yml` and `Deployment-jobs.yml` files to use your custom image.
 
+#### GeoIP database
+
+The image looks players up in MaxMind's GeoLite2-City database (country, city, map position). The repository no longer ships a copy: the build downloads the current one with a MaxMind license key (free GeoLite2 account at maxmind.com):
+
+```bash
+docker build --secret id=maxmind_license_key,env=MAXMIND_LICENSE_KEY -t hlstatsx-daemon ./scripts
+```
+
+CI does the same with the repository secret `MAXMIND_LICENSE_KEY`. Without a key the image builds without the database: the daemon logs `GeoIP method set to binary file lookup but .../GeoLite2-City.mmdb NOT FOUND` at start and stores no location. Outside Docker, run `scripts/GeoLiteCity/install_binary.sh` with `MAXMIND_LICENSE_KEY` set.
+
 ### 3. Set Environment Variables
 
 The deployment depends on several environment variables for the database configuration, which you need to define in Kubernetes:

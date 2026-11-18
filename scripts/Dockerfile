@@ -30,8 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # with a read-only root filesystem
 COPY . /home/hlxce/
 
-# Optional "maxmind_license_key" build secret: install_binary.sh then downloads
-# the current GeoLite2-City database instead of using the bundled one
+# "maxmind_license_key" build secret: install_binary.sh downloads the current
+# GeoLite2-City database with it. Without it the image has no GeoIP database
 # (docker build --secret id=maxmind_license_key,env=MAXMIND_LICENSE_KEY ...)
 RUN --mount=type=secret,id=maxmind_license_key \
     mv docker-hlxce-daemon-entrypoint docker-hlxce-awards /usr/local/bin/ \
