@@ -181,6 +181,23 @@ sub doConnect
 }
 
 #
+# void readDbEnv ()
+#
+# Takes the database settings from the environment variables DB_HOST, DB_USERNAME,
+# DB_PASSWORD and DB_NAME when they are set and not empty, the names the Docker
+# image and the web .env use. The image then runs without rewriting hlstats.conf,
+# so its files can stay read-only.
+#
+
+sub readDbEnv
+{
+	$db_host = $ENV{DB_HOST} if (($ENV{DB_HOST} // '') ne '');
+	$db_user = $ENV{DB_USERNAME} if (($ENV{DB_USERNAME} // '') ne '');
+	$db_pass = $ENV{DB_PASSWORD} if (($ENV{DB_PASSWORD} // '') ne '');
+	$db_name = $ENV{DB_NAME} if (($ENV{DB_NAME} // '') ne '');
+}
+
+#
 # void useBackslashEscapes (dbh)
 #
 # Removes NO_BACKSLASH_ESCAPES from the session's sql_mode (set by a server-wide

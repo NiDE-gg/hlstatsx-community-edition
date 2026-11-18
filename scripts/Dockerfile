@@ -25,8 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         && useradd -u 10001 -d /home/hlxce/ -s /bin/bash -g hlxce hlxce \
         && chown 10001:10001 /home/hlxce
 
-# Owned by the runtime user: the entrypoints rewrite hlstats.conf in this folder
-COPY --chown=10001:10001 . /home/hlxce/
+# Owned by root and read-only for the runtime user: the scripts read the database
+# settings from the environment and write nothing here, so the container can run
+# with a read-only root filesystem
+COPY . /home/hlxce/
 
 # Optional "maxmind_license_key" build secret: install_binary.sh then downloads
 # the current GeoLite2-City database instead of using the bundled one
@@ -38,8 +40,7 @@ RUN --mount=type=secret,id=maxmind_license_key \
         && chmod +x /usr/local/bin/docker-hlxce-awards \
         && chmod +x hlstats-awards.pl hlstats.pl hlstats-resolve.pl run_hlstats \
         && chmod +x GeoLiteCity/install_binary.sh \
-        && ./GeoLiteCity/install_binary.sh \
-        && chown -R 10001:10001 GeoLiteCity
+        && ./GeoLiteCity/install_binary.sh
 
 EXPOSE 32578/udp
 

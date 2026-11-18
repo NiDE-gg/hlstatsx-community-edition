@@ -147,6 +147,7 @@ spec:
         imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL
@@ -211,7 +212,7 @@ spec:
                 drop:
                 - ALL
               privileged: false
-              readOnlyRootFilesystem: false
+              readOnlyRootFilesystem: true
               runAsNonRoot: true
             terminationMessagePath: /dev/termination-log
             terminationMessagePolicy: File

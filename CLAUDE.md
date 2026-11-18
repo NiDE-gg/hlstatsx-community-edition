@@ -71,7 +71,7 @@ The `hlstats_Events_*` tables hold millions of rows, and pages are crawled heavi
 
 ## Docker / deployment
 
-`scripts/Dockerfile` builds the daemon image (context `./scripts`); CI (`.github/workflows/docker-build-push.yml`) pushes `ghcr.io/nide-gg/hlstatsx-deamon:latest` on every push to `master`. The entrypoints (`docker-hlxce-daemon-entrypoint`, `docker-hlxce-awards`) inject `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` into `hlstats.conf` via sed. Kubernetes manifests are in `scripts/deploy/` (see `scripts/Readme.md`).
+`scripts/Dockerfile` builds the daemon image (context `./scripts`); CI (`.github/workflows/docker-build-push.yml`) pushes `ghcr.io/nide-gg/hlstatsx-deamon:latest` on every push to `master`. The scripts read `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` from the environment (`readDbEnv()` in `HLstats.plib`, over `hlstats.conf`, under command-line options), so the entrypoints (`docker-hlxce-daemon-entrypoint`, `docker-hlxce-awards`) write nothing and the image runs with a read-only root filesystem; its files are owned by root. Kubernetes manifests are in `scripts/deploy/` (see `scripts/Readme.md`).
 
 ```bash
 docker build -t hlstatsx-daemon ./scripts
