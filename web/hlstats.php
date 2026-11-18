@@ -53,7 +53,7 @@ if ((int) ini_get('session.gc_maxlifetime') < 3600) {
 session_set_cookie_params([
 	'httponly' => true,
 	'samesite' => 'Lax',
-	'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+	'secure'   => hlxIsHttps(),
 ]);
 session_start();
 
@@ -71,7 +71,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['logout'] ?? '')
 // Several stuff added by Malte Bayer
 global $scripttime, $siteurlneo;
 $scripttime = microtime(true);
-$siteurlneo=((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://').preg_replace('/[^A-Za-z0-9.:\[\]-]/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')).rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/').'/';
+$siteurlneo = hlxSiteUrl();
 
 // Several Stuff end
 
