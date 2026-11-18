@@ -335,9 +335,11 @@ public dod_client_changeteam(id, team, oldteam)
 	}
 }
 
-public client_disconnect(id)
+// client_disconnected (AMX Mod X 1.9+) replaces the deprecated client_disconnect. The
+// player may already be gone here, so only the id is checked.
+public client_disconnected(id)
 {
-	if ((id > 0) && (is_user_connected(id))) {
+	if (id > 0) {
 		if ((allies_player_color == -1) || (id == allies_player_color)) {
 			allies_player_color = -1
 		} else if ((axis_player_color == -1) || (id == axis_player_color)) {
@@ -721,10 +723,10 @@ public hlx_amx_hint(id, level, cid)
 		}
 		
 		if ((player_index > 0) && (!is_user_bot(player_index)) && (is_user_connected(player_index))) {
-			new color3[0][] = {255, 128, 0}
+			new color3[] = {255, 128, 0}
 			new Float:verpos = 0.80
 	
-			set_hudmessage(color3[0][0], color3[0][1], color3[0][2], -1.0, verpos, 0, 6.0, 6.0, 0.5, 0.15, -1)
+			set_hudmessage(color3[0], color3[1], color3[2], -1.0, verpos, 0, 6.0, 6.0, 0.5, 0.15, -1)
 			show_hudmessage(player_index, "%s", client_message)
 		}	
 	}

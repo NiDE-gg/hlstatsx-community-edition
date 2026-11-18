@@ -1,0 +1,48 @@
+name: AMX Mod X
+
+on:
+  pull_request:
+    paths:
+      - "amxmodx/scripting/**"
+      - ".github/scripts/compile-amxx.sh"
+      - ".github/workflows/amxmodx.yml"
+  push:
+    branches: ["master"]
+    paths:
+      - "amxmodx/scripting/**"
+      - ".github/scripts/compile-amxx.sh"
+      - ".github/workflows/amxmodx.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile (AMX Mod X 1.10)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # amxxpc is a 32-bit binary
+      - name: Install 32-bit runtime
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libc6:i386 lib32stdc++6
+
+      - name: Compile plugins
+        run: .github/scripts/compile-amxx.sh "$RUNNER_TEMP/amxx-plugins"
+
+      - name: Upload compiled plugins
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: amxmodx-plugins
+          path: ${{ runner.temp }}/amxx-plugins/*.amxx
+          if-no-files-found: ignore
