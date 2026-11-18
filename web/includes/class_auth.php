@@ -38,6 +38,10 @@ class Auth
 	// Idle time after which the admin has to log in again
 	const SESSION_TIMEOUT = 3600;
 
+	// Time after the login at which the session ends, however active it is, so a
+	// stolen session cookie can't be kept alive forever
+	const SESSION_MAX_AGE = 43200;
+
 	// hlstats_Users.password holds more than 32 characters from this dbversion on
 	const HASH_DBVERSION = 110;
 
@@ -162,6 +166,7 @@ class Auth
 		$_SESSION['username'] = $user['username'];
 		$_SESSION['acclevel'] = $user['acclevel'];
 		$_SESSION['authsessionStart'] = time();
+		$_SESSION['authloginTime'] = time();
 		$_SESSION['authhash'] = self::fingerprint($user['password']);
 		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 		$_SESSION['authdefaultpassword'] = ($password === self::DEFAULT_PASSWORD);
@@ -184,7 +189,7 @@ class Auth
 			return;
 		}
 
-		if ($sessionStart < time() - self::SESSION_TIMEOUT) {
+		if ($sessionStart < time() - self::SESSION_TIMEOUT || self::sessionTooOld()) {
 			self::logout();
 			$this->username = $user['username'];
 			$this->error = 'Your session has expired. Please try again.';
@@ -222,11 +227,23 @@ class Auth
 		$sessionStart = (int) ($_SESSION['authsessionStart'] ?? 0);
 
 		if ($user === null || !hash_equals(self::fingerprint($user['password']), $sessionHash)
-			|| $sessionStart < time() - self::SESSION_TIMEOUT) {
+			|| $sessionStart < time() - self::SESSION_TIMEOUT || self::sessionTooOld()) {
 			return 0;
 		}
 
 		return (int) $user['acclevel'];
+	}
+
+	// Whether the signed-in session is older than SESSION_MAX_AGE. A session opened
+	// before this check existed has no login time: it gets one now, so it still
+	// ends SESSION_MAX_AGE from here.
+	static function sessionTooOld()
+	{
+		if (!isset($_SESSION['authloginTime'])) {
+			$_SESSION['authloginTime'] = time();
+		}
+
+		return (int) $_SESSION['authloginTime'] < time() - self::SESSION_MAX_AGE;
 	}
 
 	// hlstats_LoginFailures key of this request's address. Behind a reverse proxy,
@@ -513,6 +530,7 @@ class Auth
 			$_SESSION['password'],
 			$_SESSION['acclevel'],
 			$_SESSION['authsessionStart'],
+			$_SESSION['authloginTime'],
 			$_SESSION['authhash'],
 			$_SESSION['csrf_token'],
 			$_SESSION['authdefaultpassword']
