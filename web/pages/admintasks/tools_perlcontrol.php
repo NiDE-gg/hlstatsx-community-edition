@@ -56,6 +56,28 @@ For support and installation notes visit http://www.hlxcommunity.com
    $commands[2]["name"] = "Shut down the Daemon *";
    $commands[2]["cmd"] = "KILL";
 
+	// The command carries the Proxy Key, so it is only sent to this machine or to a
+	// daemon listed in the Proxy_Daemons option ("host:port" entries, "host" alone
+	// allows any port), never to whatever host is typed in the form.
+	$allowedTargets = array(array('127.0.0.1', 0), array('localhost', 0));
+	foreach (explode(',', (string) ($g_options['Proxy_Daemons'] ?? '')) as $entry) {
+		if (preg_match('/^\s*([A-Za-z0-9.-]{1,255})(?::(\d{1,5}))?\s*\z/', $entry, $m)) {
+			$allowedTargets[] = array(strtolower($m[1]), (int) ($m[2] ?? 0));
+		}
+	}
+	$isAllowedTarget = function ($host, $port) use ($allowedTargets) {
+		foreach ($allowedTargets as $target) {
+			if ($target[0] === strtolower($host) && ($target[1] === 0 || $target[1] === $port)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	$allowedList = array();
+	foreach ($allowedTargets as $target) {
+		$allowedList[] = $target[0] . ($target[1] ? ':' . $target[1] : '');
+	}
+
 	if (!function_exists('socket_create')) {
 		// Without it the calls below are a fatal error and the admin page stops half-drawn
 		message('warning', 'This tool needs the PHP sockets extension, which is not loaded on this server.');
@@ -67,7 +89,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 		if (!$command) die ('Invalid command!');
 		if ($port == 0) $port = 27500;
 		if ($port < 1 || $port > 65535) die ('Invalid port!');
-		if (!preg_match('/^[A-Za-z0-9.:-]{1,255}\z/', $host)) die ('Invalid host!');
+		if (!preg_match('/^[A-Za-z0-9.-]{1,255}\z/', $host)) die ('Invalid host!');
+		if (!$isAllowedTarget($host, $port)) {
+			echo '<p><strong>Not sent:</strong> ' . htmlspecialchars("$host:$port", ENT_QUOTES, 'UTF-8')
+				. ' is not this machine or a daemon listed in the Proxy Daemons option. The command carries the Proxy Key, so it is only sent to those addresses.</p>';
+			echo '<p>Add the daemon as <em>host:port</em> to <a href="' . htmlspecialchars($g_options['scripturl'], ENT_QUOTES, 'UTF-8')
+				. '?mode=admin&amp;task=options#options">Proxy Settings &gt; Proxy Daemons</a> first.</p>';
+			return;
+		}
 
 		// Check if we're contacting a remote host -- if so, need proxy_key configured for this to work (die and throw an error if we're missing it)
 		if (($host != "127.0.0.1") && ($host != "localhost")) 
@@ -156,7 +185,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	<table class="data-table">
 		<tr class="bg1">
-			<td width="40%"><label for="masterserver">Daemon IP or Hostname:</label><p>Hostname or IP address of your HLX:CE Daemon<br />Normally the IP or Hostname listed in the "logaddress_add" line on your game server.<br />example: daemon1.hlxce.com <em>or</em> 1.2.3.4</p></td>
+			<td width="40%"><label for="masterserver">Daemon IP or Hostname:</label><p>Hostname or IP address of your HLX:CE Daemon<br />Normally the IP or Hostname listed in the "logaddress_add" line on your game server.<br />example: daemon1.hlxce.com <em>or</em> 1.2.3.4</p>
+				<p>Allowed: <?php echo htmlspecialchars(implode(', ', $allowedList), ENT_QUOTES, 'UTF-8'); ?>. Other daemons have to be listed in Proxy Settings &gt; Proxy Daemons.</p></td>
 			<td><input type="text" name="masterserver" value="localhost"></td>
 		</tr>
 		<tr class="bg2">
