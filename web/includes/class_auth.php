@@ -44,12 +44,20 @@ class Auth
 	// Password of the "admin" account created by sql/install.sql
 	const DEFAULT_PASSWORD = '123456';
 
-	// Failed logins allowed within LOCKOUT_WINDOW seconds before logins are refused.
-	// The per-IP limit stops a single host; the higher per-username limit slows a
-	// spread-out attack without letting a few failures lock the real admin out.
+	// Failed logins are counted over LOCKOUT_WINDOW seconds. One address gets
+	// MAX_FAILURES_PER_IP of them, then is refused until the window has passed.
+	// A username is never locked, since anyone could then keep a known account
+	// locked: after USER_FREE_FAILURES its attempts wait 2, 4, 8... seconds after
+	// the previous failure, at most USER_MAX_DELAY, which still stops a spread-out
+	// guessing attack. A browser that has signed in to the account before (see
+	// isKnownBrowser()) skips that wait and its failures don't count for it.
 	const LOCKOUT_WINDOW = 900;
 	const MAX_FAILURES_PER_IP = 5;
-	const MAX_FAILURES_PER_USER = 20;
+	const USER_FREE_FAILURES = 5;
+	const USER_MAX_DELAY = 300;
+
+	// How long a browser stays known after signing in to an account
+	const KNOWN_BROWSER_LIFETIME = 7776000;
 
 	// Checked against the password when the username doesn't exist, so a failed
 	// login takes the same time either way and usernames can't be probed
@@ -101,26 +109,31 @@ class Auth
 		// The username collation ignores case and accents, so "ADMIN" and "ádmin" reach
 		// the same account: count their failures under the name it is stored with
 		$user = self::fetchUser($username);
-		$failureKeys = self::failureKeys($user !== null ? $user['username'] : $username);
+		$accountName = $user !== null ? $user['username'] : $username;
+		$ipKey = self::ipFailureKey();
+		$userKey = self::userFailureKey($accountName);
+		$knownBrowser = self::isKnownBrowser($accountName);
 		$failures = self::loginFailures();
 		$now = time();
 
 		// Each attempt is counted before the password is checked, in one statement per
 		// key, so requests sent in parallel can't all pass a check made before any of
 		// them is counted. A refused attempt is checked before the password too, so
-		// guesses made while locked tell nothing.
-		$counted = array();
-		foreach ($failureKeys as $key => $limit) {
-			if (!$failures->take($key, $limit, $now, $now - self::LOCKOUT_WINDOW)) {
-				foreach ($counted as $countedKey) {
-					$failures->giveBack($countedKey);
-				}
-				$lockedFor = max(1, self::lockedFor($failureKeys));
-				$this->error = 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+		// guesses made while refused tell nothing.
+		if (!$failures->take($ipKey, self::MAX_FAILURES_PER_IP, $now, $now - self::LOCKOUT_WINDOW)) {
+			$lockedFor = max(1, self::lockedFor($ipKey, self::MAX_FAILURES_PER_IP));
+			$this->error = 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+			$this->printAuth();
+			return;
+		}
+		if (!$knownBrowser) {
+			$wait = $failures->takeDelayed($userKey, self::USER_FREE_FAILURES, self::USER_MAX_DELAY, $now, $now - self::LOCKOUT_WINDOW);
+			if ($wait > 0) {
+				$failures->giveBack($ipKey);
+				$this->error = 'Too many failed logins for this account. Please try again in ' . $wait . ' second(s).';
 				$this->printAuth();
 				return;
 			}
-			$counted[] = $key;
 		}
 
 		// Unknown usernames are counted too, so a lockout doesn't reveal which ones exist
@@ -135,13 +148,9 @@ class Auth
 		// A good login ends the count for its own account. The address only gets this one
 		// attempt back: any account holder could otherwise reset the count for an address
 		// that is guessing another account's password.
-		foreach ($failureKeys as $key => $limit) {
-			if (strncmp($key, 'user:', 5) === 0) {
-				$failures->clear(array($key));
-			} else {
-				$failures->giveBack($key);
-			}
-		}
+		$failures->clear(array($userKey));
+		$failures->giveBack($ipKey);
+		self::rememberBrowser($user['username']);
 
 		if (self::needsRehash($user['password'])) {
 			$user['password'] = self::upgradeHash($user['username'], $password, $user['password']);
@@ -220,16 +229,18 @@ class Auth
 		return (int) $user['acclevel'];
 	}
 
-	// hlstats_LoginFailures keys for this request and username, with their limits.
-	// Behind a reverse proxy, REMOTE_ADDR must be the client's address (Caddy's
-	// php_fastcgi does this; Apache needs mod_remoteip, nginx real_ip), or every
-	// visitor shares the proxy's IP limit.
-	static function failureKeys($username)
+	// hlstats_LoginFailures key of this request's address. Behind a reverse proxy,
+	// REMOTE_ADDR must be the client's address (Caddy's php_fastcgi does this; Apache
+	// needs mod_remoteip, nginx real_ip), or every visitor shares the proxy's limit.
+	static function ipFailureKey()
 	{
-		return array(
-			'ip:' . self::addressKey((string) ($_SERVER['REMOTE_ADDR'] ?? '')) => self::MAX_FAILURES_PER_IP,
-			'user:' . mb_strtolower(mb_substr($username, 0, 64)) => self::MAX_FAILURES_PER_USER,
-		);
+		return 'ip:' . self::addressKey((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+	}
+
+	// hlstats_LoginFailures key of a username (unknown usernames are counted too)
+	static function userFailureKey($username)
+	{
+		return 'user:' . mb_strtolower(mb_substr((string) $username, 0, 64));
 	}
 
 	// An IPv6 client usually owns a whole /64 and can use any address in it, so those
@@ -253,20 +264,77 @@ class Auth
 		return inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
 	}
 
-	// Seconds until a login is allowed again, 0 when it is allowed now
-	static function lockedFor(array $failureKeys)
+	// Seconds until $key is below $limit again, 0 when it is now
+	static function lockedFor($key, $limit)
 	{
 		$now = time();
-		$wait = 0;
-
-		foreach ($failureKeys as $key => $limit) {
-			$row = self::loginFailures()->find($key, $now - self::LOCKOUT_WINDOW);
-			if ($row !== null && $row['failures'] >= $limit) {
-				$wait = max($wait, $row['last_failure'] + self::LOCKOUT_WINDOW - $now);
-			}
+		$row = self::loginFailures()->find($key, $now - self::LOCKOUT_WINDOW);
+		if ($row !== null && $row['failures'] >= $limit) {
+			return $row['last_failure'] + self::LOCKOUT_WINDOW - $now;
 		}
 
-		return $wait;
+		return 0;
+	}
+
+	// Secret that signs the known-browser cookies, created on first use. Deleting the
+	// auth_browser_key row of hlstats_Options forgets every known browser.
+	// opttype 3: read by the web pages, never by the daemon (it reads opttype <= 1).
+	static function browserKey()
+	{
+		global $db;
+
+		for ($try = 0; $try < 2; $try++) {
+			$result = $db->query("SELECT value FROM hlstats_Options WHERE keyname = 'auth_browser_key'");
+			$row = $db->fetch_row($result);
+			$db->free_result($result);
+			if ($row && strlen((string) $row[0]) >= 64) {
+				return (string) $row[0];
+			}
+			// INSERT IGNORE then read again: two first logins at once end up with the same key
+			$db->query("INSERT IGNORE INTO hlstats_Options (keyname, value, opttype) VALUES ('auth_browser_key', '"
+				. bin2hex(random_bytes(32)) . "', 3)");
+		}
+
+		return '';
+	}
+
+	static function browserCookieName($username)
+	{
+		return 'hlx_known_' . substr(hash('sha256', mb_strtolower((string) $username)), 0, 16);
+	}
+
+	static function browserCookieMac($username, $expires, $key)
+	{
+		return hash_hmac('sha256', mb_strtolower((string) $username) . '|' . $expires, $key);
+	}
+
+	// Whether this browser has signed in to $username before: it then carries a
+	// cookie signed with browserKey() for that account, valid KNOWN_BROWSER_LIFETIME.
+	static function isKnownBrowser($username)
+	{
+		$value = $_COOKIE[self::browserCookieName($username)] ?? '';
+		if (!is_string($value) || !preg_match('/^(\d{1,12})\.([0-9a-f]{64})\z/', $value, $m) || (int) $m[1] < time()) {
+			return false;
+		}
+		$key = self::browserKey();
+
+		return $key !== '' && hash_equals(self::browserCookieMac($username, $m[1], $key), $m[2]);
+	}
+
+	static function rememberBrowser($username)
+	{
+		$key = self::browserKey();
+		if ($key === '' || headers_sent()) {
+			return;
+		}
+		$expires = time() + self::KNOWN_BROWSER_LIFETIME;
+		setcookie(self::browserCookieName($username), $expires . '.' . self::browserCookieMac($username, $expires, $key), array(
+			'expires'  => $expires,
+			'path'     => rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/'))), '/') . '/',
+			'secure'   => hlxIsHttps(),
+			'httponly' => true,
+			'samesite' => 'Strict',
+		));
 	}
 
 	static function loginFailures()

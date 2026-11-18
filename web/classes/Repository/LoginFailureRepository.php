@@ -90,6 +90,62 @@
             }
         }
 
+        /**
+         * Counts one attempt against $key unless it has to wait: the first $free
+         * failures since $since are free, then each one waits 2, 4, 8... seconds
+         * after the previous one, at most $maxDelay. The UPDATE both checks and
+         * counts, like take(). Returns 0 when the attempt was counted, else the
+         * seconds left to wait. Fails open (returns 0) on a database error.
+         */
+        public function takeDelayed(string $key, int $free, int $maxDelay, int $now, int $since) : int
+        {
+            // Exponent capped so POW() stays in range however many failures pile up
+            $delay = "LEAST(:maxDelay, POW(2, LEAST(20, GREATEST(0, CAST(`failures` AS SIGNED) - :free + 1))))";
+
+            try {
+                $this->pdo->prepare("DELETE FROM `hlstats_LoginFailures` WHERE `last_failure` < :since")
+                    ->execute(['since' => $since]);
+
+                $this->pdo->prepare("
+                    INSERT IGNORE INTO
+                        `hlstats_LoginFailures` (`key`, `failures`, `last_failure`)
+                    VALUES
+                        (:key, 0, :now)
+                ")->execute(['key' => $key, 'now' => $now]);
+
+                $stmt = $this->pdo->prepare("
+                    UPDATE
+                        `hlstats_LoginFailures`
+                    SET
+                        `failures` = `failures` + 1,
+                        `last_failure` = :now
+                    WHERE
+                        `key` = :key
+                        AND (`failures` < :free2 OR `last_failure` + $delay <= :now2)
+                ");
+                $stmt->execute(['key' => $key, 'now' => $now, 'now2' => $now, 'free' => $free, 'free2' => $free, 'maxDelay' => $maxDelay]);
+                if ($stmt->rowCount() > 0) {
+                    return 0;
+                }
+
+                $stmt = $this->pdo->prepare("
+                    SELECT
+                        `last_failure` + $delay - :now
+                    FROM
+                        `hlstats_LoginFailures`
+                    WHERE
+                        `key` = :key
+                ");
+                $stmt->execute(['key' => $key, 'now' => $now, 'free' => $free, 'maxDelay' => $maxDelay]);
+
+                return max(1, (int) ceil((float) $stmt->fetchColumn()));
+            } catch (PDOException $e) {
+                // Fails open, for the same reasons as take()
+                $this->logger->error("Failed to count a login attempt, attempt not limited: " . $e->getMessage());
+                return 0;
+            }
+        }
+
         // Takes one counted attempt back (a good login, or an attempt refused on another key)
         public function giveBack(string $key) : void
         {
