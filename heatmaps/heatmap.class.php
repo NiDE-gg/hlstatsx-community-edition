@@ -448,8 +448,13 @@ class Heatmap {
 			imagefill($hud, 0, 0, $trans_colour);
 			imagefilledrectangle($hud, 0, 0, imagesx($img) - 1, imagesy($img) - 1, $black);
 
-			// Absolute path: GD does not look for the font in the current directory
-			$font = dirname(__FILE__) . "/DejaVuSans.ttf";
+			// The web pages' copy (forum signatures), in the web folder the heatmaps are
+			// written to. Absolute path: GD does not look for it in the current directory.
+			$font = HLXCE_WEB . "/hlstatsimg/sig/font/DejaVuSans.ttf";
+			if (!is_readable($font)) {
+				show::Event("HUD", "Font not found: $font, the heatmap is saved without its text", 1);
+				return $img;
+			}
 
 			// Copy the hud to the top of the image.
 			imagecopy($img, $hud, 0, 0, 0, 0, $hudx, $hudy);

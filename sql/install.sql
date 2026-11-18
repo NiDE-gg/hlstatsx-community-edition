@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="151";
-SET @VERSION="1.18.5";
+SET @DBVERSION="152";
+SET @VERSION="1.18.6";
 
 -- --------------------------------------------------------
 
