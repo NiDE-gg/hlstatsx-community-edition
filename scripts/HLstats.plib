@@ -138,6 +138,11 @@ sub error
 # SQL query. Returns the escaped version.
 #
 
+# quoteSQL() escapes with backslashes, which is only right while the session's
+# sql_mode does not contain NO_BACKSLASH_ESCAPES: with it, "\'" ends the string
+# and the rest of the value is read as SQL. Every connection therefore goes
+# through useBackslashEscapes() (doConnect, hlstats-resolve.pl).
+
 sub quoteSQL
 {
 	my $varQuote = $_[0];
@@ -170,8 +175,26 @@ sub doConnect
 		);
 	}
 	$db_conn->do("SET NAMES 'utf8mb4'");
+	&useBackslashEscapes($db_conn);
 	&printEvent("MYSQL", "Connecting to MySQL database '$db_name' on '$db_host' as user '$db_user' ... connected ok", 1);
 	%db_stmt_cache = ();
+}
+
+#
+# void useBackslashEscapes (dbh)
+#
+# Removes NO_BACKSLASH_ESCAPES from the session's sql_mode (set by a server-wide
+# sql_mode or by ANSI-style configurations), so the escaping done by quoteSQL()
+# stays correct. The rest of the mode is kept. Without it the daemon can't
+# write safely, so a failure stops it.
+#
+
+sub useBackslashEscapes
+{
+	my ($dbh) = @_;
+
+	$dbh->do("SET SESSION sql_mode = TRIM(BOTH ',' FROM REPLACE(CONCAT(',', \@\@SESSION.sql_mode, ','), ',NO_BACKSLASH_ESCAPES,', ','))")
+		or die("Can't remove NO_BACKSLASH_ESCAPES from the session sql_mode: $DBI::errstr\n");
 }
 
 #
