@@ -34,10 +34,12 @@
 #
 # For support and installation notes visit http://www.hlxcommunity.com
 
-# Optional: with a MaxMind license key (free GeoLite2 account), the current
-# database is downloaded instead of using the bundled archive, which is only
-# updated by hand. Set MAXMIND_LICENSE_KEY or, for Docker builds, pass the
-# "maxmind_license_key" build secret (see scripts/Dockerfile).
+# The GeoLite2-City database is downloaded from MaxMind, which needs a license key
+# (free GeoLite2 account). Set MAXMIND_LICENSE_KEY or, for Docker builds, pass the
+# "maxmind_license_key" build secret (see scripts/Dockerfile). The repository no
+# longer bundles a copy. Without a key, or if the download fails, the script ends
+# without a database (exit 0, so an image build goes on): the daemon then runs
+# without GeoIP and says so when it starts (UseGeoIPBinary).
 LICENSE_KEY="${MAXMIND_LICENSE_KEY:-}"
 if [ -z "$LICENSE_KEY" ] && [ -r /run/secrets/maxmind_license_key ]; then
   LICENSE_KEY=$(tr -d '[:space:]' < /run/secrets/maxmind_license_key)
@@ -51,20 +53,20 @@ FILE_EXT=.tar.gz
 # Change to directory where installer is
 cd "$(dirname "$0")" || exit 1
 
-if [ -n "$LICENSE_KEY" ]; then
-  echo "[>>] Downloading the current $FILE database"
-  if curl -fsSL -o "$FILE.download$FILE_EXT" "https://download.maxmind.com/app/geoip_download?edition_id=$FILE&license_key=$LICENSE_KEY&suffix=tar.gz"; then
-    mv "$FILE.download$FILE_EXT" "$FILE$FILE_EXT"
-  else
-    echo "[!] Download failed, using the bundled database"
-    rm -f "$FILE.download$FILE_EXT"
-  fi
-else
-  echo "[i] No MaxMind license key set, using the bundled database"
+if [ -z "$LICENSE_KEY" ]; then
+  echo "[!] No MaxMind license key set: no GeoIP database installed (players get no country or location)"
+  exit 0
+fi
+
+echo "[>>] Downloading the current $FILE database"
+if ! curl -fsSL -o "$FILE$FILE_EXT" "https://download.maxmind.com/app/geoip_download?edition_id=$FILE&license_key=$LICENSE_KEY&suffix=tar.gz"; then
+  echo "[!] Download failed (check the license key): no GeoIP database installed"
+  rm -f "$FILE$FILE_EXT"
+  exit 0
 fi
 
 echo "[<<] Uncompressing $FILE$FILE_EXT"
-tar -zxvf $FILE$FILE_EXT
+tar -zxf $FILE$FILE_EXT || { echo "[!] Not a valid archive: no GeoIP database installed"; rm -f "$FILE$FILE_EXT"; exit 0; }
 
 echo "[->] Moving $FILE.mmdb file to $PWD"
 mv ./${FILE}_*/${FILE}.mmdb ./

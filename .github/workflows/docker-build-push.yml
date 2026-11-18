@@ -41,6 +41,7 @@ jobs:
         build-args: |
           BUILD_COMMIT=${{ github.sha }}
           BUILD_DATE=${{ steps.meta.outputs.date }}
-        # Optional: when set, the image gets the current GeoLite2-City database
+        # Repository secret MAXMIND_LICENSE_KEY (free GeoLite2 account): without it
+        # the image has no GeoIP database (players get no country or location)
         secrets: |
           maxmind_license_key=${{ secrets.MAXMIND_LICENSE_KEY }}
