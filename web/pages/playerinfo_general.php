@@ -664,9 +664,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 							'bgColor'   => '#' . $g_options['graphbg_trend'],
 							'textColor' => '#' . $g_options['graphtxt_trend'],
 						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>" data-once></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>" data-once></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo-trend-chart.js'); ?>"></script>
+						<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>" data-once></script>
+						<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>" data-once></script>
+						<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo-trend-chart.js'); ?>"></script>
 					</td>
 				</tr>
 			</table>
@@ -703,7 +703,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 							);
 						?>
 						<script type="application/json" id="playerinfo-forum-text-data"><?php echo jsEscape($forumTextData); ?></script>
-						<script src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo.js'); ?>" data-once></script>
+						<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/playerinfo.js'); ?>" data-once></script>
 						<a href="#" data-forum-text="1">
 							bbCode 1 (phpBB, SMF)</a>&nbsp;|&nbsp;<a href="#" data-forum-text="2">bbCode 2 (IPB)</a>&nbsp;|&nbsp;<a href="#" data-forum-text="0">Direct Image
 						</a>
