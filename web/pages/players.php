@@ -378,8 +378,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 					hlstats_Players_History.game = '$game_sql'
 					AND hlstats_Players.hideranking = 0
 					AND activity > 0
-					AND UNIX_TIMESTAMP(hlstats_Players_History.eventTime) >= $minEvent
-					AND UNIX_TIMESTAMP(hlstats_Players_History.eventTime) <= $maxEvent
+					AND hlstats_Players_History.eventTime >= FROM_UNIXTIME($minEvent)
+					AND hlstats_Players_History.eventTime <= FROM_UNIXTIME($maxEvent)
 				GROUP BY
 					hlstats_Players_History.playerId
 				HAVING
