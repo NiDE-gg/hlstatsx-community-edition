@@ -31,7 +31,7 @@
 #include <clientprefs>
 #define REQUIRE_EXTENSIONS
 
-#define VERSION "1.7.0"
+#define VERSION "1.7.1"
 #define HLXTAG "HLstatsX:CE"
 #define SVTAGSIZE 128
 
@@ -146,7 +146,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	if (GetEngineVersion() == Engine_CSGO)
 	{
-		strcopy(error, err_max, "This plugin is not for CS:GO, please use hlstatsx-csgo plugin instead.");
+		strcopy(error, err_max, "CS:GO is not supported (its HLstatsX plugin was removed in 1.18.8).");
 		return APLRes_Failure;
 	}
 
