@@ -110,6 +110,10 @@ if ($opt_configfile && -r $opt_configfile) {
 }
 
 # Read Command Line Arguments
+# DB_HOST, DB_USERNAME, DB_PASSWORD and DB_NAME from the environment (Docker) take
+# precedence over the config file; command line options still win.
+&readDbEnv();
+
 GetOptions(
 	"help|h"			=> \$opt_help,
 	"configfile|c=s"		=> \$configfile,
