@@ -30,12 +30,12 @@
 #define LOG_HIT_LEFTLEG    13
 #define LOG_HIT_RIGHTLEG   14
 
-Handle g_weapon_trie = INVALID_HANDLE;
+StringMap g_weapon_trie = null;
 
 void CreatePopulateWeaponTrie()
 {
 	// Create a Trie
-	g_weapon_trie = CreateTrie();
+	g_weapon_trie = new StringMap();
 	
 	// Initial populate
 	for (int i = 0; i < MAX_LOG_WEAPONS; i++)
@@ -47,7 +47,7 @@ void CreatePopulateWeaponTrie()
 			continue;
 		}
 		
-		SetTrieValue(g_weapon_trie, g_weapon_list[i], i);
+		g_weapon_trie.SetValue(g_weapon_list[i], i);
 	}
 }
 
@@ -106,7 +106,7 @@ void reset_player_stats(int client)
 stock int get_weapon_index(const char[] weapon_name)
 {
 	int index = -1;
-	GetTrieValue(g_weapon_trie, weapon_name, index);
+	g_weapon_trie.GetValue(weapon_name, index);
 	return index;
 }
 

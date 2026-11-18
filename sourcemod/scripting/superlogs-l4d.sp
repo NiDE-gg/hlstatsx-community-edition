@@ -26,7 +26,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: L4D"
-#define VERSION "1.3.4"
+#define VERSION "1.3.5"
 
 #define MAX_LOG_WEAPONS 27
 #define MAX_WEAPON_LEN 16
@@ -63,10 +63,10 @@ char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"charger_claw"
 									};
 
-Handle g_cvar_wstats = INVALID_HANDLE;
-Handle g_cvar_actions = INVALID_HANDLE;
-Handle g_cvar_headshots = INVALID_HANDLE;
-Handle g_cvar_meleeoverride = INVALID_HANDLE;
+ConVar g_cvar_wstats = null;
+ConVar g_cvar_actions = null;
+ConVar g_cvar_headshots = null;
+ConVar g_cvar_meleeoverride = null;
 
 bool g_logwstats = true;
 bool g_logactions = true;
@@ -114,10 +114,10 @@ public void OnPluginStart()
 	g_cvar_actions = CreateConVar("superlogs_actions", "1", "Enable logging of player actions, such as \"Got_The_Bomb\" (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_headshots = CreateConVar("superlogs_headshots", "0", "Enable logging of headshot player action (default off)", 0, true, 0.0, true, 1.0);
 	g_cvar_meleeoverride = CreateConVar("superlogs_meleeoverride", "1", "Enable changing \"melee\" weapon in server logs to specific weapon (L4D2-only) (default on)", 0, true, 0.0, true, 1.0);
-	HookConVarChange(g_cvar_wstats, OnCvarWstatsChange);
-	HookConVarChange(g_cvar_actions, OnCvarActionsChange);
-	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
-	HookConVarChange(g_cvar_meleeoverride, OnCvarMeleeOverrideChange);
+	g_cvar_wstats.AddChangeHook(OnCvarWstatsChange);
+	g_cvar_actions.AddChangeHook(OnCvarActionsChange);
+	g_cvar_headshots.AddChangeHook(OnCvarHeadshotsChange);
+	g_cvar_meleeoverride.AddChangeHook(OnCvarMeleeOverrideChange);
 	CreateConVar("superlogs_l4d_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
 	if (GetEngineVersion() != Engine_Left4Dead)
@@ -233,7 +233,7 @@ public Action FlushWeaponLogs(Handle timer, any index)
 	return Plugin_Continue;
 }
 
-public void Event_PlayerShoot(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerShoot(Event event, const char[] name, bool dontBroadcast)
 {
 	// "local"         "1"             // don't network this, its way too spammy
 	// "userid"        "short"
@@ -241,11 +241,11 @@ public void Event_PlayerShoot(Handle event, const char[] name, bool dontBroadcas
 	// "weaponid"      "short"         // used weapon ID
 	// "count"         "short"         // number of bullets
 
-	int attacker   = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker   = GetClientOfUserId(event.GetInt("userid"));
 	if (attacker > 0)
 	{
 		char weapon[MAX_WEAPON_LEN];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 		int weapon_index = get_weapon_index(weapon);
 		if (weapon_index > -1)
 		{
@@ -254,7 +254,7 @@ public void Event_PlayerShoot(Handle event, const char[] name, bool dontBroadcas
 	}
 }
 
-public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 {
 	// "local"         "1"             // Not networked
 	// "userid"        "short"         // user ID who was hurt
@@ -268,18 +268,18 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 	// "hitgroup"      "byte"          // hitgroup that was damaged
 	// "type"          "long"          // damage type
 
-	int attacker  = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int attacker  = GetClientOfUserId(event.GetInt("attacker"));
 	
 	if (attacker > 0)
 	{
 		char weapon[MAX_WEAPON_LEN];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 		int weapon_index = get_weapon_index(weapon);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
-			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE] += GetEventInt(event, "dmg_health");
-			int hitgroup  = GetEventInt(event, "hitgroup");
+			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE] += event.GetInt("dmg_health");
+			int hitgroup  = event.GetInt("hitgroup");
 			if (hitgroup < 8)
 			{
 				g_weapon_stats[attacker][weapon_index][hitgroup + LOG_HIT_OFFSET]++;
@@ -287,7 +287,7 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 		}
 		else if (g_logactions && !strcmp(weapon, "insect_swarm"))
 		{
-			int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+			int victim = GetClientOfUserId(event.GetInt("userid"));
 			if (victim > 0 && IsClientInGame(victim) && GetClientTeam(victim) == 2 &&  !GetEntProp(victim, Prop_Send, "m_isIncapacitated"))
 			{
 				LogPlyrPlyrEvent(attacker, victim, "triggered", "spit_hurt", true);
@@ -296,7 +296,7 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 	}
 }
 
-public void Event_InfectedHurt(Handle event, const char[] name, bool dontBroadcast)
+public void Event_InfectedHurt(Event event, const char[] name, bool dontBroadcast)
 {
 	// "local"         "1"             // don't network this, its way too spammy
 	// "attacker"      "short"         // player userid who attacked
@@ -305,7 +305,7 @@ public void Event_InfectedHurt(Handle event, const char[] name, bool dontBroadca
 	// "amount"        "short"         // how much damage was done                  
 	// "type"          "long"          // damage type     
 
-	int attacker  = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int attacker  = GetClientOfUserId(event.GetInt("attacker"));
 	
 	if (attacker > 0)
 	{
@@ -316,8 +316,8 @@ public void Event_InfectedHurt(Handle event, const char[] name, bool dontBroadca
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
-			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE] += GetEventInt(event, "amount");
-			int hitgroup  = GetEventInt(event, "hitgroup");
+			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE] += event.GetInt("amount");
+			int hitgroup  = event.GetInt("hitgroup");
 			if (hitgroup < 8)
 			{
 				g_weapon_stats[attacker][weapon_index][hitgroup + LOG_HIT_OFFSET]++;
@@ -326,18 +326,18 @@ public void Event_InfectedHurt(Handle event, const char[] name, bool dontBroadca
 	}
 }
 
-public void Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	
-	if (g_logheadshots && GetEventBool(event, "headshot"))
+	if (g_logheadshots && event.GetBool("headshot"))
 	{
 		LogPlayerEvent(attacker, "triggered", "headshot");
 	}
 	if (g_logmeleeoverride && g_bIsL4D2 && attacker > 0 && IsClientInGame(attacker))
 	{
 		char szWeapon[64];
-		GetEventString(event, "weapon", szWeapon, sizeof(szWeapon));
+		event.GetString("weapon", szWeapon, sizeof(szWeapon));
 		if (strncmp(szWeapon, "melee", 5) == 0)
 		{
 			int iWeapon = GetEntDataEnt2(attacker, g_iActiveWeaponOffset);
@@ -348,14 +348,14 @@ public void Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroad
 				if (strncmp(szWeapon[7], "melee", 5) == 0)
 				{
 					GetEntPropString(iWeapon, Prop_Data, "m_strMapSetScriptName", szWeapon, sizeof(szWeapon));
-					SetEventString(event, "weapon", szWeapon);
+					event.SetString("weapon", szWeapon);
 				}
 			}
 		}
 	}
 }
 
-public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID who died
 	// "entityid"      "long"          // entity ID who died, userid should be used first, to get the dead Player.  Otherwise, it is not a player, so use this.         $
@@ -373,19 +373,19 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	// "victim_y"      "float"
 	// "victim_z"      "float"
 
-	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim   = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 
 	if (g_logwstats && victim > 0 && attacker > 0)
 	{
 		char weapon[MAX_WEAPON_LEN];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 		
 		int weapon_index = get_weapon_index(weapon);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_KILLS]++;
-			if (GetEventBool(event, "headshot"))
+			if (event.GetBool("headshot"))
 			{
 				g_weapon_stats[attacker][weapon_index][LOG_HIT_HEADSHOTS]++;
 			}
@@ -399,25 +399,25 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	}
 }
 
-public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	WstatsDumpAll();
 }
 
-public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
@@ -430,9 +430,9 @@ public Action LogMap(Handle timer)
 	return Plugin_Continue;
 }
 
-public void Event_RescueSurvivor(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RescueSurvivor(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "rescuer"));
+	int player = GetClientOfUserId(event.GetInt("rescuer"));
 	
 	if (player > 0)
 	{
@@ -440,19 +440,19 @@ public void Event_RescueSurvivor(Handle event, const char[] name, bool dontBroad
 	}
 }
 
-public void Event_Heal(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Heal(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "userid"));
+	int player = GetClientOfUserId(event.GetInt("userid"));
 	
-	if (player > 0 && player != GetClientOfUserId(GetEventInt(event, "subject")))
+	if (player > 0 && player != GetClientOfUserId(event.GetInt("subject")))
 	{
 		LogPlayerEvent(player, "triggered", "healed_teammate", true);
 	}
 }
 
-public void Event_Revive(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Revive(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "userid"));
+	int player = GetClientOfUserId(event.GetInt("userid"));
 	
 	if (player > 0)
 	{
@@ -460,20 +460,20 @@ public void Event_Revive(Handle event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Event_StartleWitch(Handle event, const char[] name, bool dontBroadcast)
+public void Event_StartleWitch(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "userid"));
+	int player = GetClientOfUserId(event.GetInt("userid"));
 	
-	if (player > 0 && (!g_bIsL4D2 || GetEventBool(event, "first")))
+	if (player > 0 && (!g_bIsL4D2 || event.GetBool("first")))
 	{
 			LogPlayerEvent(player, "triggered", "startled_witch", true);
 	}
 }
 
-public void Event_Pounce(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Pounce(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "userid"));
-	int victim = GetClientOfUserId(GetEventInt(event, "victim"));
+	int player = GetClientOfUserId(event.GetInt("userid"));
+	int victim = GetClientOfUserId(event.GetInt("victim"));
 	
 	if (victim > 0)
 	{
@@ -485,12 +485,12 @@ public void Event_Pounce(Handle event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Event_Boomered(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Boomered(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "attacker"));
-	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int player = GetClientOfUserId(event.GetInt("attacker"));
+	int victim = GetClientOfUserId(event.GetInt("userid"));
 	
-	if (player > 0 && (!g_bIsL4D2 || GetEventBool(event, "by_boomer")))
+	if (player > 0 && (!g_bIsL4D2 || event.GetBool("by_boomer")))
 	{
 		if (victim > 0)
 		{
@@ -503,12 +503,12 @@ public void Event_Boomered(Handle event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Event_FF(Handle event, const char[] name, bool dontBroadcast)
+public void Event_FF(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "attacker"));
-	int victim = GetClientOfUserId(GetEventInt(event, "victim"));
+	int player = GetClientOfUserId(event.GetInt("attacker"));
+	int victim = GetClientOfUserId(event.GetInt("victim"));
 	
-	if (player > 0 && player == GetClientOfUserId(GetEventInt(event, "guilty")))
+	if (player > 0 && player == GetClientOfUserId(event.GetInt("guilty")))
 	{
 		if (victim > 0)
 		{
@@ -521,28 +521,28 @@ public void Event_FF(Handle event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Event_WitchKilled(Handle event, const char[] name, bool dontBroadcast)
+public void Event_WitchKilled(Event event, const char[] name, bool dontBroadcast)
 {
-	if (GetEventBool(event, "oneshot"))
+	if (event.GetBool("oneshot"))
 	{
-		LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "cr0wned", true);
+		LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "cr0wned", true);
 	}
 }
 
-public void Event_Defib(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Defib(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "defibrillated_teammate", true);
+	LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "defibrillated_teammate", true);
 }
 
-public void Event_Adrenaline(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Adrenaline(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "used_adrenaline", true);
+	LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "used_adrenaline", true);
 }
 
-public void Event_JockeyRide(Handle event, const char[] name, bool dontBroadcast)
+public void Event_JockeyRide(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "userid"));
-	int victim = GetClientOfUserId(GetEventInt(event, "victim"));
+	int player = GetClientOfUserId(event.GetInt("userid"));
+	int victim = GetClientOfUserId(event.GetInt("victim"));
 	
 	if (player > 0)
 	{
@@ -557,10 +557,10 @@ public void Event_JockeyRide(Handle event, const char[] name, bool dontBroadcast
 	}
 }
 
-public void Event_ChargerPummelStart(Handle event, const char[] name, bool dontBroadcast)
+public void Event_ChargerPummelStart(Event event, const char[] name, bool dontBroadcast)
 {
-	int player = GetClientOfUserId(GetEventInt(event, "userid"));
-	int victim = GetClientOfUserId(GetEventInt(event, "victim"));
+	int player = GetClientOfUserId(event.GetInt("userid"));
+	int victim = GetClientOfUserId(event.GetInt("victim"));
 	
 	if (victim > 0)
 	{
@@ -572,47 +572,47 @@ public void Event_ChargerPummelStart(Handle event, const char[] name, bool dontB
 	}
 }
 
-public void Event_VomitBombTank(Handle event, const char[] name, bool dontBroadcast)
+public void Event_VomitBombTank(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "bilebomb_tank", true);
+	LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "bilebomb_tank", true);
 }
 
-public void Event_ScavengeEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_ScavengeEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	LogTeamEvent(GetEventInt(event, "winners"), "triggered", "Scavenge_Win");
+	LogTeamEvent(event.GetInt("winners"), "triggered", "Scavenge_Win");
 }
 
-public void Event_VersusEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_VersusEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	LogTeamEvent(GetEventInt(event, "winners"), "triggered", "Versus_Win");
+	LogTeamEvent(event.GetInt("winners"), "triggered", "Versus_Win");
 }
 
-public void Event_Award(Handle event, const char[] name, bool dontBroadcast)
+public void Event_Award(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"	"short"			// player who earned the award
 	// "entityid"	"long"			// client likes ent id
 	// "subjectentid"	"long"			// entity id of other party in the award, if any
 	// "award"		"short"			// id of award earned
 	
-	switch(GetEventInt(event, "award"))
+	switch(event.GetInt("award"))
 	{
 		case 21:
-			LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "hunter_punter", true);
+			LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "hunter_punter", true);
 		case 27:
-			LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "tounge_twister", true);
+			LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "tounge_twister", true);
 		case 67:
-			LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "protect_teammate", true);
+			LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "protect_teammate", true);
 		case 80:
-			LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "no_death_on_tank", true);
+			LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "no_death_on_tank", true);
 		case 136:
-			LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "killed_all_survivors", true);
+			LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "killed_all_survivors", true);
 	}
 }
 
-public void OnCvarWstatsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarWstatsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logwstats;
-	g_logwstats = GetConVarBool(g_cvar_wstats);
+	g_logwstats = g_cvar_wstats.BoolValue;
 	
 	if (old_value != g_logwstats)
 	{
@@ -627,10 +627,10 @@ public void OnCvarWstatsChange(Handle cvar, const char[] oldVal, const char[] ne
 	}
 }
 
-public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarActionsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logactions;
-	g_logactions = GetConVarBool(g_cvar_actions);
+	g_logactions = g_cvar_actions.BoolValue;
 	
 	if (old_value != g_logactions)
 	{
@@ -645,10 +645,10 @@ public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] n
 	}
 }
 
-public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarHeadshotsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logheadshots;
-	g_logheadshots = GetConVarBool(g_cvar_headshots);
+	g_logheadshots = g_cvar_headshots.BoolValue;
 	
 	if (old_value != g_logheadshots)
 	{
@@ -663,10 +663,10 @@ public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarMeleeOverrideChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarMeleeOverrideChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logmeleeoverride;
-	g_logmeleeoverride = GetConVarBool(g_cvar_meleeoverride);
+	g_logmeleeoverride = g_cvar_meleeoverride.BoolValue;
 	
 	if (old_value != g_logmeleeoverride)
 	{

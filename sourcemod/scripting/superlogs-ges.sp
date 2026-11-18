@@ -26,7 +26,7 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: GES"
-#define VERSION "1.1.3"
+#define VERSION "1.1.4"
 
 #define MAX_LOG_WEAPONS 18
 #define MAX_WEAPON_LEN 13
@@ -78,11 +78,11 @@ char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"#GE_GoldPP7"
 								};
 */								
-Handle g_cvar_wstats = INVALID_HANDLE;
-Handle g_cvar_headshots = INVALID_HANDLE;
-Handle g_cvar_locations = INVALID_HANDLE;
-Handle g_cvar_actions = INVALID_HANDLE;
-Handle g_cvar_classchanges = INVALID_HANDLE;
+ConVar g_cvar_wstats = null;
+ConVar g_cvar_headshots = null;
+ConVar g_cvar_locations = null;
+ConVar g_cvar_actions = null;
+ConVar g_cvar_classchanges = null;
 
 bool g_logwstats = true;
 bool g_logheadshots = true;
@@ -112,11 +112,11 @@ public void OnPluginStart()
 	g_cvar_locations = CreateConVar("superlogs_locations", "1", "Enable logging of location on player death (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_actions = CreateConVar("superlogs_actions", "1", "Enable logging of actions, such as round winner and awards won (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_classchanges = CreateConVar("superlogs_classchanges", "1", "Enable logging of character changes (default on)", 0, true, 0.0, true, 1.0);
-	HookConVarChange(g_cvar_wstats, OnCvarWstatsChange);
-	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
-	HookConVarChange(g_cvar_locations, OnCvarLocationsChange);
-	HookConVarChange(g_cvar_actions, OnCvarActionsChange);
-	HookConVarChange(g_cvar_classchanges, OnCvarClasschangesChange);
+	g_cvar_wstats.AddChangeHook(OnCvarWstatsChange);
+	g_cvar_headshots.AddChangeHook(OnCvarHeadshotsChange);
+	g_cvar_locations.AddChangeHook(OnCvarLocationsChange);
+	g_cvar_actions.AddChangeHook(OnCvarActionsChange);
+	g_cvar_classchanges.AddChangeHook(OnCvarClasschangesChange);
 	CreateConVar("superlogs_ges_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
 	hook_wstats();
@@ -165,17 +165,17 @@ public void OnClientPutInServer(int client)
 }
 
 
-public void Event_PlayerShoot(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerShoot(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"		"local" 	// user ID on server
 	// "weapon"	"local" 	// weapon name
 	// "mode"		"local" 	// weapon mode [0 normal, 1 aimed]
 
-	int attacker = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(event.GetInt("userid"));
 	if (g_logwstats && attacker > 0)
 	{
 		char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
@@ -185,7 +185,7 @@ public void Event_PlayerShoot(Handle event, const char[] name, bool dontBroadcas
 }
 
 
-public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"		"local" 	// user ID who was hurt
 	// "attacker"	"local" 	// user ID who attacked
@@ -195,20 +195,20 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 	// "damage"	"local" 	// how much damage in this attack
 	// "hitgroup"	"local" 	// what hitgroup was hit
 
-	int attacker  = GetClientOfUserId(GetEventInt(event, "attacker"));
-	int hitgroup  = GetEventInt(event, "hitgroup");
-	bool headshot = (GetEventInt(event, "health") <= 0 && hitgroup == HITGROUP_HEAD);
+	int attacker  = GetClientOfUserId(event.GetInt("attacker"));
+	int hitgroup  = event.GetInt("hitgroup");
+	bool headshot = (event.GetInt("health") <= 0 && hitgroup == HITGROUP_HEAD);
 	
 	if (g_logwstats && attacker > 0)
 	{
 		char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 
 		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
 			g_weapon_stats[attacker][weapon_index][LOG_HIT_HITS]++;
-			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE]  += GetEventInt(event, "damage");
+			g_weapon_stats[attacker][weapon_index][LOG_HIT_DAMAGE]  += event.GetInt("damage");
 			if (hitgroup < 8)
 			{
 				g_weapon_stats[attacker][weapon_index][hitgroup + LOG_HIT_OFFSET]++;
@@ -225,15 +225,15 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 	}
 }
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
-	LogKillLoc(GetClientOfUserId(GetEventInt(event, "attacker")), GetClientOfUserId(GetEventInt(event, "userid")));
+	LogKillLoc(GetClientOfUserId(event.GetInt("attacker")), GetClientOfUserId(event.GetInt("userid")));
 	
 	return Plugin_Continue;
 }
 
 
-public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"		"short"	// user ID who died
 	// "attacker"	"short"	// user ID who killed
@@ -241,12 +241,12 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	// "weaponid"	"short"	// GE Weapon ID (for easy comparison)
 	// "custom"		"byte"	// Used for achievements
 
-	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim   = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	if (g_logwstats && (victim > 0) && (attacker > 0))
 	{
 		char weapon[MAX_WEAPON_LEN+PREFIX_LEN];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 		int weapon_index = get_weapon_index(weapon[PREFIX_LEN]);
 		if (weapon_index > -1)
 		{
@@ -261,18 +261,18 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	}
 }
 
-public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_logwstats)
 	{
@@ -280,34 +280,34 @@ public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 	}
 	if (g_logactions)
 	{
-		int winner = GetEventInt(event, "winnerid");
+		int winner = event.GetInt("winnerid");
 		if (winner > 0)
 		{
 			LogPlayerEvent(winner, "triggered", "Round_Win", true);
 		}
 		else
 		{
-			winner = GetEventInt(event, "teamid");
+			winner = event.GetInt("teamid");
 			if (winner > 0)
 			{
 				LogTeamEvent(winner, "triggered", "Round_Win_Team");
 			}
 		}
 		int awards[6];
-		awards[0] = GetEventInt(event, "award1_id");
-		awards[1] = GetEventInt(event, "award2_id");
-		awards[2] = GetEventInt(event, "award3_id");
-		awards[3] = GetEventInt(event, "award4_id");
-		awards[4] = GetEventInt(event, "award5_id");
-		awards[5] = GetEventInt(event, "award6_id");
+		awards[0] = event.GetInt("award1_id");
+		awards[1] = event.GetInt("award2_id");
+		awards[2] = event.GetInt("award3_id");
+		awards[3] = event.GetInt("award4_id");
+		awards[4] = event.GetInt("award5_id");
+		awards[5] = event.GetInt("award6_id");
 
 		int winners[6];
-		winners[0] = GetEventInt(event, "award1_winner");
-		winners[1] = GetEventInt(event, "award2_winner");
-		winners[2] = GetEventInt(event, "award3_winner");
-		winners[3] = GetEventInt(event, "award4_winner");
-		winners[4] = GetEventInt(event, "award5_winner");
-		winners[5] = GetEventInt(event, "award6_winner");
+		winners[0] = event.GetInt("award1_winner");
+		winners[1] = event.GetInt("award2_winner");
+		winners[2] = event.GetInt("award3_winner");
+		winners[3] = event.GetInt("award4_winner");
+		winners[4] = event.GetInt("award5_winner");
+		winners[5] = event.GetInt("award6_winner");
 
 		for (int i = 0; i < 6; i++)
 		{
@@ -348,24 +348,24 @@ public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 }
 
 
-public void Event_RoleChange(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoleChange(Event event, const char[] name, bool dontBroadcast)
 {
 	// "playerid"	"short"
 	// "ident"		"string"
 	
-	int client = GetEventInt(event, "playerid");
+	int client = event.GetInt("playerid");
 
 	if (client > 0)
 	{
 		char ident[32];
-		GetEventString(event, "ident", ident, sizeof(ident));
+		event.GetString("ident", ident, sizeof(ident));
 		LogRoleChange(client, ident);
 	}	
 }
 
-public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
@@ -378,10 +378,10 @@ public Action LogMap(Handle timer)
 }
 
 
-public void OnCvarWstatsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarWstatsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logwstats;
-	g_logwstats = GetConVarBool(g_cvar_wstats);
+	g_logwstats = g_cvar_wstats.BoolValue;
 	
 	if (old_value != g_logwstats)
 	{
@@ -414,10 +414,10 @@ public void OnCvarWstatsChange(Handle cvar, const char[] oldVal, const char[] ne
 
 
 
-public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarHeadshotsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logheadshots;
-	g_logheadshots = GetConVarBool(g_cvar_headshots);
+	g_logheadshots = g_cvar_headshots.BoolValue;
 	
 	if (old_value != g_logheadshots)
 	{
@@ -432,10 +432,10 @@ public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarLocationsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_loglocations;
-	g_loglocations = GetConVarBool(g_cvar_locations);
+	g_loglocations = g_cvar_locations.BoolValue;
 	
 	if (old_value != g_loglocations)
 	{
@@ -450,10 +450,10 @@ public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarActionsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logactions;
-	g_logactions = GetConVarBool(g_cvar_actions);
+	g_logactions = g_cvar_actions.BoolValue;
 	
 	if (old_value != g_logactions)
 	{
@@ -469,10 +469,10 @@ public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] n
 	}
 }
 
-public void OnCvarClasschangesChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarClasschangesChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logclasschanges;
-	g_logclasschanges = GetConVarBool(g_cvar_classchanges);
+	g_logclasschanges = g_cvar_classchanges.BoolValue;
 	
 	if (old_value != g_logclasschanges)
 	{

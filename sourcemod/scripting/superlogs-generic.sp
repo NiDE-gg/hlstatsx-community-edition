@@ -26,9 +26,9 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: Generic"
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
-Handle g_cvar_enable = INVALID_HANDLE;
+ConVar g_cvar_enable = null;
 
 bool g_log = true;
 
@@ -48,7 +48,7 @@ public void OnPluginStart()
 {
 	g_cvar_enable = CreateConVar("superlogs_locations", "1", "Enable logging of kill coordinates (default on)", 0, true, 0.0, true, 1.0);
 
-	HookConVarChange(g_cvar_enable, OnCvarEnableChange);
+	g_cvar_enable.AddChangeHook(OnCvarEnableChange);
 
 	CreateConVar("superlogs_generic_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
@@ -61,17 +61,17 @@ public void OnPluginStart()
 }
 
 
-public Action Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
-	LogKillLoc(GetClientOfUserId(GetEventInt(event, "attacker")), GetClientOfUserId(GetEventInt(event, "userid")));	
+	LogKillLoc(GetClientOfUserId(event.GetInt("attacker")), GetClientOfUserId(event.GetInt("userid")));	
 	
 	return Plugin_Continue;
 }
 
-public void OnCvarEnableChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarEnableChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_log;
-	g_log = GetConVarBool(g_cvar_enable);
+	g_log = g_cvar_enable.BoolValue;
 	
 	if (old_value != g_log)
 	{

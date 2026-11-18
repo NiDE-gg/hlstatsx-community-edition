@@ -27,7 +27,7 @@
 #include <sdkhooks>
 
 #define NAME "SuperLogs: Dino D-Day"
-#define VERSION "1.1.2"
+#define VERSION "1.1.3"
 
 #define MAX_LOG_WEAPONS 47
 #define MAX_WEAPON_LEN 12
@@ -136,8 +136,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	CreatePopulateWeaponTrie();
-	Handle hVersion = CreateConVar( "superlogs_dinodday_version", VERSION, NAME, FCVAR_NOTIFY|FCVAR_DONTRECORD );
-	SetConVarString(hVersion, VERSION, false, true);
+	ConVar hVersion = CreateConVar( "superlogs_dinodday_version", VERSION, NAME, FCVAR_NOTIFY|FCVAR_DONTRECORD );
+	hVersion.SetString(VERSION, false, true);
 	
 	HookEvent( "player_death",       Event_PlayerDeathPre,       EventHookMode_Pre        );
 	HookEvent( "player_death",       Event_PlayerDeath,          EventHookMode_Post       );
@@ -276,11 +276,11 @@ public Action OnGameLog(const char[] szMessage)
 	return Plugin_Continue;
 }
 
-public Action Event_PointCaptured(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PointCaptured(Event event, const char[] name, bool dontBroadcast)
 {
 	int client;
 	char cappers[256];
-	GetEventString(event, "cappers", cappers, sizeof(cappers));
+	event.GetString("cappers", cappers, sizeof(cappers));
 	for (int i = 0 ; i < strlen(cappers); i++)
 	{
 		client = cappers[i];
@@ -293,30 +293,30 @@ public Action Event_PointCaptured(Handle event, const char[] name, bool dontBroa
 	return Plugin_Continue;
 }
 
-public Action Event_PlayerChangeClassPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerChangeClassPre(Event event, const char[] name, bool dontBroadcast)
 {
 	PauseLogging();
 	
 	return Plugin_Continue;
 }
 
-public void Event_PlayerChangeClass(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerChangeClass(Event event, const char[] name, bool dontBroadcast)
 {
 	ResumeLogging();
 }
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
 	PauseLogging();
 	
-	int customkill = GetEventInt(event, "customkill");
+	int customkill = event.GetInt("customkill");
 	if( customkill == CUSTOMKILL_GOAT )
 	{
-		int attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
-		int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+		int attacker = GetClientOfUserId( event.GetInt("attacker" ) );
+		int victim = GetClientOfUserId( event.GetInt("userid" ) );
 		if(attacker == victim && g_DiloGoatBite[attacker])
 		{
-			SetEventBroadcast(event, true);
+			event.BroadcastDisabled = true;
 			return Plugin_Continue;
 		}
 	}
@@ -324,18 +324,18 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	return Plugin_Continue;
 }
 
-public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
 	ResumeLogging();
 	
-	int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	int victim = GetClientOfUserId( event.GetInt("userid" ) );
 	
 	if ( victim > 0 )
 	{
-		int attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
+		int attacker = GetClientOfUserId( event.GetInt("attacker" ) );
 
 		char weapon[32];
-		GetEventString( event, "weapon", weapon, sizeof(weapon) );
+		event.GetString("weapon", weapon, sizeof(weapon) );
 		if( attacker > 0 && attacker != victim )
 		{
 			int weapon_index = get_weapon_index( weapon );
@@ -351,8 +351,8 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 			
 			LogKill( attacker, victim, weapon, true );
 			
-			int dominated = GetEventInt(event, "dominated");
-			int revenge = GetEventInt(event, "revenge");
+			int dominated = event.GetInt("dominated");
+			int revenge = event.GetInt("revenge");
 			if(dominated == 1)
 			{
 				LogPlyrPlyrEvent(attacker, victim, "triggered", "dominated");
@@ -362,18 +362,18 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 				LogPlyrPlyrEvent(attacker, victim, "triggered", "revenge");
 			}
 
-			int assisteruid = GetEventInt(event, "assister");
+			int assisteruid = event.GetInt("assister");
 			if(assisteruid != -1)
 			{
 				int assister = GetClientOfUserId(assisteruid);
 				if(assister > 0 && attacker != assister)
 				{
 					LogPlayerEvent(assister, "triggered", "assister");
-					if(GetEventInt(event, "assister_revenge") == 1)
+					if(event.GetInt("assister_revenge") == 1)
 					{
 						LogPlyrPlyrEvent(assister, victim, "triggered", "assister_revenge");
 					}
-					else if(GetEventInt(event, "assister_dominated") == 1)
+					else if(event.GetInt("assister_dominated") == 1)
 					{
 						LogPlyrPlyrEvent(assister, victim, "triggered", "assister_dominated");
 					}
@@ -383,7 +383,7 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 		}
 		else
 		{
-			int customkill = GetEventInt(event, "customkill");
+			int customkill = event.GetInt("customkill");
 			if( customkill == CUSTOMKILL_GOAT )
 			{
 				if(g_DiloGoatBite[attacker])
@@ -402,9 +402,9 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	}
 }
 
-public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	int client = GetClientOfUserId( event.GetInt("userid" ) );
 	if( client == 0 || !IsClientInGame(client) )
 		return;
 	
@@ -430,9 +430,9 @@ public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcas
 	g_DiloGoatBite[client] = false;
 }
 
-public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	int winner = GetEventInt( event, "team_that_won" );
+	int winner = event.GetInt("team_that_won" );
 	if( winner == DDD_TEAM_ALLIES || winner == DDD_TEAM_AXIS )
 	{
 		char round_win[32];
