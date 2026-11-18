@@ -114,30 +114,12 @@ class Auth
 		// the same account: count their failures under the name it is stored with
 		$user = self::fetchUser($username);
 		$accountName = $user !== null ? $user['username'] : $username;
-		$ipKey = self::ipFailureKey();
-		$userKey = self::userFailureKey($accountName);
-		$knownBrowser = self::isKnownBrowser($accountName);
-		$failures = self::loginFailures();
-		$now = time();
 
-		// Each attempt is counted before the password is checked, in one statement per
-		// key, so requests sent in parallel can't all pass a check made before any of
-		// them is counted. A refused attempt is checked before the password too, so
-		// guesses made while refused tell nothing.
-		if (!$failures->take($ipKey, self::MAX_FAILURES_PER_IP, $now, $now - self::LOCKOUT_WINDOW)) {
-			$lockedFor = max(1, self::lockedFor($ipKey, self::MAX_FAILURES_PER_IP));
-			$this->error = 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+		$refused = self::countPasswordAttempt($accountName);
+		if ($refused !== null) {
+			$this->error = $refused;
 			$this->printAuth();
 			return;
-		}
-		if (!$knownBrowser) {
-			$wait = $failures->takeDelayed($userKey, self::USER_FREE_FAILURES, self::USER_MAX_DELAY, $now, $now - self::LOCKOUT_WINDOW);
-			if ($wait > 0) {
-				$failures->giveBack($ipKey);
-				$this->error = 'Too many failed logins for this account. Please try again in ' . $wait . ' second(s).';
-				$this->printAuth();
-				return;
-			}
 		}
 
 		// Unknown usernames are counted too, so a lockout doesn't reveal which ones exist
@@ -149,11 +131,7 @@ class Auth
 			return;
 		}
 
-		// A good login ends the count for its own account. The address only gets this one
-		// attempt back: any account holder could otherwise reset the count for an address
-		// that is guessing another account's password.
-		$failures->clear(array($userKey));
-		$failures->giveBack($ipKey);
+		self::passwordAttemptSucceeded($user['username']);
 		self::rememberBrowser($user['username']);
 
 		if (self::needsRehash($user['password'])) {
@@ -232,6 +210,42 @@ class Auth
 		}
 
 		return (int) $user['acclevel'];
+	}
+
+	// Counts a password check for $accountName (a login, or the current password asked
+	// before a change). Each attempt is counted before the password is checked, in one
+	// statement per key, so requests sent in parallel can't all pass a check made
+	// before any of them is counted. A refused attempt is refused before the password
+	// is checked too, so guesses made while refused tell nothing. Returns the message
+	// to show when the attempt is refused, or null when the password can be checked.
+	static function countPasswordAttempt($accountName)
+	{
+		$failures = self::loginFailures();
+		$ipKey = self::ipFailureKey();
+		$now = time();
+
+		if (!$failures->take($ipKey, self::MAX_FAILURES_PER_IP, $now, $now - self::LOCKOUT_WINDOW)) {
+			$lockedFor = max(1, self::lockedFor($ipKey, self::MAX_FAILURES_PER_IP));
+			return 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+		}
+		if (!self::isKnownBrowser($accountName)) {
+			$wait = $failures->takeDelayed(self::userFailureKey($accountName), self::USER_FREE_FAILURES, self::USER_MAX_DELAY, $now, $now - self::LOCKOUT_WINDOW);
+			if ($wait > 0) {
+				$failures->giveBack($ipKey);
+				return 'Too many failed logins for this account. Please try again in ' . $wait . ' second(s).';
+			}
+		}
+
+		return null;
+	}
+
+	// The password was right: the count for its own account ends. The address only gets
+	// this one attempt back: any account holder could otherwise reset the count for an
+	// address that is guessing another account's password.
+	static function passwordAttemptSucceeded($accountName)
+	{
+		self::loginFailures()->clear(array(self::userFailureKey($accountName)));
+		self::loginFailures()->giveBack(self::ipFailureKey());
 	}
 
 	// Whether the signed-in session is older than SESSION_MAX_AGE. A session opened

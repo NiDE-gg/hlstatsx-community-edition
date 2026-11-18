@@ -977,6 +977,7 @@ $admintasks['ribbons'] = new AdminTask('Ribbons (triggered by Awards)', 80, 'gam
 
 // Tools
 $admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 100, 'tool', 'Reload or stop your HLX: CE Daemons');
+$admintasks['tools_mypassword'] = new AdminTask('Change My Password', 80, 'tool', 'Choose a new password for the account you are signed in with.');
 $admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 80, 'tool', 'Edit a player or clan\'s profile information.');
 $admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 100, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
 $admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');
