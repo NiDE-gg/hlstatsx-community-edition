@@ -5,10 +5,62 @@ WARNING: Heatmap generation will consume alot of processor time.  Please be sure
 300k kills on one map will take ~10min to generate on one 2.4Ghz core processor.
 
 Install:
-	- change user, password, database and path to your "web" folder in config.inc.php
-	- download the appropriate heatmap pack from the dev branch /extras/HeatmapPack/  and put into "src"
+	- set DB_HOST, DB_USERNAME, DB_PASSWORD and DB_NAME in the .env file at the
+	  repository root (the same file the web pages use, see .env.example), or as
+	  environment variables. HEATMAP_WEB_PATH sets the web folder the images are
+	  written to (default: the web folder of this checkout).
+	- put one overview image per map in src/<game>/<map>.jpg (see below).
 
 To generate heatmaps:
 	- run: php generate.php
+	  (--game=<code> and --map=<name> limit the run, --disable-cache starts again
+	  from scratch, --ignore-infected skips L4D infected deaths)
 
-report problems to hlx forums or irc
+Output: <web>/hlstatsimg/games/<game code>/heatmaps/<map>-kill.jpg and
+<map>-kill-thumb.jpg, shown on the map page.
+
+
+Source images
+-------------
+
+The "HeatmapPack" of ready-made images (once downloaded from hlxce.com / the
+HLX-Extras repository) is no longer available anywhere. Each map needs a JPEG
+of its overview (radar) image:
+
+	src/<game>/<map>.jpg
+
+<game> is the "game" column of hlstats_Heatmap_Config (the realgame, e.g. css,
+cstrike, tf), <map> the map name. Only letters, digits, "_", "-", "!", "+" and "."
+are accepted in both.
+
+How kill positions are placed on the image (hlstats_Heatmap_Config):
+
+	pixel_x = (pos_x + xoffset) / scale
+	pixel_y = (pos_y + yoffset) / scale     (pos_y is negated first when flipy = 1,
+	                                         pos_x when flipx = 1)
+
+rotate = 1 swaps x and y. The shipped rows match the images of the old pack:
+an image made another way needs its own values.
+
+For Source games, the overview the game itself uses is the easiest source:
+	- the image: materials/overviews/<map>_radar.vtf (or .dds), converted to JPEG
+	  at its original size (usually 1024x1024) with any VTF tool;
+	- the position: resource/overviews/<map>.txt has "pos_x", "pos_y" and
+	  "scale" for that image. Set
+		xoffset = -pos_x
+		yoffset = pos_y
+		scale   = scale
+		flipx = 0, flipy = 1, rotate = 0 (try rotate = 1 if that file has "rotate" "1")
+
+	  UPDATE hlstats_Heatmap_Config SET xoffset = ..., yoffset = ..., scale = ...,
+	         flipx = 0, flipy = 1, rotate = 0
+	  WHERE game = '<game>' AND map = '<map>';
+
+A map with no row in hlstats_Heatmap_Config is not generated: insert one with
+the same columns.
+
+Other columns: days (how far back kills are read), brush (small or large),
+font (HUD text size), thumbw/thumbh (thumbnail size as a fraction of the image),
+cropx1/cropy1/cropx2/cropy2 (crop before saving, 0 = none).
+
+report problems to the issue tracker of this repository
