@@ -1,4 +1,5 @@
 package HLstats_Game;
+use warnings;
 # HLstatsX Community Edition - Real-time player and clan rankings and statistics
 # Copyleft (L) 2008-20XX Nicholas Hastings (nshastings@gmail.com)
 # http://www.hlxcommunity.com

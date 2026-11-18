@@ -1,4 +1,5 @@
 package HLstats_Server;
+use warnings;
 # HLstatsX Community Edition - Real-time player and clan rankings and statistics
 # Copyleft (L) 2008-20XX Nicholas Hastings (nshastings@gmail.com)
 # http://www.hlxcommunity.com
@@ -339,7 +340,7 @@ sub set
 	
 	if (defined($self->{$key}))
 	{
-		if ($self->{$key} eq $value)
+		if (($self->{$key} // "") eq ($value // ""))
 		{
 			if ($::g_debug > 2)
 			{
@@ -668,7 +669,7 @@ sub get_map
 				}
 			}
 				
-			if ($update > 0 && $fromupdate == 0) {
+			if ($update > 0 && !$fromupdate) {
 				$self->updateDB();
 			}
 		  

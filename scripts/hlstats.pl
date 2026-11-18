@@ -35,7 +35,28 @@
 # For support and installation notes visit http://www.hlxcommunity.com
 
 use strict;
-no strict 'vars';
+use warnings;
+
+# The daemon's globals, shared with the .plib files (loaded with "do", in this
+# package) and the modules (as $::name). Declared so that "use strict" also checks
+# variable names: a misspelled one no longer silently becomes a new global.
+our ($opt_configfile, $opt_libdir, $last_trend_timestamp, $s_addr, %g_servers, $ev_daemontime, $g_debug, $g_global_chat);
+our ($i, %g_eventTables, $g_event_queue_size, $g_skill_maxchange, $g_skill_minchange, $g_skill_ratio_cap, $j, %g_games);
+our ($cmd_str, $desc, $g_player_minkills, $rcmd, %g_players, $db_conn, $g_mode, $md5);
+our ($plainuniqueid, %g_lan_noplayerinfo, $db_host, $db_pass, $db_user, $g_preconnect, $g_shutting_down, $opt_help);
+our ($opt_version, $db_lowpriority, $db_name, $g_deletedays, $g_mailpath, $g_mailto, $g_nodebug, $g_rcon);
+our ($g_requiremap, $s_ip, $s_port, $g_cpanelhack, $g_dns_resolveip, $g_rcon_ignoreself, $g_rcon_record, $g_server_ip);
+our ($g_server_port, $g_stdin, $g_timestamp, $g_unknown_probe_last, %g_unknown_servers, $g_dns_timeout, $g_geoip_binary, $g_gi);
+our ($g_global_banning, $g_log_chat, $g_log_chat_admins, $g_onlyconfig_servers, $g_ranktype, $g_track_stats_trend, $usage, %directives_mysql);
+our (%g_config_servers, $conf, $proxy_key, %copts, %directives, $configfile, $ev_timestamp, $ev_unixtime);
+our ($g_version, $s_peerhost, $g_build_info, $ip, $s_peerport, $s_socket, $c, $import_logs_count);
+our ($loop, $s_output, $start_parse_time, $start_time, $timeout, $g_proxykey_warned, $parse_time, $rproxy_key);
+our ($bytes, $cmd, $ev_month, $g_notallowed_warned, %g_logsecret_warned, $ev_day, $ev_hour, $ev_min);
+our ($ev_remotetime, $ev_sec, $ev_time, $ev_year, $ev_Xcoord, $ev_XcoordKV, $ev_Ycoord, $ev_YcoordKV);
+our ($ev_Zcoord, %ev_properties_hash, $ev_ZcoordKV, $ev_l4dXcoord, $ev_l4dXcoordKV, $ev_l4dYcoord, $ev_l4dZcoord, $headshot);
+our ($ev_l4dXcoordV, $ev_l4dYcoordKV, $ev_l4dYcoordV, $ev_l4dZcoordKV, $ev_l4dZcoordV, $ev_victim, $playerinfo, $victiminfo);
+our ($ev_clantag, $ev_queryId, $numcappers, $uniqueid, $userid, $ev_isbad, $ev_obj_d, $player);
+our ($player_a, $player_b, $ev_bantime, $s_lines, @cmds, $end_time);
 
 $SIG{HUP} = 'HUP_handler';
 $SIG{INT} = 'INT_handler';
@@ -961,6 +982,9 @@ sub getServerMod
 			);
 
 	my ($gamename, $gamedir, $hostname, $numplayers, $maxplayers, $mapname) = &queryServer($address, $port, @query);
+	# No answer: every field is undefined, and the tests below find no game
+	$gamename //= "";
+	$gamedir //= "";
 
 	if ($gamename =~ /^Counter-Strike$/i) {
 		$playgame = "cstrike";
@@ -1211,7 +1235,7 @@ sub getPlayerInfo
 			}
 		}
 
-		if ($ipAddr eq "none") {
+		if (($ipAddr // "") eq "none") {
 			$ipAddr = "";
 		}
 		
@@ -1313,7 +1337,7 @@ sub getPlayerInfo
 						$team
 					);
 				}
-				if ($role ne "" && $role ne $player->{role}) {
+				if (($role // "") ne "" && $role ne ($player->{role} // "")) {
 					&doEvent_RoleSelection(
 						$player->{"userid"},
 						$player->{"uniqueid"},
@@ -2202,7 +2226,8 @@ while ($loop = &getLine()) {
 			$s_peerhost  = $s_socket->peerhost;
 			$s_peerport  = $s_socket->peerport;
 
-			$s_addr = "$s_peerhost:$s_peerport";
+			# Both undefined when nothing was received (timeout): ":" as before
+			$s_addr = ($s_peerhost // "") . ":" . ($s_peerport // "");
 		}
 	}
 
@@ -2214,7 +2239,7 @@ while ($loop = &getLine()) {
 		# (web panel, proxy heartbeat), or comes from this host when no key is set.
 		# A line forwarded by proxy-daemon.pl carries a game server's address: it is a
 		# log line, even though it arrives wrapped in the key.
-		my $keyedControl = ($proxy_key ne "" && $proxy_key eq $rproxy_key && $s_addr eq "");
+		my $keyedControl = ($proxy_key ne "" && $proxy_key eq ($rproxy_key // "") && $s_addr eq "");
 		my $localControl = ($proxy_key eq "" && $s_peerhost eq "127.0.0.1");
 		if ($cmd eq "C" && ($keyedControl || $localControl)) {
 			&printEvent("CONTROL", "Command received: ".$data[1], 1);
@@ -2358,21 +2383,21 @@ while ($loop = &getLine()) {
 				my %s_cfg = %{$g_config_servers{$s_addr}};
 				$g_servers{$s_addr}->set("minplayers", $s_cfg{"MinPlayers"});
 				$g_servers{$s_addr}->set("hlstats_url", $s_cfg{"HLStatsURL"});
-				if ($s_cfg{"DisplayResultsInBrowser"} > 0) {
+				if (($s_cfg{"DisplayResultsInBrowser"} // 0) > 0) {
 					$g_servers{$s_addr}->set("use_browser",  1);
 					&printEvent("SERVER", "Query results will displayed in valve browser", 1); 
 				} else { 
 					$g_servers{$s_addr}->set("use_browser",  0);
 					&printEvent("SERVER", "Query results will not displayed in valve browser", 1); 
 				}
-				if ($s_cfg{"ShowStats"} == 1) {
+				if (($s_cfg{"ShowStats"} // 0) == 1) {
 					$g_servers{$s_addr}->set("show_stats",  1);
 					&printEvent("SERVER", "Showing stats is enabled", 1); 
 				} else {
 					$g_servers{$s_addr}->set("show_stats",  0);
 					&printEvent("SERVER", "Showing stats is disabled", 1); 
 				}
-				if ($s_cfg{"BroadCastEvents"} == 1) {  
+				if (($s_cfg{"BroadCastEvents"} // 0) == 1) {  
 					$g_servers{$s_addr}->set("broadcasting_events",  1);
 					$g_servers{$s_addr}->set("broadcasting_player_actions",  $s_cfg{"BroadCastPlayerActions"});
 					$g_servers{$s_addr}->set("broadcasting_command", $s_cfg{"BroadCastEventsCommand"});
@@ -2389,7 +2414,7 @@ while ($loop = &getLine()) {
 					$g_servers{$s_addr}->set("broadcasting_events",               0);
 					&printEvent("SERVER", "Broadcasting Live-Events is disabled", 1); 
 				}
-				if ($s_cfg{"PlayerEvents"} == 1) {
+				if (($s_cfg{"PlayerEvents"} // 0) == 1) {
 					$g_servers{$s_addr}->set("player_events",  1);
 					$g_servers{$s_addr}->set("player_command", $s_cfg{"PlayerEventsCommand"});
 					$g_servers{$s_addr}->set("player_command_osd", $s_cfg{"PlayerEventsCommandOSD"});
@@ -2403,14 +2428,14 @@ while ($loop = &getLine()) {
 					$g_servers{$s_addr}->set("player_events",                 0);
 					&printEvent("SERVER", "Player Event-Handler is disabled", 1); 
 				}
-				if ($s_cfg{"DefaultDisplayEvents"} > 0) {
+				if (($s_cfg{"DefaultDisplayEvents"} // 0) > 0) {
 					$g_servers{$s_addr}->set("default_display_events", "1");
 					&printEvent("SERVER", "New Players defaulting to show event messages", 1);
 				} else {
 					$g_servers{$s_addr}->set("default_display_events", "0");
 					&printEvent("SERVER", "New Players defaulting to NOT show event messages", 1);
 				}
-				if ($s_cfg{"TrackServerLoad"} > 0) {
+				if (($s_cfg{"TrackServerLoad"} // 0) > 0) {
 					$g_servers{$s_addr}->set("track_server_load", "1");
 					&printEvent("SERVER", "Tracking server load is enabled", 1);
 				} else {
@@ -2418,30 +2443,30 @@ while ($loop = &getLine()) {
 					&printEvent("SERVER", "Tracking server load is disabled", 1);
 				}
 
-				if ($s_cfg{"TKPenalty"} > 0) {
+				if (($s_cfg{"TKPenalty"} // 0) > 0) {
 					$g_servers{$s_addr}->set("tk_penalty", $s_cfg{"TKPenalty"});
 					&printEvent("SERVER", "Penalty team kills with ".$s_cfg{"TKPenalty"}." points", 1);
 				}  
-				if ($s_cfg{"SuicidePenalty"} > 0) {
+				if (($s_cfg{"SuicidePenalty"} // 0) > 0) {
 					$g_servers{$s_addr}->set("suicide_penalty", $s_cfg{"SuicidePenalty"});
 					&printEvent("SERVER", "Penalty suicides with ".$s_cfg{"SuicidePenalty"}." points", 1);
 				}  
-				if ($s_cfg{"BonusRoundTime"} > 0) {
+				if (($s_cfg{"BonusRoundTime"} // 0) > 0) {
 					$g_servers{$s_addr}->set("bonusroundtime", $s_cfg{"BonusRoundTime"});
 					&printEvent("SERVER", "Bonus Round time set to: ".$s_cfg{"BonusRoundTime"}, 1);
 				} 
-				if ($s_cfg{"BonusRoundIgnore"} > 0) {
+				if (($s_cfg{"BonusRoundIgnore"} // 0) > 0) {
 					$g_servers{$s_addr}->set("bonusroundignore", $s_cfg{"BonusRoundIgnore"});
 					&printEvent("SERVER", "Bonus Round is being ignored. Length: (".$s_cfg{"BonusRoundTime"}.")", 1);
 				}
-				if ($s_cfg{"AutoTeamBalance"} > 0) {
+				if (($s_cfg{"AutoTeamBalance"} // 0) > 0) {
 					$g_servers{$s_addr}->set("ba_enabled", "1");
 					&printEvent("TEAMS", "Auto-Team-Balancing is enabled", 1);
 				} else {
 					$g_servers{$s_addr}->set("ba_enabled", "0");
 					&printEvent("TEAMS", "Auto-Team-Balancing is disabled", 1);
 				}
-				if ($s_cfg{"AutoBanRetry"} > 0) {
+				if (($s_cfg{"AutoBanRetry"} // 0) > 0) {
 					$g_servers{$s_addr}->set("auto_ban", "1");
 					&printEvent("TEAMS", "Auto-Retry-Banning is enabled", 1);
 				} else {
@@ -2449,7 +2474,7 @@ while ($loop = &getLine()) {
 					&printEvent("TEAMS", "Auto-Retry-Banning is disabled", 1);
 				}
 				
-				if ($s_cfg{"MinimumPlayersRank"} > 0) {
+				if (($s_cfg{"MinimumPlayersRank"} // 0) > 0) {
 					$g_servers{$s_addr}->set("min_players_rank", $s_cfg{"MinimumPlayersRank"});
 					&printEvent("SERVER", "Requires minimum players rank is enabled [MinPos:".$s_cfg{"MinimumPlayersRank"}."]", 1);
 				} else {
@@ -2457,7 +2482,7 @@ while ($loop = &getLine()) {
 					&printEvent("SERVER", "Requires minimum players rank is disabled", 1);
 				}
 				
-				if ($s_cfg{"EnablePublicCommands"} > 0) {
+				if (($s_cfg{"EnablePublicCommands"} // 0) > 0) {
 					$g_servers{$s_addr}->set("public_commands", $s_cfg{"EnablePublicCommands"});
 					&printEvent("SERVER", "Public chat commands are enabled", 1);
 				} else {
@@ -2474,7 +2499,7 @@ while ($loop = &getLine()) {
 					&printEvent("SERVER", "Admins: ".$s_cfg{"Admins"}, 1);
 				}
 
-				if ($s_cfg{"SwitchAdmins"} > 0) {
+				if (($s_cfg{"SwitchAdmins"} // 0) > 0) {
 					$g_servers{$s_addr}->set("switch_admins", "1");
 					&printEvent("TEAMS", "Switching Admins on Auto-Team-Balance is enabled", 1);
 				} else {
@@ -2482,7 +2507,7 @@ while ($loop = &getLine()) {
 					&printEvent("TEAMS", "Switching Admins on Auto-Team-Balance is disabled", 1);
 				}
 				
-				if ($s_cfg{"IgnoreBots"} > 0) {
+				if (($s_cfg{"IgnoreBots"} // 0) > 0) {
 					$g_servers{$s_addr}->set("ignore_bots", "1");
 					&printEvent("SERVER", "Ignoring bots is enabled", 1);
 				} else {
@@ -2492,7 +2517,7 @@ while ($loop = &getLine()) {
 				$g_servers{$s_addr}->set("skill_mode", $s_cfg{"SkillMode"});
 				&printEvent("SERVER", "Using skill mode ".$s_cfg{"SkillMode"}, 1);
 				
-				if ($s_cfg{"GameType"} == 1) {
+				if (($s_cfg{"GameType"} // 0) == 1) {
 					$g_servers{$s_addr}->set("game_type", $s_cfg{"GameType"});
 					&printEvent("SERVER", "Game type: Counter-Strike: Source - Deathmatch", 1);
 				} else {
@@ -2505,14 +2530,14 @@ while ($loop = &getLine()) {
 				if ($s_cfg{"Mod"} ne "") {
 					&printEvent("SERVER", "Using plugin ".$s_cfg{"Mod"}." for internal functions!", 1);
 				}
-				if ($s_cfg{"ConnectAnnounce"} == 1) {
+				if (($s_cfg{"ConnectAnnounce"} // 0) == 1) {
 					$g_servers{$s_addr}->set("connect_announce", $s_cfg{"ConnectAnnounce"});
 					&printEvent("SERVER", "Connect Announce is enabled", 1);
 				} else {
 					$g_servers{$s_addr}->set("connect_announce", "0");
 					&printEvent("SERVER", "Connect Announce is disabled", 1);
 				}
-				if ($s_cfg{"UpdateHostname"} == 1) {
+				if (($s_cfg{"UpdateHostname"} // 0) == 1) {
 					$g_servers{$s_addr}->set("update_hostname", $s_cfg{"UpdateHostname"});
 					&printEvent("SERVER", "Auto-updating hostname is enabled", 1);
 				} else {
@@ -3848,7 +3873,7 @@ EOT
 		
 		while( my($table) = each(%g_eventtable_data))
 		{
-			if ($g_eventtable_data{$table}{lastflush} + 30 < $ev_daemontime)
+			if (($g_eventtable_data{$table}{lastflush} // 0) + 30 < $ev_daemontime)
 			{
 				flushEventTable($table);
 			}
