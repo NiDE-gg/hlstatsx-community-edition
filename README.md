@@ -59,6 +59,10 @@ The code cannot do these for you:
 - Firewall the daemon's UDP port (32578 by default) so only your game servers can reach it.
 - Give staff the *Restricted* access level (80) only for clan tags, weapons, teams, roles, ranks, ribbons, awards and actions, editing player and clan details, host statistics and the player IP search. Restricted accounts can see players' IP and e-mail addresses. Everything else needs *Administrator* (100).
 
+### :package: Game server plugins
+
+The compiled SourceMod (`.smx`) and AMX Mod X (`.amxx`) plugins are attached to every [release](https://github.com/NiDE-gg/hlstatsx-community-edition/releases/latest), built by CI from `sourcemod/scripting` and `amxmodx/scripting`. The `.smx` are no longer committed to the repository.
+
 ### :book: Documentation
 * https://github.com/NomisCZ/hlstatsx-community-edition/wiki 🚧 Wiki - work in progress 🚧
 ### :speech_balloon: Help
