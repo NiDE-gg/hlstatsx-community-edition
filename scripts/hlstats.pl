@@ -904,24 +904,39 @@ sub getServer
 sub queryServer
 {
 	my ($iaddr, $iport, @query)            = @_;
-	my $game = "";
 	my $timeout=2;
+	my $request = "\xFF\xFF\xFF\xFFTSource Engine Query\x00";
+	# A connected UDP socket: the kernel drops replies from any other address
 	my $message = IO::Socket::INET->new(Proto=>"udp",Timeout=>$timeout,PeerPort=>$iport,PeerAddr=>$iaddr) or die "Can't make UDP socket: $@";
-	$message->send("\xFF\xFF\xFF\xFFTSource Engine Query\x00");
+	$message->send($request);
 	my ($datagram,$flags);
 	my $end = time + $timeout;
 	my $rin = '';
 	vec($rin, fileno($message), 1) = 1;
+	my $challenged = 0;
 
 	my %hash = ();
 
+	# Returns as soon as the server has answered (the loop used to wait for the
+	# whole timeout, holding the main loop for 2 seconds on every query)
 	while (1) {
 		my $timeleft = $end - time;
 		last if ($timeleft <= 0);
 		my ($nfound, $t) = select(my $rout = $rin, undef, undef, $timeleft);
 		last if ($nfound == 0); # either timeout or end of file
-		$message->recv($datagram,1024,$flags);
+		last if (!defined($message->recv($datagram,1400,$flags)));
+		next if (length($datagram) < 5);
+		my $type = unpack("x4C", $datagram);
+		if ($type == 0x41 && length($datagram) >= 9 && !$challenged) {
+			# Servers updated since 2020 first answer with a challenge (S2C_CHALLENGE)
+			# that the query has to repeat
+			$challenged = 1;
+			$message->send($request . substr($datagram, 5, 4));
+			next;
+		}
+		next if ($type != 0x49);
 		@hash{qw/key type netver hostname mapname gamedir gamename id numplayers maxplayers numbots dedicated os passreq secure gamever edf port/} = unpack("LCCZ*Z*Z*Z*vCCCCCCCZ*Cv",$datagram);
+		last;
 	}
 
 	return @hash{@query};
@@ -1565,6 +1580,9 @@ $g_rcon = 1;
 $g_rcon_ignoreself = 0;
 $g_rcon_record = 1;
 $g_stdin = 0;
+# Unknown sources (AllowOnlyConfigServers=0): address => time of the last probe
+%g_unknown_servers = ();
+$g_unknown_probe_last = 0;
 $g_server_ip = "";
 $g_server_port = 27015;
 $g_timestamp = 0;
@@ -2262,6 +2280,35 @@ while ($loop = &getLine()) {
 				}
 				next;
 			} elsif (!defined($g_config_servers{$s_addr})) { # create std cfg.
+				# AllowOnlyConfigServers=0: any address can send a line, and the source
+				# of a UDP packet can be spoofed. Probing it blocks the main loop, so at
+				# most one unknown address is probed every 5 seconds, an address that
+				# did not answer as a game server is not probed again for 10 minutes,
+				# and nothing is kept in memory for it until it has answered.
+				my $now = time();
+				next if (($g_unknown_servers{$s_addr} // 0) > $now - 600);
+				next if ($g_unknown_probe_last > $now - 5);
+				$g_unknown_probe_last = $now;
+				if (scalar(keys %g_unknown_servers) >= 1000) {
+					delete @g_unknown_servers{grep { $g_unknown_servers{$_} <= $now - 600 } keys %g_unknown_servers};
+					%g_unknown_servers = () if (scalar(keys %g_unknown_servers) >= 1000);
+				}
+				$g_unknown_servers{$s_addr} = $now;
+				# Already in hlstats_Servers (added in the admin panel since the last
+				# config load): reload instead of inserting it a second time
+				my $known = &execCached("get_server_known", "SELECT serverId FROM hlstats_Servers WHERE address=? AND port=? LIMIT 1", $s_peerhost, $s_peerport);
+				my $isKnown = $known->rows;
+				$known->finish;
+				if ($isKnown) {
+					&readDatabaseConfig();
+				} else {
+					my $mod = &getServerMod($s_peerhost, $s_peerport);
+					&printEvent("DETECT", "New server with game: " . $mod);
+					next if (!$mod);
+				}
+				delete $g_unknown_servers{$s_addr};
+			}
+			if (!defined($g_config_servers{$s_addr})) { # still unknown to the config: std cfg.
 				my %std_cfg;
 				$std_cfg{"MinPlayers"}						= 6;
 				$std_cfg{"HLStatsURL"}						= "";
@@ -2297,7 +2344,6 @@ while ($loop = &getLine()) {
 				$std_cfg{"LogSecret"}						= "";
 				%{$g_config_servers{$s_addr}}				= %std_cfg;
 				&printEvent("CFG", "Created default config for unknown server [$s_addr]");
-				&printEvent("DETECT", "New server with game: " . &getServerMod($s_peerhost, $s_peerport));
 			}
 			
 			if ($g_config_servers{$s_addr}) {
