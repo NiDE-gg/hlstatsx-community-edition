@@ -8,7 +8,7 @@ HLstatsX Community Edition (NiDE-gg fork of NomisCZ/hlstatsx-community-edition):
 
 There is no build system, test suite or package manager (no composer/npm). Verify PHP changes with `php -l <file>` and Perl changes with `perl -c scripts/hlstats.pl` (run from `scripts/`, needs DBI/DBD::mysql installed).
 
-CI (`.github/workflows/`) runs one workflow per tool, each triggered only by changes under its own paths: PHP syntax on PHP 8.5 (`php-lint.yml`), `perl -c` on every `.pl`, `.pm` and `.plib` (`perl-lint.yml`; `hlstats.pl` loads the `.plib` files with `do`, so `perl -c hlstats.pl` alone never compiles them), ShellCheck at error severity (`shellcheck.yml`), SourcePawn compile with SourceMod 1.12 and 1.13 (`sourcepawn.yml`, compiled `.smx` uploaded as an artifact), updater/`install.sql` consistency (`db-updaters.yml` → `.github/scripts/check-updaters.sh`), hadolint + image build on PRs (`dockerfile-lint.yml`) and actionlint (`actionlint.yml`).
+CI (`.github/workflows/`) runs one workflow per tool, each triggered only by changes under its own paths: PHP syntax on PHP 8.5 (`php-lint.yml`), `perl -c` on every `.pl`, `.pm` and `.plib` (`perl-lint.yml`; `hlstats.pl` loads the `.plib` files with `do`, so `perl -c hlstats.pl` alone never compiles them), ShellCheck at error severity (`shellcheck.yml`), SourcePawn compile with SourceMod 1.12 and 1.13 (`sourcepawn.yml`, compiled `.smx` uploaded as an artifact), AMX Mod X compile with the pinned official 1.10 `amxxpc` (`amxmodx.yml` → `.github/scripts/compile-amxx.sh`, warnings fail, `.amxx` also attached to releases), updater/`install.sql` consistency (`db-updaters.yml` → `.github/scripts/check-updaters.sh`), hadolint + image build on PRs (`dockerfile-lint.yml`) and actionlint (`actionlint.yml`).
 
 ## Contribution workflow
 
@@ -30,7 +30,7 @@ scripts/hlstats-awards.pl  -- daily cron: awards, ranks, cleanup
 
 - **`scripts/`** — Perl daemon. `hlstats.pl` is the main loop (log parsing, skill calc, DB writes); it `require`s `HLstats_Server.pm`, `HLstats_Player.pm`, `HLstats_Game.pm`, RCON modules (`TRcon.pm`, `BASTARDrcon.pm`), and `do`s `HLstats_EventHandlers.plib` (per-event handlers). Config is `scripts/hlstats.conf` (DB credentials, bind IP/port); most runtime options are read from the `hlstats_Options` table. `run_hlstats` is the start/stop wrapper; `proxy-daemon.pl` forwards logs.
 - **`web/`** — PHP frontend (see below).
-- **`sourcemod/scripting/*.sp`**, **`amxmodx/scripting`** — game-server plugins (SourcePawn/Pawn) that emit extended log lines (`superlogs-*`) and handle in-game commands. Compiled `.smx`/`.amxx` are committed in `sourcemod/compiled` and `amxmodx/plugins`; recompile with the SourceMod/AMX Mod X compiler when editing sources.
+- **`sourcemod/scripting/*.sp`**, **`amxmodx/scripting`** — game-server plugins (SourcePawn/Pawn) that emit extended log lines (`superlogs-*`) and handle in-game commands. Compiled `.smx`/`.amxx` are committed in `sourcemod/compiled` and `amxmodx/plugins`; recompile with the SourceMod/AMX Mod X compiler when editing sources (for `.amxx`, run `.github/scripts/compile-amxx.sh amxmodx/plugins` on Linux with the i386 runtime: the output is reproducible).
 - **`sql/`** — `install.sql` is the full schema + seed data for fresh installs. `Upgrade x - y/` folders are legacy manual upgrades (pre-1.6.2). `migrations/` holds standalone SQL fixes.
 - **`heatmaps/`** — standalone PHP heatmap generator (`generate.php`, own `config.inc.php`).
 
