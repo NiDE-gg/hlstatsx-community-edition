@@ -113,12 +113,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<!-- U R A SMACKHEAD -->
 
 	<link rel="SHORTCUT ICON" href="favicon.ico" />
-	<script src="<?php echo asset_url(INCLUDE_PATH . '/js/hlstats.js'); ?>" defer></script>
-	<script src="<?php echo asset_url(INCLUDE_PATH . '/js/heatmap.js'); ?>" defer></script>
+	<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/hlstats.js'); ?>" defer></script>
+	<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/heatmap.js'); ?>" defer></script>
 <?php
 	if ($g_options['playerinfo_tabs'] == '1') {
 ?>
-	<script src="<?php echo asset_url(INCLUDE_PATH . '/js/tabs.js'); ?>" defer></script>
+	<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/tabs.js'); ?>" defer></script>
 <?php
 	}
 ?>

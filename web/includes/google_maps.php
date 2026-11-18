@@ -50,7 +50,7 @@ function printMap($type = 'main')
 	global $db, $game, $g_options, $clandata, $clan;
 
 	if ($type == 'main') {
-		echo ('<script src="https://maps.googleapis.com/maps/api/js?callback=Function.prototype&amp;key=' . rawurlencode(GOOGLE_MAPS_API_KEY) . '" type="text/javascript"></script>' . "\n");
+		echo ('<script nonce="' . cspNonce() . '" src="https://maps.googleapis.com/maps/api/js?callback=Function.prototype&amp;key=' . rawurlencode(GOOGLE_MAPS_API_KEY) . '" type="text/javascript"></script>' . "\n");
 	}
 
 	$mapCenter = getMapCenter(($type == 'clan' && $clandata['mapregion'] != '') ? $clandata['mapregion'] : $g_options['google_map_region']);
@@ -248,7 +248,7 @@ function printMap($type = 'main')
 	$bootstrap['preload'] = $preloadImages;
 
 	echo '<script type="application/json" id="hlstats-map-data-' . htmlspecialchars($type, ENT_QUOTES) . '">' . jsEscape($bootstrap) . "</script>\n";
-	echo '<script type="text/javascript" src="' . asset_url(INCLUDE_PATH . '/js/maps.js') . '"></script>' . "\n";
+	echo '<script nonce="' . cspNonce() . '" src="' . asset_url(INCLUDE_PATH . '/js/maps.js') . '"></script>' . "\n";
 }
 
 // A player's coordinate as the public map shows it: about 10 km of precision

@@ -658,16 +658,40 @@ function message($icon, $msg)
 }
 
 /**
+ * cspNonce()
+ *
+ * Random value of this request for the Content-Security-Policy nonce, the same
+ * for every call during the request.
+ *
+ * @return string
+ */
+function cspNonce() : string
+{
+	static $nonce = null;
+
+	if ($nonce === null) {
+		$nonce = rtrim(strtr(base64_encode(random_bytes(18)), '+/', '-_'), '=');
+	}
+
+	return $nonce;
+}
+
+/**
  * sendPageSecurityHeaders()
  *
  * Browser-side limits for the HTML pages. They carry no inline JavaScript, so
  * scripts can be restricted to this site and injected markup can't run. Inline
  * styles are still used everywhere.
  *
- * The Maps JavaScript API needs the sources listed in Google's CSP guide. They
- * include 'unsafe-eval' and wildcard hosts serving user uploads, which weaken the
- * policy, so they are only added on pages showing the map, when it is switched
- * on. The guide's 'unsafe-inline' is left out: nothing here needs it.
+ * Pages showing the Google map use the strict policy of Google's CSP guide for the
+ * Maps JavaScript API: a script runs only if its tag carries this request's nonce
+ * (cspNonce(), on every <script src> this site prints) or if a script that did
+ * loaded it ('strict-dynamic': the Maps loader fetches the rest of the API).
+ * Host lists are then ignored for scripts, so the wildcard Google hosts that
+ * also serve user uploads (*.googleusercontent.com, *.ggpht.com) can't deliver
+ * one. The API still needs 'unsafe-eval'; "https:" and "blob:" only matter for
+ * browsers without 'strict-dynamic'. The guide's 'unsafe-inline' is left out:
+ * nothing here needs it. Only on those pages, when the map is switched on.
  *
  * @param bool $frameable false for pages an admin acts on (clickjacking)
  * @param bool $mapPage true for the pages that can show the Google map
@@ -681,7 +705,7 @@ function sendPageSecurityHeaders(bool $frameable = true, bool $mapPage = false) 
 
 	$policy = array(
 		"default-src 'self'",
-		"script-src 'self'" . ($maps ? " 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:" : ''),
+		"script-src " . ($maps ? "'nonce-" . cspNonce() . "' 'strict-dynamic' 'unsafe-eval' https: blob:" : "'self'"),
 		"style-src 'self' 'unsafe-inline'" . ($maps ? ' https://fonts.googleapis.com' : ''),
 		"img-src 'self' data: https:",
 		"font-src 'self' data:" . ($maps ? ' https://fonts.gstatic.com' : ''),

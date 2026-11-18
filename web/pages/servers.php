@@ -248,6 +248,6 @@ if (!defined('IN_HLSTATS')) {
 		</table>
 	</div>
 </div>
-<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>"></script>
-<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>"></script>
-<script type="text/javascript" src="<?php echo asset_url(INCLUDE_PATH . '/js/server-load-chart.js'); ?>"></script>
+<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart.js'); ?>"></script>
+<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/chart-zoom.js'); ?>"></script>
+<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/server-load-chart.js'); ?>"></script>

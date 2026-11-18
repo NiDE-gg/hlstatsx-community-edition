@@ -120,7 +120,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<div class="subblock">
 		<div style="float:left;">
 			<link rel="stylesheet" type="text/css" href="<?php echo asset_url('css/search-suggestions.css'); ?>">
-			<script src="<?php echo asset_url(INCLUDE_PATH . '/js/search-suggestions.js'); ?>"></script>
+			<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/search-suggestions.js'); ?>"></script>
 
 			<form method="get" action="<?php echo $g_options['scripturl']; ?>" style="margin:0px;padding:0px;">
 				<input type="hidden" name="mode" value="search" />
