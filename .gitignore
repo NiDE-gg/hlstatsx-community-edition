@@ -22,3 +22,5 @@ desktop.ini
 
 # Claude Code local settings
 /.claude/settings.local.json
+# Written by heatmaps/generate.php
+heatmaps/cache/
