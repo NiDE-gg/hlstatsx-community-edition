@@ -122,6 +122,13 @@ class Auth
 			return;
 		}
 
+		// Checked before the password, so a guess tells nothing about it
+		if ($user !== null && self::passkeyRequired($user)) {
+			$this->error = 'This account signs in with a passkey: use "Sign in with a passkey".';
+			$this->printAuth();
+			return;
+		}
+
 		// Unknown usernames are counted too, so a lockout doesn't reveal which ones exist
 		$passwordOk = self::verifyPassword($password, $user !== null ? $user['password'] : self::DUMMY_HASH);
 		if ($user === null || !$passwordOk) {
@@ -132,22 +139,12 @@ class Auth
 		}
 
 		self::passwordAttemptSucceeded($user['username']);
-		self::rememberBrowser($user['username']);
 
 		if (self::needsRehash($user['password'])) {
 			$user['password'] = self::upgradeHash($user['username'], $password, $user['password']);
 		}
 
-		session_regenerate_id(true);
-		unset($_SESSION['password']);
-		$_SESSION['loggedin'] = 1;
-		$_SESSION['username'] = $user['username'];
-		$_SESSION['acclevel'] = $user['acclevel'];
-		$_SESSION['authsessionStart'] = time();
-		$_SESSION['authloginTime'] = time();
-		$_SESSION['authhash'] = self::fingerprint($user['password']);
-		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-		$_SESSION['authdefaultpassword'] = ($password === self::DEFAULT_PASSWORD);
+		self::startSession($user, $password === self::DEFAULT_PASSWORD);
 
 		$this->userdata = $user;
 		$this->usesDefaultPassword = $_SESSION['authdefaultpassword'];
@@ -210,6 +207,46 @@ class Auth
 		}
 
 		return (int) $user['acclevel'];
+	}
+
+	// Signs $user (a hlstats_Users row) in, after a password or a passkey check: a new
+	// session id, a new CSRF token, and the times the session limits are counted from.
+	static function startSession(array $user, $defaultPassword)
+	{
+		self::rememberBrowser($user['username']);
+
+		session_regenerate_id(true);
+		unset($_SESSION['password'], $_SESSION['passkey_challenge']);
+		$_SESSION['loggedin'] = 1;
+		$_SESSION['username'] = $user['username'];
+		$_SESSION['acclevel'] = $user['acclevel'];
+		$_SESSION['authsessionStart'] = time();
+		$_SESSION['authloginTime'] = time();
+		$_SESSION['authreauthTime'] = time();
+		$_SESSION['authhash'] = self::fingerprint($user['password']);
+		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+		$_SESSION['authdefaultpassword'] = (bool) $defaultPassword;
+	}
+
+	// Administrators with a passkey only sign in with it when the passkey_required
+	// option is on. Errors (no table before the update) count as no passkey.
+	static function passkeyRequired(array $user)
+	{
+		require_once(INCLUDE_PATH . '/class_passkeys.php');
+
+		return Passkeys::requiredFor($user);
+	}
+
+	// Counts a sign-in attempt for the address only (a passkey nobody has registered)
+	static function countAddressAttempt()
+	{
+		$now = time();
+		if (!self::loginFailures()->take(self::ipFailureKey(), self::MAX_FAILURES_PER_IP, $now, $now - self::LOCKOUT_WINDOW)) {
+			$lockedFor = max(1, self::lockedFor(self::ipFailureKey(), self::MAX_FAILURES_PER_IP));
+			return 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+		}
+
+		return null;
 	}
 
 	// Counts a password check for $accountName (a login, or the current password asked
@@ -545,6 +582,7 @@ class Auth
 			$_SESSION['acclevel'],
 			$_SESSION['authsessionStart'],
 			$_SESSION['authloginTime'],
+			$_SESSION['authreauthTime'],
 			$_SESSION['authhash'],
 			$_SESSION['csrf_token'],
 			$_SESSION['authdefaultpassword']

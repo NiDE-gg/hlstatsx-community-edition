@@ -77,6 +77,18 @@ For support and installation notes visit http://www.hlxcommunity.com
 			Please ensure cookies are enabled in your browser security options.<br />
 			<!-- <strong>Note</strong> Do not select "Save my password" if other people will use this computer.</span>	<br /><br /> -->
 		</form>
+<?php
+		require_once(INCLUDE_PATH . '/class_passkeys.php');
+		if (Passkeys::unavailableReason() === null) {
+?>
+		<div style="margin-top:10px;">
+			<button type="button" class="submit" hidden data-passkey-login data-passkey-api="api/passkey.php" data-csrf="<?php echo eHtml(Auth::csrfToken()); ?>"> Sign in with a passkey </button>
+			<span class="fSmall" data-passkey-message></span>
+		</div>
+		<script nonce="<?php echo cspNonce(); ?>" src="<?php echo asset_url(INCLUDE_PATH . '/js/passkeys.js'); ?>" defer></script>
+<?php
+		}
+?>
 		</div>
 	</div>
 </div>
