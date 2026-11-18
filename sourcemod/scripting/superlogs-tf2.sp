@@ -29,7 +29,7 @@
 #include <sdkhooks> // http://forums.alliedmods.net/showthread.php?t=106748
 #define REQUIRE_EXTENSIONS
 
-#define VERSION "2.0.32"
+#define VERSION "2.0.33"
 #define NAME "SuperLogs: TF2"
 
 #define UNLOCKABLE_BIT (1<<30)
@@ -1275,9 +1275,11 @@ int GetWeaponIndex(const char[] weaponname, int client = 0, int weapon = -1)
 	int index;
 	bool unlockable;
 	int reflectindex = -1;
-	
-	if (strlen(weaponname) < 15)
-		return -1;
+	// Only the projectile test below reads characters 3 and 14 of the name
+	// ("tf_projectile_..."), so only it needs the name to be that long. The length
+	// check used to reject every name shorter than 15 characters, which dropped
+	// most weapons ("scattergun", "minigun", "deflect_rocket"...) from the stats.
+	int len = strlen(weaponname);
 	
 	if(GetTrieValue(h_weapontrie, weaponname, index))
 	{
@@ -1287,7 +1289,7 @@ int GetWeaponIndex(const char[] weaponname, int client = 0, int weapon = -1)
 			unlockable = true;
 			
 		}
-		if(weaponname[3] == 'p' && weapon > -1) // Projectile?
+		if(len > 14 && weaponname[3] == 'p' && weapon > -1) // Projectile?
 		{
 			if(client == GetEntProp(weapon, Prop_Send, "m_iDeflected"))
 			{
@@ -1298,7 +1300,7 @@ int GetWeaponIndex(const char[] weaponname, int client = 0, int weapon = -1)
 					case 'f':
 						reflectindex = GetWeaponIndex("deflect_flare");
 					case 'p':
-						if(weaponname[19] == 0) // we aren't a _remote
+						if(len == 18) // "tf_projectile_pipe", not a _remote
 							reflectindex = GetWeaponIndex("deflect_promode");
 					case 'r':
 						reflectindex = GetWeaponIndex("deflect_rocket");
