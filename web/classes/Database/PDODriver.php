@@ -35,6 +35,11 @@
 
             try {
                 $this->pdo = new PDO($dsn, $options->getUser(), $options->getPass(), $driverOptions);
+                // The legacy $db layer runs on this connection too (includes/class_db.php),
+                // and always set this collation; the DSN only sets the charset
+                if (defined('DB_COLLATE') && preg_match('/^[a-z0-9_]+$/', DB_COLLATE)) {
+                    $this->pdo->exec("SET collation_connection = '" . DB_COLLATE . "'");
+                }
             } catch (PDOException $e) {
                 $this->logger->error('Database connection failed: ' . $e->getMessage());
                 // The PDOException message names the DB user and host; it only goes to the log

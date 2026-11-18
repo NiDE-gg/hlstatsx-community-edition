@@ -140,7 +140,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			awardid=$award	
 	");
 
-	$numitems = mysqli_num_rows($resultCount);
+	$numitems = $db->num_rows($resultCount);
 
 ?>
 
