@@ -155,4 +155,3 @@ try {
 	error_log('HLstats passkey ' . $action . ' refused: ' . $e->getMessage());
 	passkeyAnswer(['error' => 'The passkey could not be verified.'], 403);
 }
-?>

@@ -546,4 +546,3 @@ function printserverstats($server_id)
 <?php			  	
 	}  // for servers
 }
-?>

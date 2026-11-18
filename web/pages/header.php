@@ -338,4 +338,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	</ul></nav>
 <?php
 	}
-?>  

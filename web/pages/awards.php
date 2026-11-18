@@ -128,4 +128,4 @@
         <div id="ribbons">
             <?php include PAGE_PATH . '/awards_ribbons.php'; ?>
         </div>
-    <?php endif; ?>
+    <?php endif;

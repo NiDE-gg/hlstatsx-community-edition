@@ -69,5 +69,3 @@ while ($rowdata = $db->fetch_array($result)) {
 	
 }
 print("</table>");
-
-?>

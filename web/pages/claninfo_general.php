@@ -413,4 +413,3 @@ printSectionTitle('Clan Information');
 		include(INCLUDE_PATH . '/google_maps.php');
 		printMap('clan');
 	}
-?>

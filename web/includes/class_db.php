@@ -83,19 +83,19 @@ class DB_mysql_result
  */
 class DB_mysql
 {
-	var $db_addr;
-	var $db_user;
-	var $db_pass;
-	var $db_name;
+	public $db_addr;
+	public $db_user;
+	public $db_pass;
+	public $db_name;
 
 	/** @var PDO|null */
-	var $pdo = null;
-	var $last_result;
-	var $last_query;
-	var $last_insert_id;
-	var $last_error = '';
-	var $profile = 0;
-	var $querycount = 0;
+	public $pdo = null;
+	public $last_result;
+	public $last_query;
+	public $last_insert_id;
+	public $last_error = '';
+	public $profile = 0;
+	public $querycount = 0;
 
 	function __construct($db_addr, $db_user, $db_pass, $db_name, $use_pconnect = false)
 	{
@@ -402,4 +402,3 @@ class DB_mysql
 		error('Database error. The details have been written to the web server error log.', $exit);
 	}
 }
-?>

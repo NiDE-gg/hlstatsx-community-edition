@@ -227,4 +227,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	");
 
 		$tblWeapons->draw($result, $db->num_rows($result), 100);
-?>

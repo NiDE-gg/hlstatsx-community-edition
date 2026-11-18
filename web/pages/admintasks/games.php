@@ -167,7 +167,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn("code", "Game Code", 10, true, "readonly", "", 16);
 	$edlist->columns[] = new EditListColumn("name", "Display Name", 30, true, "text", "", 128);
 	$edlist->columns[] = new EditListColumn("realgame", "Game", 50, true, "select", "hlstats_Games_Supported.name/code/", 128);
-	$edlist->columns[] = new EditListColumn("hidden", "<center>Hide Game</center>", 0, false, "checkbox");
+	$edlist->columns[] = new EditListColumn("hidden", '<div style="text-align:center;">Hide Game</div>', 0, false, "checkbox");
 	
 	
 	if ($_POST)

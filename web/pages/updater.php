@@ -100,4 +100,3 @@
 	}
 	
 	echo "<br /><br /><a href=\"" . $g_options['scripturl'] . "\">Back to the site</a>\n</div>\n";
-?>

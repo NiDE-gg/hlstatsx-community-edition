@@ -152,4 +152,3 @@ class Passkeys
 			&& self::repository()->countForUser($user['username']) > 0;
 	}
 }
-?>

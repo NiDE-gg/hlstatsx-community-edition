@@ -64,10 +64,10 @@ require_once(INCLUDE_PATH . '/class_auth.php');
 
 class AdminTask
 {
-	var $title = '';
-	var $acclevel = 0;
-	var $type = '';
-	var $description = '';
+	public $title = '';
+	public $acclevel = 0;
+	public $type = '';
+	public $description = '';
 	public $group;
 
 	function __construct($title, $acclevel, $type = 'general', $description = '', $group = '')
@@ -82,21 +82,21 @@ class AdminTask
 
 class EditList
 {
-	var $columns;
-	var $keycol;
-	var $table;
-	var $deleteCallback;
-	var $icon;
-	var $showid;
-	var $drawDetailsLink;
-	var $DetailsLink;
+	public $columns;
+	public $keycol;
+	public $table;
+	public $deleteCallback;
+	public $icon;
+	public $showid;
+	public $drawDetailsLink;
+	public $DetailsLink;
 
-	var $errors;
-	var $newerror;
+	public $errors;
+	public $newerror;
 
-	var $helpTexts;
-	var $helpKey;
-	var $helpDIV;
+	public $helpTexts;
+	public $helpKey;
+	public $helpDIV;
 
 	// Options of the select columns, by column name (see selectOptions())
 	private $selectOptions = array();
@@ -670,7 +670,7 @@ class EditList
 						$selected = '';
 					}
 
-					echo '<center><input type="checkbox" name="' . $keyvalHtml . "_$col->name\" value=\"$selectedval\"$selected /></center>";
+					echo '<div style="text-align:center;"><input type="checkbox" name="' . $keyvalHtml . "_$col->name\" value=\"$selectedval\"$selected /></div>";
 					break;
 					
 				case 'hidden':
@@ -737,13 +737,13 @@ class EditList
 
 class EditListColumn
 {
-	var $name;
-	var $title;
-	var $width;
-	var $required;
-	var $type;
-	var $datasource;
-	var $maxlength;
+	public $name;
+	public $title;
+	public $width;
+	public $required;
+	public $type;
+	public $datasource;
+	public $maxlength;
 
 	function __construct($name, $title, $width = 20, $required = false, $type = 'text', $datasource = '', $maxlength = 0)
 	{
@@ -759,10 +759,10 @@ class EditListColumn
 
 class PropertyPage
 {
-	var $table;
-	var $keycol;
-	var $keyval;
-	var $propertygroups = array();
+	public $table;
+	public $keycol;
+	public $keyval;
+	public $propertygroups = array();
 
 	function __construct($table, $keycol, $keyval, $groups)
 	{
@@ -824,8 +824,8 @@ class PropertyPage
 
 class PropertyPage_Group
 {
-	var $title = '';
-	var $properties = array();
+	public $title = '';
+	public $properties = array();
 
 	function __construct($title, $properties)
 	{
@@ -858,10 +858,10 @@ class PropertyPage_Group
 
 class PropertyPage_Property
 {
-	var $name;
-	var $title;
-	var $type;
-	var $datasource;
+	public $name;
+	public $title;
+	public $type;
+	public $datasource;
 
 	function __construct($name, $title, $type, $datasource = '')
 	{
@@ -1157,4 +1157,3 @@ if (isset($footerscript))
 {
     echo $footerscript;
 }
-?>

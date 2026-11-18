@@ -222,5 +222,4 @@ For support and installation notes visit http://www.hlxcommunity.com
 if ($db->num_rows($result) != 0)
 {
 		$tblWeaponstats2->draw($result, $db->num_rows($result), 100);
-}        
-	?>
+}

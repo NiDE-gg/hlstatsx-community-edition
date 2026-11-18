@@ -16,4 +16,3 @@ foreach (Env::get('mapinfo') as $game => $gameconf) {
 }
 
 show::Event("CREATE", "Heatmap creation done.", 1);
-?>

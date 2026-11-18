@@ -175,4 +175,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	");
 	
 	$table->draw($result, $db->num_rows($resultCount), 100);
-?>

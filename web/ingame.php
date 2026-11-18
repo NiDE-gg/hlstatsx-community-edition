@@ -121,6 +121,3 @@ else
 	error('Page not found.');
 
 pageFooter();
-
-?>
-

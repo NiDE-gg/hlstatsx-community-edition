@@ -202,5 +202,3 @@ if ($db->num_rows($result) != 0)
 {
 	$tblWeaponstats->draw($result, $db->num_rows($result), 100);
 }
-
-?>

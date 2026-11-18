@@ -124,4 +124,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 	$table->draw($result, $numitems, 100, 'center');
-?>

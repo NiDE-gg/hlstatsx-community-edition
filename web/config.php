@@ -288,5 +288,3 @@ function hlxStartSession()
 }
 
 unset($hlxEnv, $hlxEnvFile, $hlxEnvLine, $hlxEnvKey, $hlxEnvValue, $hlxSiteUrl);
-
-?>

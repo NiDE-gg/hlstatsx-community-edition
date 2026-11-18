@@ -152,4 +152,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<br /><br />
 <?php
 	}
-?>
