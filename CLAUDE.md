@@ -31,7 +31,7 @@ scripts/hlstats-awards.pl  -- daily cron: awards, ranks, cleanup
 - **`scripts/`** — Perl daemon. `hlstats.pl` is the main loop (log parsing, skill calc, DB writes); it `require`s `HLstats_Server.pm`, `HLstats_Player.pm`, `HLstats_Game.pm`, RCON modules (`TRcon.pm`, `BASTARDrcon.pm`), and `do`s `HLstats_EventHandlers.plib` (per-event handlers). Config is `scripts/hlstats.conf` (DB credentials, bind IP/port); most runtime options are read from the `hlstats_Options` table. `run_hlstats` is the start/stop wrapper; `proxy-daemon.pl` forwards logs.
 - **`web/`** — PHP frontend (see below).
 - **`sourcemod/scripting/*.sp`**, **`amxmodx/scripting`** — game-server plugins (SourcePawn/Pawn) that emit extended log lines (`superlogs-*`) and handle in-game commands. Compiled `.smx`/`.amxx` are committed in `sourcemod/compiled` and `amxmodx/plugins`; recompile with the SourceMod/AMX Mod X compiler when editing sources (for `.amxx`, run `.github/scripts/compile-amxx.sh amxmodx/plugins` on Linux with the i386 runtime: the output is reproducible).
-- **`sql/`** — `install.sql` is the full schema + seed data for fresh installs. `Upgrade x - y/` folders are legacy manual upgrades (pre-1.6.2). `migrations/` holds standalone SQL fixes.
+- **`sql/`** — `install.sql` is the full schema + seed data for fresh installs; every later change goes through `web/updater/<N>.php`. The legacy manual upgrades (pre-1.6.1 `Upgrade x - y/`, the `convert/` scripts from ELstatsNEO / HLstats / older HLstatsX, `migrations/`) were removed after 1.18.4: they are in the `sql/` folder of the `v1.18.4` tag.
 - **`heatmaps/`** — standalone PHP heatmap generator (`generate.php`, own `config.inc.php`).
 
 ## Web frontend architecture

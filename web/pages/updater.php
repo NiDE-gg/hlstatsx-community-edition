@@ -65,7 +65,8 @@
 	if ($versioncomp === -1)
 	{
 		// not yet at 1.6.1
-		echo "You cannot upgrade from this version (".$g_options['version']."). You can only upgrade from 1.6.1.  Please manually apply the SQL updates found in the SQL folder through 1.6.1, then re-run this updater.\n";
+		// The manual upgrade scripts ("Upgrade x - y" folders) were removed after 1.18.4
+		echo "You cannot upgrade from this version (" . eHtml($g_options['version']) . "). You can only upgrade from 1.6.1. Apply the manual SQL upgrades through 1.6.1 first: they are in the sql folder of release 1.18.4 (https://github.com/NiDE-gg/hlstatsx-community-edition/tree/v1.18.4/sql). Then run this updater again.\n";
 	}
 	else if ($versioncomp === 0)
 	{
