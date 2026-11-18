@@ -241,6 +241,41 @@ sub queryFailed
 }
 
 #
+# Connection checks. A ping() before every query cost one more round trip to the
+# database for each statement. The connection is now pinged only when it has been
+# idle for DB_IDLE_PING seconds (the server may have closed it: wait_timeout), and a
+# statement that fails because the connection was lost (2006 server gone away,
+# 2013 lost during query, 4031 closed for inactivity) is sent again once after
+# reconnecting. A statement that reached the server just before the connection
+# dropped can then run twice; the ping had the same window.
+#
+
+use constant DB_IDLE_PING => 60;
+$g_db_last_used = 0;
+
+sub dbCheckConnection
+{
+	if (time() - $g_db_last_used > DB_IDLE_PING && !$db_conn->ping()) {
+		&printEvent("HLSTATSX", "Lost database connection. Trying to reconnect...", 1);
+		&doConnect();
+	}
+	$g_db_last_used = time();
+}
+
+sub dbConnectionLost
+{
+	my $err = $DBI::err // 0;
+	return ($err == 2006 || $err == 2013 || $err == 4031);
+}
+
+sub dbReconnectAfterError
+{
+	&printEvent("HLSTATSX", "Lost database connection ($DBI::errstr). Reconnecting and sending the statement again...", 1);
+	&doConnect();
+	$g_db_last_used = time();
+}
+
+#
 # result doQuery (string query)
 #
 # Executes the SQL query 'query' and returns the result identifier.
@@ -249,43 +284,61 @@ sub queryFailed
 sub doQuery
 {
 	my ($query, $callref) = @_;
-	if(!$db_conn->ping()) {
-		&printEvent("HLSTATSX", "Lost database connection. Trying to reconnect...", 1);
-		&doConnect();
-	}
+	&dbCheckConnection();
 
-	my $result = $db_conn->prepare($query) or &queryFailed("Unable to prepare query:\n$query\n$DBI::errstr\n$callref");
-	$result->execute or &queryFailed("Unable to execute query:\n$query\n$DBI::errstr\n$callref");
-	
-	return $result;
+	for my $try (1, 2) {
+		my $result = $db_conn->prepare($query);
+		if ($result && $result->execute) {
+			return $result;
+		}
+		if ($try == 1 && &dbConnectionLost()) {
+			&dbReconnectAfterError();
+			next;
+		}
+		&queryFailed(($result ? "Unable to execute query:" : "Unable to prepare query:") . "\n$query\n$DBI::errstr\n" . ($callref // ''));
+	}
 }
 
 sub execNonQuery
 {
 	my ($query) = @_;
-	if(!$db_conn->ping()) {
-		&printEvent("HLSTATSX", "Lost database connection. Trying to reconnect...", 1);
-		&doConnect();
-	}
+	&dbCheckConnection();
 	#&printEvent("DEBUG","execNonQuery:\n".$query);
 	# undef when the statement failed: see flushEventTable() in hlstats.pl
-	return $db_conn->do($query);
+	my $rows = $db_conn->do($query);
+	if (!defined($rows) && &dbConnectionLost()) {
+		&dbReconnectAfterError();
+		$rows = $db_conn->do($query);
+	}
+	return $rows;
 }
 
 sub execCached {
 	my ($query_id,$query, @bind_args) = @_;
-	
-	if(!$db_conn->ping()) {
-		&printEvent("HLSTATSX", "Lost database connection. Trying to reconnect...", 1);
-		&doConnect();
+	&dbCheckConnection();
+
+	for my $try (1, 2) {
+		# doConnect() empties the cache: statements are prepared again on the new connection
+		if(!$db_stmt_cache{$query_id}) {
+			$db_stmt_cache{$query_id} = $db_conn->prepare($query);
+			if (!$db_stmt_cache{$query_id}) {
+				delete $db_stmt_cache{$query_id};
+				if ($try == 1 && &dbConnectionLost()) {
+					&dbReconnectAfterError();
+					next;
+				}
+				&queryFailed("Unable to prepare query ($query_id):\n$query\n$DBI::errstr");
+			}
+		}
+		if ($db_stmt_cache{$query_id}->execute(@bind_args)) {
+			return $db_stmt_cache{$query_id};
+		}
+		if ($try == 1 && &dbConnectionLost()) {
+			&dbReconnectAfterError();
+			next;
+		}
+		&queryFailed("Unable to execute query ($query_id):\n$query\n$DBI::errstr");
 	}
-	
-	if(!$db_stmt_cache{$query_id}) {
-		$db_stmt_cache{$query_id} = $db_conn->prepare($query) or &queryFailed("Unable to prepare query ($query_id):\n$query\n$DBI::errstr");
-		#&printEvent("HLSTATSX", "Prepared a statement ($query_id) for the first time.", 1);
-	} 
-	$db_stmt_cache{$query_id}->execute(@bind_args) or &queryFailed("Unable to execute query ($query_id):\n$query\n$DBI::errstr");
-	return $db_stmt_cache{$query_id};
 }
 
 #
