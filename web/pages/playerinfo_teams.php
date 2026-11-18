@@ -211,54 +211,31 @@ For support and installation notes visit http://www.hlxcommunity.com
 		true
 	);
 
-	$db->query("DROP TABLE IF EXISTS hlstats_Frags_as");
-
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_Frags_as
+	// Kills and deaths of the player in each role: kills by their role when they
+	// killed (killerRole), deaths by their role when they died (victimRole). Read
+	// grouped from the player's own frags; it used to copy all of them into two
+	// temporary tables on every view (and, since #19, counted them by the other
+	// player's role, with deaths almost always 0).
+	$roleFrags = "
+		SELECT
+			roleFrags.role,
+			SUM(roleFrags.kills) AS killsTotal,
+			SUM(roleFrags.deaths) AS deathsTotal
+		FROM
 		(
-			playerId INT(10) NOT NULL,
-			deaths INT(10) NOT NULL,
-			role varchar(128) NOT NULL default '',
-			INDEX idx_player_role (playerId, role)
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
+			SELECT killerRole AS role, COUNT(*) AS kills, 0 AS deaths
+			FROM hlstats_Events_Frags
+			WHERE killerId = $player
+			GROUP BY killerRole
+			UNION ALL
+			SELECT victimRole, 0, COUNT(*)
+			FROM hlstats_Events_Frags
+			WHERE victimId = $player
+			GROUP BY victimRole
+		) AS roleFrags
+		GROUP BY
+			roleFrags.role
 	";
-
-	$db->query($sql_create_temp_table);
-
-	$db->query("
-		INSERT INTO hlstats_Frags_as (playerId, deaths, role)
-		SELECT killerId, victimId, victimRole
-		FROM hlstats_Events_Frags
-		WHERE killerId = $player
-		UNION ALL
-		SELECT victimId, killerId, killerRole
-		FROM hlstats_Events_Frags
-		WHERE victimId = $player
-	");
-
-	$db->query("DROP TABLE IF EXISTS hlstats_Frags_as_res");
-
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_Frags_as_res
-		(
-			killsTotal INT(10),
-			deathsTotal INT(10),
-			role varchar(128) NOT NULL default '',
-			INDEX idx_role (role)
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
-	";
-
-	$db->query($sql_create_temp_table);
-
-	$db->query("
-		INSERT INTO hlstats_Frags_as_res (killsTotal, deathsTotal, role)
-		SELECT 
-			SUM(CASE WHEN playerId = $player THEN 1 ELSE 0 END) AS kills,
-			SUM(CASE WHEN deaths = $player THEN 1 ELSE 0 END) AS deaths,
-			role
-		FROM hlstats_Frags_as
-		GROUP BY role
-	");
 
 	$db->query("
 		SELECT COUNT(*)
@@ -273,9 +250,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 			IFNULL(hlstats_Roles.code, hlstats_Events_ChangeRole.role) AS code,
 			COUNT(hlstats_Events_ChangeRole.id) AS rolecount,
 			ROUND(COUNT(hlstats_Events_ChangeRole.id) / IF($numrolejoins = 0, 1, $numrolejoins) * 100, 2) AS percent,
-			hlstats_Frags_as_res.killsTotal,
-			hlstats_Frags_as_res.deathsTotal,
-			ROUND(hlstats_Frags_as_res.killsTotal / IF(hlstats_Frags_as_res.deathsTotal = 0, 1, hlstats_Frags_as_res.deathsTotal), 2) AS kpd
+			IFNULL(roleFrags.killsTotal, 0) AS killsTotal,
+			IFNULL(roleFrags.deathsTotal, 0) AS deathsTotal,
+			ROUND(IFNULL(roleFrags.killsTotal, 0) / IF(IFNULL(roleFrags.deathsTotal, 0) = 0, 1, roleFrags.deathsTotal), 2) AS kpd
 		FROM
 			hlstats_Events_ChangeRole
 		LEFT JOIN
@@ -283,9 +260,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 		ON
 			hlstats_Events_ChangeRole.role = hlstats_Roles.code
 		LEFT JOIN
-			hlstats_Frags_as_res
+			($roleFrags) AS roleFrags
 		ON
-			hlstats_Frags_as_res.role = hlstats_Events_ChangeRole.role
+			roleFrags.role = hlstats_Events_ChangeRole.role
 		WHERE
 			hlstats_Events_ChangeRole.playerId = $player
 			AND
@@ -296,8 +273,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 			AND hlstats_Roles.game = '$game'
 		GROUP BY
 			hlstats_Events_ChangeRole.role,
-			hlstats_Frags_as_res.killsTotal,
-			hlstats_Frags_as_res.deathsTotal
+			roleFrags.killsTotal,
+			roleFrags.deathsTotal
 		ORDER BY
 			$tblRoles->sort $tblRoles->sortorder,
 			$tblRoles->sort2 $tblRoles->sortorder

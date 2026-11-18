@@ -139,181 +139,103 @@ For support and installation notes visit http://www.hlxcommunity.com
 		'sortorder'
 	);
 	$surl = $g_options['scripturl'];
-// This would be better done with a UNION query, I think, but MySQL doesn't
-// support them yet. (NOTE you need MySQL 3.23 for temporary table support.)
-	$db->query("DROP TABLE IF EXISTS hlstats_EventHistory");
+	// The page used to copy every event of the player (with the text of each line)
+	// into a temporary table, then show 50 of them. Now a first query picks the
+	// rows of this page from the player's events using only their time, type, map
+	// and server, and the text is built for those rows only. The description is not
+	// sortable, so the order only needs those columns.
+	$game_sql = $db->escape($game);
+	$player = (int) $player;
+	$historySources = array(
+		// kind => array(type shown, table, condition, extra joins for the text, text)
+		'c' => array('Connect', 'Connects', "<t>.playerId = $player", '', "'I connected to the server'"),
+		'd' => array('Disconnect', 'Disconnects', "<t>.playerId = $player", '', "'I left the game'"),
+		'e' => array('Entry', 'Entries', "<t>.playerId = $player", '', "'I entered the game'"),
+		'k' => array('Kill', 'Frags', "<t>.killerId = $player",
+			'LEFT JOIN hlstats_Players ON hlstats_Players.playerId = <t>.victimId',
+			"CONCAT('I killed %A%$surl?mode=playerinfo&player=', <t>.victimId, '%', IFNULL(hlstats_Players.lastName, 'Unknown'), '%/A%', CASE WHEN <t>.headshot = 1 THEN ' with a headshot from ' ELSE ' with ' END, <t>.weapon)"),
+		'x' => array('Death', 'Frags', "<t>.victimId = $player",
+			'LEFT JOIN hlstats_Players ON hlstats_Players.playerId = <t>.killerId',
+			"CONCAT('%A%$surl?mode=playerinfo&player=', <t>.killerId, '%', IFNULL(hlstats_Players.lastName, 'Unknown'), '%/A%', ' killed me with ', <t>.weapon)"),
+		't' => array('Team Kill', 'Teamkills', "<t>.killerId = $player",
+			'LEFT JOIN hlstats_Players ON hlstats_Players.playerId = <t>.victimId',
+			"CONCAT('I killed teammate %A%$surl?mode=playerinfo&player=', <t>.victimId, '%', IFNULL(hlstats_Players.lastName, 'Unknown'), '%/A%', ' with ', <t>.weapon)"),
+		'f' => array('Friendly Fire', 'Teamkills', "<t>.victimId = $player",
+			'LEFT JOIN hlstats_Players ON hlstats_Players.playerId = <t>.killerId',
+			"CONCAT('My teammate %A%$surl?mode=playerinfo&player=', <t>.killerId, '%', IFNULL(hlstats_Players.lastName, 'Unknown'), '%/A%', ' killed me with ', <t>.weapon)"),
+		'a' => array('Action', 'PlayerActions', "<t>.playerId = $player",
+			'',
+			"CONCAT('I received a points bonus of ', <t>.bonus, ' for triggering \"', IFNULL(hlstats_Actions.description, 'Unknown'), '\"')"),
+		'p' => array('Action', 'PlayerPlayerActions', "<t>.playerId = $player",
+			'LEFT JOIN hlstats_Players ON hlstats_Players.playerId = <t>.victimId',
+			"CONCAT('I received a points bonus of ', <t>.bonus, ' for triggering \"', IFNULL(hlstats_Actions.description, 'Unknown'), '\" against %A%$surl?mode=playerinfo&player=', <t>.victimId, '%', IFNULL(hlstats_Players.lastName, 'Unknown'), '%/A%')"),
+	);
+	// Actions only count for this game (the same action code exists once per game)
+	$historyActionJoin = "INNER JOIN hlstats_Actions ON hlstats_Actions.id = <t>.actionId AND hlstats_Actions.game = '$game_sql'";
 
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_EventHistory
-		(
-			eventType VARCHAR(32) NOT NULL,
-			eventTime DATETIME NOT NULL,
-			eventDesc TEXT NOT NULL,
-			serverName VARCHAR(255) NOT NULL,
-			map VARCHAR(64) NOT NULL,
-			INDEX idx_event_time (eventTime)
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
-	";
+	// Columns the table can be sorted by, all available before the text is built
+	$historyOrder = array(
+		'eventTime' => 'eventTime',
+		'eventType' => 'eventType',
+		'serverName' => 'serverName',
+		'map' => 'map',
+	);
+	$historySort = ($historyOrder[$table->sort] ?? 'eventTime') . " $table->sortorder, "
+		. ($historyOrder[$table->sort2] ?? 'eventTime') . " $table->sortorder";
 
-	$db->query($sql_create_temp_table);
-
-	function insertEvents ($table, $select)
-	{
-		global $db;
-		$select = str_replace("<table>", "hlstats_Events_$table", $select);
-		$db->query("
-			INSERT INTO hlstats_EventHistory (eventType, eventTime, eventDesc, serverName, map)
-			$select
-		");
+	$historyBranches = array();
+	$historyCounts = array();
+	foreach ($historySources as $kind => $source) {
+		$t = 'hlstats_Events_' . $source[1];
+		$where = str_replace('<t>', $t, $source[2]);
+		$actionJoin = ($kind === 'a' || $kind === 'p') ? str_replace('<t>', $t, $historyActionJoin) : '';
+		$historyBranches[] = "SELECT '$kind' AS kind, $t.id, '{$source[0]}' AS eventType, $t.eventTime, $t.map, $t.serverId FROM $t $actionJoin WHERE $where";
+		$historyCounts[] = "(SELECT COUNT(*) FROM $t $actionJoin WHERE $where)";
 	}
 
-	// Regrouper les insertions pour les événements de base
-	$db->query("
-		INSERT INTO hlstats_EventHistory (eventType, eventTime, eventDesc, serverName, map)
-		SELECT 
-			'Connect',
-			eventTime,
-			'I connected to the server',
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Connects
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Connects.serverId
-		WHERE playerId = $player
-		UNION ALL
-		SELECT 
-			'Disconnect',
-			eventTime,
-			'I left the game',
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Disconnects
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Disconnects.serverId
-		WHERE playerId = $player
-		UNION ALL
-		SELECT 
-			'Entry',
-			eventTime,
-			'I entered the game',
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Entries
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Entries.serverId
-		WHERE playerId = $player
-	");
+	$resultCount = $db->query('SELECT ' . implode(' + ', $historyCounts));
+	list($numitems) = $db->fetch_row($resultCount);
+	$numitems = (int) $numitems;
 
-	// Optimiser les requêtes de frags avec une seule requête
-	$db->query("
-		INSERT INTO hlstats_EventHistory (eventType, eventTime, eventDesc, serverName, map)
-		SELECT 
-			'Kill',
-			eventTime,
-			CONCAT('I killed %A%$surl?mode=playerinfo&player=', victimId, '%', 
-				   IFNULL(hlstats_Players.lastName,'Unknown'), '%/A%', 
-				   CASE WHEN headshot = 1 THEN ' with a headshot from ' ELSE ' with ' END,
-				   weapon),
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Frags
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Frags.serverId
-		LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_Frags.victimId
-		WHERE killerId = $player
-		UNION ALL
-		SELECT 
-			'Death',
-			eventTime,
-			CONCAT('%A%$surl?mode=playerinfo&player=', killerId, '%', 
-				   IFNULL(hlstats_Players.lastName,'Unknown'), '%/A%', ' killed me with ', weapon),
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Frags
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Frags.serverId
-		LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_Frags.killerId
-		WHERE victimId = $player
-	");
-
-	// Optimiser les requêtes de teamkills
-	$db->query("
-		INSERT INTO hlstats_EventHistory (eventType, eventTime, eventDesc, serverName, map)
-		SELECT 
-			'Team Kill',
-			eventTime,
-			CONCAT('I killed teammate %A%$surl?mode=playerinfo&player=', victimId, '%', 
-				   IFNULL(hlstats_Players.lastName,'Unknown'), '%/A%', ' with ', weapon),
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Teamkills
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Teamkills.serverId
-		LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_Teamkills.victimId
-		WHERE killerId = $player
-		UNION ALL
-		SELECT 
-			'Friendly Fire',
-			eventTime,
-			CONCAT('My teammate %A%$surl?mode=playerinfo&player=', killerId, '%', 
-				   IFNULL(hlstats_Players.lastName, 'Unknown'), '%/A%', ' killed me with ', weapon),
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_Teamkills
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Teamkills.serverId
-		LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_Teamkills.killerId
-		WHERE victimId = $player
-	");
-
-	// Optimiser les requêtes d'actions
-	$db->query("
-		INSERT INTO hlstats_EventHistory (eventType, eventTime, eventDesc, serverName, map)
-		SELECT 
-			'Action',
-			eventTime,
-			CONCAT('I received a points bonus of ', bonus, ' for triggering \"', 
-				   IFNULL(hlstats_Actions.description,'Unknown'), '\"'),
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_PlayerActions
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_PlayerActions.serverId
-		LEFT JOIN hlstats_Actions ON hlstats_Actions.id = hlstats_Events_PlayerActions.actionId
-		WHERE hlstats_Events_PlayerActions.playerId = $player AND hlstats_Actions.game = '$game'
-		UNION ALL
-		SELECT 
-			'Action',
-			eventTime,
-			CONCAT('I received a points bonus of ', bonus, ' for triggering \"', 
-				   IFNULL(hlstats_Actions.description,'Unknown'), '\" against %A%$surl?mode=playerinfo&player=', 
-				   victimId, '%', IFNULL(hlstats_Players.lastName,'Unknown'), '%/A%'),
-			IFNULL(hlstats_Servers.name, 'Unknown'),
-			map
-		FROM hlstats_Events_PlayerPlayerActions
-		LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_PlayerPlayerActions.serverId
-		LEFT JOIN hlstats_Actions ON hlstats_Actions.id = hlstats_Events_PlayerPlayerActions.actionId
-		LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_PlayerPlayerActions.victimId
-		WHERE hlstats_Events_PlayerPlayerActions.playerId = $player AND hlstats_Actions.game = '$game'
-	");
-
-	$result = $db->query
-	("
+	$pageRows = $db->query("
 		SELECT
-			hlstats_EventHistory.eventTime,
-			hlstats_EventHistory.eventType,
-			hlstats_EventHistory.eventDesc,
-			hlstats_EventHistory.serverName,
-			hlstats_EventHistory.map
+			events.kind,
+			events.id,
+			events.eventType,
+			events.eventTime,
+			events.map,
+			IFNULL(hlstats_Servers.name, 'Unknown') AS serverName
 		FROM
-			hlstats_EventHistory
+			(" . implode("\n			UNION ALL\n			", $historyBranches) . ") AS events
+		LEFT JOIN
+			hlstats_Servers ON hlstats_Servers.serverId = events.serverId
 		ORDER BY
-			$table->sort $table->sortorder,
-			$table->sort2 $table->sortorder
+			$historySort
 		LIMIT
 			$table->startitem,
 			$table->numperpage
 	");
-	$resultCount = $db->query
-	("
-		SELECT
-			COUNT(*)
-		FROM
-			hlstats_EventHistory
-	");
-	list($numitems) = $db->fetch_row($resultCount);
+	$pageIds = array();
+	while ($row = $db->fetch_array($pageRows)) {
+		$pageIds[$row['kind']][] = (int) $row['id'];
+	}
+	$db->free_result($pageRows);
+
+	// The text of this page's rows only, in the same order
+	$detailBranches = array();
+	foreach ($pageIds as $kind => $ids) {
+		$source = $historySources[$kind];
+		$t = 'hlstats_Events_' . $source[1];
+		$joins = str_replace('<t>', $t, $source[3]) . (($kind === 'a' || $kind === 'p') ? ' ' . str_replace('<t>', $t, $historyActionJoin) : '');
+		$detailBranches[] = "SELECT '{$source[0]}' AS eventType, $t.eventTime, " . str_replace('<t>', $t, $source[4]) . " AS eventDesc,"
+			. " IFNULL(hlstats_Servers.name, 'Unknown') AS serverName, $t.map"
+			. " FROM $t LEFT JOIN hlstats_Servers ON hlstats_Servers.serverId = $t.serverId $joins"
+			. " WHERE $t.id IN (" . implode(',', $ids) . ')';
+	}
+	// A page past the last one has no rows: an empty result, which the table draws as such
+	$result = $db->query($detailBranches
+		? 'SELECT * FROM (' . implode("\n		UNION ALL\n		", $detailBranches) . ") AS events ORDER BY $historySort"
+		: 'SELECT NULL AS eventType FROM DUAL WHERE 0');
 ?>
 
 <div class="block">

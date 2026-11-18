@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="146";
-SET @VERSION="1.18.0";
+SET @DBVERSION="147";
+SET @VERSION="1.18.1";
 
 -- --------------------------------------------------------
 
@@ -2222,7 +2222,8 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Disconnects` (
   `serverId` int(10) unsigned NOT NULL default '0',
   `map` varchar(64) NOT NULL default '',
   `playerId` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`id`)
+  PRIMARY KEY  (`id`),
+  KEY `playerId` (`playerId`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2501,7 +2502,8 @@ CREATE TABLE IF NOT EXISTS `hlstats_Events_Teamkills` (
   `pos_victim_y` MEDIUMINT default NULL,
   `pos_victim_z` MEDIUMINT default NULL,
   PRIMARY KEY  (`id`),
-  KEY `killerId` (`killerId`)
+  KEY `killerId` (`killerId`),
+  KEY `victimId` (`victimId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

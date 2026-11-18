@@ -109,49 +109,51 @@ For support and installation notes visit http://www.hlxcommunity.com
 		true
 	);
 	
-	$db->query("
-		CREATE TEMPORARY TABLE tmp_clan_kills
-			SELECT
-				IF(map='', '(Unaccounted)', map) AS map,
-				COUNT(*) AS kills,
-				SUM(headshot=1) AS headshots
-			FROM
-				hlstats_Events_Frags, hlstats_Players
-			WHERE
-				hlstats_Players.playerId = hlstats_Events_Frags.killerId
-				AND hlstats_Players.clan = $clan
-			GROUP BY
-				map;
-	");
-	
-	$db->query("
-		CREATE TEMPORARY TABLE tmp_clan_deaths
-			SELECT
-				IF(map='', '(Unaccounted)', map) AS map,
-				COUNT(*) AS deaths
-			FROM
-				hlstats_Events_Frags, hlstats_Players
-			WHERE
-				hlstats_Players.playerId = hlstats_Events_Frags.victimId
-				AND hlstats_Players.clan = $clan
-			GROUP BY
-				map;
-	");
-
+	// Kills and deaths of the clan's members per map, in one grouped query. A map
+	// where the clan only killed or only died is listed too (the join of two
+	// temporary tables used to drop it).
 	$result = $db->query("
 		SELECT
-			tmp_clan_kills.map,
-			tmp_clan_kills.kills,
-			tmp_clan_kills.headshots,
-			tmp_clan_deaths.deaths,
-			IFNULL(kills/deaths, '-') AS kpd,
-			IFNULL(headshots / kills, '-') AS hpk,
-			ROUND(kills / $realkills * 100, 2) AS kpercent,
-			ROUND(headshots / $realheadshots * 100, 2) AS hpercent
+			mapFrags.map,
+			SUM(mapFrags.kills) AS kills,
+			SUM(mapFrags.headshots) AS headshots,
+			SUM(mapFrags.deaths) AS deaths,
+			IFNULL(SUM(mapFrags.kills) / NULLIF(SUM(mapFrags.deaths), 0), '-') AS kpd,
+			IFNULL(SUM(mapFrags.headshots) / NULLIF(SUM(mapFrags.kills), 0), '-') AS hpk,
+			ROUND(SUM(mapFrags.kills) / $realkills * 100, 2) AS kpercent,
+			ROUND(SUM(mapFrags.headshots) / $realheadshots * 100, 2) AS hpercent
 		FROM
-			tmp_clan_kills, tmp_clan_deaths
-		WHERE
-			tmp_clan_kills.map = tmp_clan_deaths.map
+		(
+			SELECT
+				IF(hlstats_Events_Frags.map = '', '(Unaccounted)', hlstats_Events_Frags.map) AS map,
+				COUNT(*) AS kills,
+				SUM(hlstats_Events_Frags.headshot = 1) AS headshots,
+				0 AS deaths
+			FROM
+				hlstats_Players
+			INNER JOIN
+				hlstats_Events_Frags ON hlstats_Events_Frags.killerId = hlstats_Players.playerId
+			WHERE
+				hlstats_Players.clan = $clan
+			GROUP BY
+				hlstats_Events_Frags.map
+			UNION ALL
+			SELECT
+				IF(hlstats_Events_Frags.map = '', '(Unaccounted)', hlstats_Events_Frags.map),
+				0,
+				0,
+				COUNT(*)
+			FROM
+				hlstats_Players
+			INNER JOIN
+				hlstats_Events_Frags ON hlstats_Events_Frags.victimId = hlstats_Players.playerId
+			WHERE
+				hlstats_Players.clan = $clan
+			GROUP BY
+				hlstats_Events_Frags.map
+		) AS mapFrags
+		GROUP BY
+			mapFrags.map
 		ORDER BY
 			$tblMaps->sort $tblMaps->sortorder,
 			$tblMaps->sort2 $tblMaps->sortorder

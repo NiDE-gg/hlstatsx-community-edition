@@ -658,6 +658,67 @@ function message($icon, $msg)
 }
 
 /**
+ * killStatsByOpponentSql()
+ *
+ * SQL of one row per opponent of $player: opponentId, kills (of the opponent by
+ * $player), deaths (of $player by the opponent) and headshots (of those kills),
+ * for opponents killed at least $killLimit times. Two grouped reads of the
+ * player's own frags (indexes killerId and victimId) instead of copying every
+ * frag into a temporary table on each page view. $game, when given, keeps the
+ * frags of that game's servers only.
+ *
+ * @param int $player
+ * @param int $killLimit
+ * @param string|null $game a valid game code
+ * @return string
+ */
+function killStatsByOpponentSql(int $player, int $killLimit, ?string $game = null) : string
+{
+	global $db;
+
+	$servers = $game === null ? '' : "
+			INNER JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Frags.serverId AND hlstats_Servers.game = '" . $db->escape($game) . "'";
+
+	return "
+		SELECT
+			byOpponent.opponentId,
+			SUM(byOpponent.kills) AS kills,
+			SUM(byOpponent.deaths) AS deaths,
+			SUM(byOpponent.headshots) AS headshots
+		FROM
+		(
+			SELECT
+				hlstats_Events_Frags.victimId AS opponentId,
+				COUNT(*) AS kills,
+				0 AS deaths,
+				SUM(hlstats_Events_Frags.headshot = 1) AS headshots
+			FROM
+				hlstats_Events_Frags$servers
+			WHERE
+				hlstats_Events_Frags.killerId = $player
+			GROUP BY
+				hlstats_Events_Frags.victimId
+			UNION ALL
+			SELECT
+				hlstats_Events_Frags.killerId,
+				0,
+				COUNT(*),
+				0
+			FROM
+				hlstats_Events_Frags$servers
+			WHERE
+				hlstats_Events_Frags.victimId = $player
+			GROUP BY
+				hlstats_Events_Frags.killerId
+		) AS byOpponent
+		GROUP BY
+			byOpponent.opponentId
+		HAVING
+			SUM(byOpponent.kills) >= $killLimit
+	";
+}
+
+/**
  * cspNonce()
  *
  * Random value of this request for the Content-Security-Policy nonce, the same

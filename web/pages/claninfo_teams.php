@@ -192,95 +192,35 @@ For support and installation notes visit http://www.hlxcommunity.com
 		'desc',
 		true
 	);
-	$db->query("DROP TABLE IF EXISTS hlstats_Frags_as");
-
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_Frags_as
-		(
-			playerId INT(10),
-			kills INT(10),
-			deaths INT(10),
-			role varchar(128) NOT NULL default ''
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
-	";
-
-	$db->query($sql_create_temp_table);
-
-	$db->query("
-		INSERT INTO
-		hlstats_Frags_as
-		(
-			playerId,
-			kills,
-			role
-		)
-		SELECT  
-			victimId,
-			killerId,
-			killerRole
-		FROM
-			hlstats_Events_Frags
-		LEFT JOIN hlstats_Servers ON
-			hlstats_Servers.serverId=hlstats_Events_Frags.serverId LEFT JOIN hlstats_Players ON
-			hlstats_Players.playerId = hlstats_Events_Frags.killerId
-		WHERE   
-			hlstats_Servers.game='$game' AND clan = $clan
-		");
-
-	$db->query("
-		INSERT INTO
-			hlstats_Frags_as
-		(
-			playerId,
-			deaths,
-			role
-		)
-		SELECT  
-			killerId,
-			victimId,
-			victimRole
-		FROM
-			hlstats_Events_Frags
-		LEFT JOIN
-			hlstats_Servers
-		ON
-			hlstats_Servers.serverId = hlstats_Events_Frags.serverId
-		LEFT JOIN
-			hlstats_Players
-		ON
-			hlstats_Players.playerId = hlstats_Events_Frags.victimId
-		WHERE   
-			hlstats_Servers.game='$game' AND clan = $clan 
-		");
-
-	$db->query("DROP TABLE IF EXISTS hlstats_Frags_as_res");
-
-	$sql_create_temp_table = "
-		CREATE TEMPORARY TABLE hlstats_Frags_as_res
-		(
-			killsTotal INT(10),
-			deathsTotal INT(10),
-			role varchar(128) NOT NULL default ''
-		) DEFAULT CHARSET=" . DB_CHARSET . " DEFAULT COLLATE=" . DB_COLLATE . ";
-	";
-
-	$db->query($sql_create_temp_table);
-
-	$db->query("
-		INSERT INTO
-		hlstats_Frags_as_res
-		(
-			killsTotal,
-			deathsTotal,
-			role
-		)
+	// Kills and deaths of the clan's members in each role, on this game's servers.
+	// Starts from the members (index playerclan) and reads their frags through the
+	// killerId / victimId indexes: the old queries joined every frag of the
+	// database to its server and player, then copied the clan's into temporary tables.
+	$roleFrags = "
 		SELECT
-		COUNT(hlstats_Frags_as.kills) AS kills, 
-		COUNT(hlstats_Frags_as.deaths) AS deaths,
-		role 
-		from hlstats_Frags_as GROUP by role
-	");
-	
+			roleFrags.role,
+			SUM(roleFrags.kills) AS killsTotal,
+			SUM(roleFrags.deaths) AS deathsTotal
+		FROM
+		(
+			SELECT hlstats_Events_Frags.killerRole AS role, COUNT(*) AS kills, 0 AS deaths
+			FROM hlstats_Players
+			INNER JOIN hlstats_Events_Frags ON hlstats_Events_Frags.killerId = hlstats_Players.playerId
+			INNER JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Frags.serverId AND hlstats_Servers.game = '$game'
+			WHERE hlstats_Players.clan = $clan
+			GROUP BY hlstats_Events_Frags.killerRole
+			UNION ALL
+			SELECT hlstats_Events_Frags.victimRole, 0, COUNT(*)
+			FROM hlstats_Players
+			INNER JOIN hlstats_Events_Frags ON hlstats_Events_Frags.victimId = hlstats_Players.playerId
+			INNER JOIN hlstats_Servers ON hlstats_Servers.serverId = hlstats_Events_Frags.serverId AND hlstats_Servers.game = '$game'
+			WHERE hlstats_Players.clan = $clan
+			GROUP BY hlstats_Events_Frags.victimRole
+		) AS roleFrags
+		GROUP BY
+			roleFrags.role
+	";
+
 	$db->query("
 		SELECT
 			COUNT(*)
@@ -299,9 +239,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 			IFNULL(hlstats_Roles.code, hlstats_Events_ChangeRole.role) AS code,
 			COUNT(hlstats_Events_ChangeRole.id) AS rolecount,
 			ROUND(COUNT(hlstats_Events_ChangeRole.id) / IF($numrolejoins = 0, 1, $numrolejoins) * 100, 2) AS percent,
-			killsTotal,
-			deathsTotal,
-			ROUND(killsTotal/if(deathsTotal=0,1,deathsTotal), 2) AS kpd
+			IFNULL(roleFrags.killsTotal, 0) AS killsTotal,
+			IFNULL(roleFrags.deathsTotal, 0) AS deathsTotal,
+			ROUND(IFNULL(roleFrags.killsTotal, 0) / IF(IFNULL(roleFrags.deathsTotal, 0) = 0, 1, roleFrags.deathsTotal), 2) AS kpd
 		FROM
 			hlstats_Events_ChangeRole
 		LEFT JOIN
@@ -313,9 +253,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 		ON
 			hlstats_Servers.serverId = hlstats_Events_ChangeRole.serverId
 		LEFT JOIN
-			hlstats_Frags_as_res
+			($roleFrags) AS roleFrags
 		ON
-			hlstats_Frags_as_res.role = hlstats_Events_ChangeRole.role
+			roleFrags.role = hlstats_Events_ChangeRole.role
 		LEFT JOIN
 			hlstats_Players
 		ON
