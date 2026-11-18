@@ -97,7 +97,7 @@ echo "${WEBSITE}"
 echo "---------------------------"
 
 # Change to directory of script
-cd `dirname ${0}`
+cd "$(dirname "${0}")" || exit 1
 
 # Perform some initial checks before we encounter later errors
 # Check if we can write to the SCRIPTPATH
@@ -126,7 +126,7 @@ if [[ ${SHEBANG} =~ ^#! ]]; then
     echo "Visit our wiki for more information: ${WIKI}."
     echo 
     echo "Potential paths for Perl: "
-    echo `which perl`
+    which perl
     exit 1
   fi
 else
@@ -165,9 +165,11 @@ function start_daemon {
 		local PORT=$1
 	fi
 	
-	local LOG=${LOGDIR}/hlstats_${PORT}_`date +${LOGDATE_FORMAT}`
+	local LOG
+	LOG="${LOGDIR}/hlstats_${PORT}_$(date +"${LOGDATE_FORMAT}")"
 	
-	local PID=`get_pid ${PORT}`
+	local PID
+	PID=$(get_pid "${PORT}")
 	# Check if a PID exists for this port number
 	if [ "${PID}" != "" ]; then
 		# PID exists -- check if the daemon is running.
@@ -237,7 +239,8 @@ function stop_daemon {
 		local PORT=$1
 	fi
 	
-	local PID=`get_pid ${PORT}`
+	local PID
+	PID=$(get_pid "${PORT}")
 		
 	if [ ${PID} -eq 0 ]; then
 		return 3
@@ -324,7 +327,8 @@ function reload_daemon {
 	fi
 	
 	
-	local PID=`get_pid ${PORT}`
+	local PID
+	PID=$(get_pid "${PORT}")
 	# Check to verify the daemon is operational
 	if [ ${PID} -ne 0 ]; then
 		kill -0 ${PID} &> /dev/null
@@ -370,7 +374,8 @@ function get_status {
 	#	2 - Invalid PID
 	
 	if [ $1 ]; then
-		local PID=`get_pid ${1}`
+		local PID
+		PID=$(get_pid "${1}")
 		if [ "${PID}" != "" ]; then
 			kill -0 ${PID} &> /dev/null
 			if [ $? -eq 0 ]; then
@@ -455,13 +460,13 @@ function get_pid {
 # Check if hlstats.pid exists (original pid from legacy run_hlstats)
 if [ -f ${PIDDIR}/hlstats.pid ]; then
 	echo "WARNING: A old PID file has been detected.  To prevent further troubles this daemon will be shut down."
-	kill -KILL `cat ${PIDDIR}/hlstats.pid` &> /dev/null
+	kill -KILL "$(cat "${PIDDIR}/hlstats.pid")" &> /dev/null
 	sleep 1
 	# Check if PID is dead
 	i=1
 	while [ $i -le 5 ]
 	do
-		kill -0 `cat ${PIDDIR}/hlstats.pid` &> /dev/null
+		kill -0 "$(cat "${PIDDIR}/hlstats.pid")" &> /dev/null
 		if [ $? -eq 0 ]; then
 			# Daemon still operating
 			let i++

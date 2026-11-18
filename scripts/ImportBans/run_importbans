@@ -47,11 +47,12 @@ if [ ! -w logs ];then
 fi
 
 # print info to the log file and run importbans.pl
-echo Importing Bans -- `date +%c` >> logs/log`date +_%Y%m%d`
+LOG="logs/log$(date +_%Y%m%d)"
+echo "Importing Bans -- $(date +%c)" >> "$LOG"
 
-echo Using importbans.pl >> logs/log`date +_%Y%m%d` 2>&1
-./importbans.pl  >> logs/log`date +_%Y%m%d` 2>&1
-echo >> logs/log`date +_%Y%m%d`
+echo Using importbans.pl >> "$LOG" 2>&1
+./importbans.pl  >> "$LOG" 2>&1
+echo >> "$LOG"
 
 
 exit 0
