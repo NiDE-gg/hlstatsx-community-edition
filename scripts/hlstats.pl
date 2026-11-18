@@ -523,7 +523,6 @@ sub calcL4DSkill
 	
 	if ($g_debug > 2) {
 		&printNotice("Begin calcSkill: killerSkill=$killerSkill");
-		&printNotice("Begin calcSkill: victimSkill=$victimSkill");
 	}
 
 	my $modifier = 1.00;
@@ -534,12 +533,14 @@ sub calcL4DSkill
 	
 	# Calculate the new skills
 	
-	$diffweight=0.5;
+	my $diffweight = 0.5;
 	if ($difficulty > 0) {
 			$diffweight = $difficulty / 2;
 	}	
 	
-	my $killerSkillChange = $pointvalue * $diffweight;
+	# The weapon's modifier weighted by the difficulty. $pointvalue was used here but
+	# never set, so every kill gave the minimum change (SkillMinChange).
+	my $killerSkillChange = $modifier * $diffweight;
 
 	if ($killerSkillChange > $g_skill_maxchange) {
 		&printNotice("Capping killer skill change of $killerSkillChange to $g_skill_maxchange") if ($g_debug > 2);
