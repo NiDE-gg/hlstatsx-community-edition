@@ -212,4 +212,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 </form>
 <?php
 	$table->draw($result, $numitems, 95, "center");
-?>

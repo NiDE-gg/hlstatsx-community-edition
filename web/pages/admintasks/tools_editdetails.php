@@ -129,4 +129,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 			"mode=admin&task=tools_editdetails_clan&id=%k"
 		);
 	}
-?>

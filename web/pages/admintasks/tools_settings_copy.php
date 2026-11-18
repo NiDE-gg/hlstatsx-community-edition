@@ -254,4 +254,3 @@ All existing images will be copied also to the new gametype!<p>
 </form>
 <?php
 	}
-?>

@@ -48,26 +48,26 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 class Table
 {
-	var $columns;
-	var $keycol;
-	var $sort;
-	var $sortorder;
-	var $sort2;
-	var $page;
-	var $showranking;
-	var $numperpage;
-	var $var_page;
-	var $var_sort;
-	var $var_sortorder;
-	var $sorthash;
-	var $ajax;
+	public $columns;
+	public $keycol;
+	public $sort;
+	public $sortorder;
+	public $sort2;
+	public $page;
+	public $showranking;
+	public $numperpage;
+	public $var_page;
+	public $var_sort;
+	public $var_sortorder;
+	public $sorthash;
+	public $ajax;
 
-	var $columnlist;
-	var $startitem;
+	public $columnlist;
+	public $startitem;
 
 	const MAX_PAGE = 1000000;
 
-	var $maxpagenumbers = 20;
+	public $maxpagenumbers = 20;
 	public $sort_default_order;
 
 	function __construct($columns, $keycol, $sort_default, $sort_default2,
@@ -510,22 +510,22 @@ class Table
 
 class TableColumn
 {
-	var $name;
-	var $title;
+	public $name;
+	public $title;
 
-	var $align = 'left';
-	var $width = 20;
-	var $icon;
-	var $mmrank;
-	var $link;
-	var $sort = 'yes';
-	var $append;
-	var $type = 'text';
-	var $embedlink = 'no';
-	var $flag;
-	var $skill_change;
-	var $heatmap;
-	var $mobile = 'show';
+	public $align = 'left';
+	public $width = 20;
+	public $icon;
+	public $mmrank;
+	public $link;
+	public $sort = 'yes';
+	public $append;
+	public $type = 'text';
+	public $embedlink = 'no';
+	public $flag;
+	public $skill_change;
+	public $heatmap;
+	public $mobile = 'show';
 	public $fname;
 
 	function __construct($name, $title, $attrs="", $fname=null)

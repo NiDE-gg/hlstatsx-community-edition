@@ -168,4 +168,3 @@
 <?php
 	}
 	// VOICECOMM MODULE END
-?>

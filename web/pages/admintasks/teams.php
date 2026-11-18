@@ -50,7 +50,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn("name", "Team Name", 20, true, "text", "", 64);
 	$edlist->columns[] = new EditListColumn("playerlist_color", "Color Code", 20, false, "text", "", 64);
 	$edlist->columns[] = new EditListColumn("playerlist_bgcolor", "Bg Color Code", 20, false, "text", "", 64);
-	$edlist->columns[] = new EditListColumn("hidden", "<center>Hide Team</center>", 0, false, "checkbox");
+	$edlist->columns[] = new EditListColumn("hidden", '<div style="text-align:center;">Hide Team</div>', 0, false, "checkbox");
 
 	if ($_POST) {
 		if ($edlist->update())

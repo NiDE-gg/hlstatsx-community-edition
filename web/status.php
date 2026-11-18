@@ -607,5 +607,4 @@ if ($server_data && $server_data['addr'] != '')  {
 	echo '</table>';
 	echo '</body>';
 	echo '</html>';
-} 
-?>
+}

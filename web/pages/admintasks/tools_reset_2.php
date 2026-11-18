@@ -118,7 +118,7 @@ Are you sure you want to clean up all statistics? All inactive players, clans an
 <b>Note</b> You should kill <b>hlstats.pl</b> before resetting the stats. You can restart it after they are reset.<p>
 
 <input type="hidden" name="confirm" value="1">
-<center><input type="submit" value="  Reset Stats  "></center>
+<div style="text-align:center;"><input type="submit" value="  Reset Stats  "></div>
 </td>
 		</tr>
 		
@@ -129,4 +129,3 @@ Are you sure you want to clean up all statistics? All inactive players, clans an
 </form>
 <?php
 	}
-?>

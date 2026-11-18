@@ -359,4 +359,3 @@ function getMapTypeId($maptype)
 			return null;
 	}
 }
-?>

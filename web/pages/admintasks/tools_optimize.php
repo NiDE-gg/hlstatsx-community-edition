@@ -158,4 +158,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$result = $db->query("ANALYZE TABLE $dbtables");
 
 		$tableAnalyze->draw($result, $db->num_rows($result), 80);
-?>

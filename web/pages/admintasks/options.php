@@ -53,8 +53,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	class OptionGroup
 	{
-		var $title = '';
-		var $options = array();
+		public $title = '';
+		public $options = array();
 
 		function __construct($title)
 		{
@@ -142,9 +142,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	class Option
 	{
-		var $name;
-		var $title;
-		var $type;
+		public $name;
+		public $title;
+		public $type;
 
 		function __construct($name, $title, $type)
 		{

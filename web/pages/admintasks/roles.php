@@ -48,7 +48,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn("game", "Game", 0, true, "hidden", $gamecode);
 	$edlist->columns[] = new EditListColumn("code", "Role Code", 20, true, "text", "", 32);
 	$edlist->columns[] = new EditListColumn("name", "Role Name", 20, true, "text", "", 64);
-	$edlist->columns[] = new EditListColumn("hidden", "<center>Hide Role</center>", 0, false, "checkbox");
+	$edlist->columns[] = new EditListColumn("hidden", '<div style="text-align:center;">Hide Role</div>', 0, false, "checkbox");
 
 	if ($_POST)
 	{

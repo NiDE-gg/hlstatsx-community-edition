@@ -59,4 +59,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	if ($sr_query || $sr_query == '0') {
 		$search->drawResults();
 	}
-?>

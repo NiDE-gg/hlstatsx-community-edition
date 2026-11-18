@@ -91,11 +91,11 @@ if (!defined('IN_HLSTATS')) {
 
 	class Search
 	{
-		var $query;
-		var $type;
-		var $game;
-		var $uniqueid_string = 'Unique ID';
-		var $uniqueid_string_plural = 'Unique IDs';
+		public $query;
+		public $type;
+		public $game;
+		public $uniqueid_string = 'Unique ID';
+		public $uniqueid_string_plural = 'Unique IDs';
 
 		// The searches use LIKE '%...%', which reads every row: a one-character search
 		// matched nearly everything, and counting beyond this many matches only costs time
@@ -679,4 +679,3 @@ if (!defined('IN_HLSTATS')) {
 <?php
 		}
 	}
-?>

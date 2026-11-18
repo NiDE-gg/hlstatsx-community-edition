@@ -35,7 +35,7 @@ class Env {
 */
 
 class Heatmap {
-        var $version = "0.1";
+        public $version = "0.1";
 
         /**
         * Stuff we want to fire when we start.
@@ -631,5 +631,3 @@ class show {
 		}     
 	}
 }
-
-?>

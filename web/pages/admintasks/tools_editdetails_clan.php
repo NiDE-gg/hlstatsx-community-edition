@@ -109,7 +109,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<td class="fNormal"><?php
 		$proppage->draw($data);
 ?>
-	<center><input type="submit" value="  Apply  " class="submit"></center></td>
+	<div style="text-align:center;"><input type="submit" value="  Apply  " class="submit"></div></td>
 </tr>
 </table>
 </form>

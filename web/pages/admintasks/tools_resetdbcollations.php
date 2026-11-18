@@ -150,7 +150,7 @@ You should not lose any data, but be sure to back up your database before runnin
 <input type="hidden" name="confirm" value="1">
 <input type="radio" name="printonly" value="0" checked> Run the commands on the database<br>
 <input type="radio" name="printonly" value="1"> Print the commands and I'll run them myself (recommended if you have a very large database likely to hang the script)<br>
-<center><input type="submit" value="Generate commands and do the above"></center>
+<div style="text-align:center;"><input type="submit" value="Generate commands and do the above"></div>
 </td>
         </tr>
         
@@ -162,5 +162,3 @@ You should not lose any data, but be sure to back up your database before runnin
 
 <?php
     }
-?>    
-    

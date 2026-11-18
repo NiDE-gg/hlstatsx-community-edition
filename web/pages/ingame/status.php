@@ -168,4 +168,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	printserverstats($server_id);
 
 	}  // for servers
-?>		

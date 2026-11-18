@@ -374,4 +374,3 @@ if ($db->num_rows($result) != 0)
 
 <?php
 }
-?>

@@ -232,5 +232,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 	{
 		$tblPlayerKillStats->draw($result, $numitems, 100);
 	}
-?>
-

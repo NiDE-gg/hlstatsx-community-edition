@@ -111,4 +111,3 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 	$tblPlayerActions->draw($result, $db->num_rows($result), 100);
-?>
