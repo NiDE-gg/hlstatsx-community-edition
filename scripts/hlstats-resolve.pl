@@ -238,6 +238,7 @@ $db_conn = DBI->connect(
 	$db_user, $db_pass
 ) or die ("Can't connect to MySQL database '$db_name' on '$db_host'\n" .
 	"$DBI::errstr\n");
+&useBackslashEscapes($db_conn);
 
 print "connected OK\n";
 
