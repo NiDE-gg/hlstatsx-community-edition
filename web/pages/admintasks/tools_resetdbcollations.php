@@ -49,7 +49,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 <?php
 
-	if (isset($_POST['confirm'])){
+	if (isset($_POST['confirm']) && Auth::postAllowed()){
 		$convert_to = DB_COLLATE;
 		$character_set = DB_CHARSET;
 

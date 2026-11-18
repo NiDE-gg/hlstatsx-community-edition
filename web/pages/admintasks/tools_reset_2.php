@@ -48,7 +48,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 &nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width=9 height=6 class="imageformat"><b>&nbsp;<?php echo $task->title; ?></b><p>
 
 <?php
-    if (isset($_POST['confirm'])) {
+    if (isset($_POST['confirm']) && Auth::postAllowed()) {
 		
 		echo "<ul>\n";
 

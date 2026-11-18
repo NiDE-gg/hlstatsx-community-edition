@@ -480,6 +480,14 @@ class Auth
 		return '<input type="hidden" name="csrf_token" value="' . self::csrfToken() . '" />';
 	}
 
+	// For the code that writes: a POST carrying this session's token. Auth::resume()
+	// already empties $_POST without it; every write checks again on its own, so a
+	// page that reaches a task some other way (or a GET) can't change anything.
+	static function postAllowed()
+	{
+		return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && self::checkCsrf();
+	}
+
 	static function checkCsrf()
 	{
 		$sent = (isset($_POST['csrf_token']) && is_string($_POST['csrf_token'])) ? $_POST['csrf_token'] : '';

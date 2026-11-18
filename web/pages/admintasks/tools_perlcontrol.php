@@ -82,7 +82,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		// Without it the calls below are a fatal error and the admin page stops half-drawn
 		message('warning', 'This tool needs the PHP sockets extension, which is not loaded on this server.');
 	}
-	elseif (isset($_POST['confirm'])) {
+	elseif (isset($_POST['confirm']) && Auth::postAllowed()) {
 		$host = is_string($_POST['masterserver'] ?? null) ? trim($_POST['masterserver']) : '';
 		$port = is_string($_POST['port'] ?? null) ? (int) $_POST['port'] : 0;
 		$command = is_string($_POST['command'] ?? null) ? ($commands[$_POST['command']]['cmd'] ?? '') : '';

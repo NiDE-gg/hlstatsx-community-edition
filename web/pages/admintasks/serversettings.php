@@ -109,7 +109,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn('parameter', 'Server parameter name', 30, true, 'readonly', '', 50);
 	$edlist->columns[] = new EditListColumn('value', 'Parameter value', 60, false, 'text', '', 128);
 	
-	if ($_POST)
+	if ($_POST && Auth::postAllowed())
 	if (($_POST['setdefaults'] ?? '') == 'defaults') {
 		setdefaults($key);
 	} else 

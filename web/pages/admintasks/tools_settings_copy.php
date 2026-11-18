@@ -153,7 +153,7 @@ function scanCopyFiles($source,$dest) {
 	}
 }
 
-	if (isset($_POST['confirm'])) {
+	if (isset($_POST['confirm']) && Auth::postAllowed()) {
 		// These become SQL strings and folder names under hlstatsimg/games
 		$game1 = valid_game_code($_POST['game1'] ?? '');
 		$game2 = is_string($_POST['game2'] ?? null) && preg_match('/^[A-Za-z0-9_-]{1,16}\z/', $_POST['game2']) ? $_POST['game2'] : '';
