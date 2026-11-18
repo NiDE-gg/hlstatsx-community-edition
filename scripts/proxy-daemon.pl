@@ -286,6 +286,30 @@ sub getProxyKey
 	return $proxy_key;
 }
 
+#
+# void loadAllowedSources ()
+#
+# Reads which sources may be forwarded: the address:port of every server in
+# hlstats_Servers, or any source when AllowOnlyConfigServers is 0 (the same rule
+# as the daemon). Read again with every heartbeat and on C;RELOAD;, so a server
+# added in the admin panel is forwarded within $heartbeat seconds.
+#
+sub loadAllowedSources
+{
+	my $result = &doQuery("SELECT `value` FROM hlstats_Options WHERE `keyname` = 'AllowOnlyConfigServers'");
+	my ($onlyConfig) = $result->fetchrow_array;
+	$result->finish;
+	# Missing row: the daemon's default (1)
+	$allow_any_source = (defined($onlyConfig) && $onlyConfig eq "0") ? 1 : 0;
+
+	%allowed_sources = ();
+	$result = &doQuery("SELECT address, port FROM hlstats_Servers");
+	while (my ($address, $port) = $result->fetchrow_array) {
+		$allowed_sources{"$address:$port"} = 1;
+	}
+	$result->finish;
+}
+
 sub is_number
 {
 	my ($str) = @_;
@@ -301,6 +325,10 @@ $g_stdin = 0;
 &doConnect();
 
 my $proxy_key = &getProxyKey();
+%allowed_sources = ();
+$allow_any_source = 0;
+$notallowed_warned = 0;
+&loadAllowedSources();
 
 # Get the daemons you will use
 $query = "SELECT `value` FROM hlstats_Options WHERE `keyname` = 'Proxy_Daemons'";
@@ -341,6 +369,7 @@ while ($server->recv($datagram,1024,$flags)) {
 	# the interval can be changed by modify $heartbeat value in beginning of script.
 	if (time > $oldtime) {
 		&checkHeartbeat(\%daemon, $proxy_key);
+		&loadAllowedSources();
 		$oldtime = (time + $heartbeat);
 	}
 
@@ -361,7 +390,8 @@ while ($server->recv($datagram,1024,$flags)) {
 	} elsif ($ipaddr eq "127.0.0.1" && $datagram =~/C;RELOAD;/) {
 		$control = 1;
 		$msg = '';
-		$msg = &reloadDaemon($daemon);
+		&loadAllowedSources();
+		$msg = &reloadDaemon(\%daemon, $proxy_key);
 	}
 
 	if ($ipaddr eq "127.0.0.1" && $control == 1) {
@@ -388,7 +418,8 @@ while ($server->recv($datagram,1024,$flags)) {
 				&printEvent("CONTROL", $msg, 1);
 			} elsif ($3 =~ /C;RELOAD;/) {
 				$msg = '';
-				$msg = &reloadDaemon($daemon);
+				&loadAllowedSources();
+		$msg = &reloadDaemon(\%daemon, $proxy_key);
 			} 
 		} else {
 			$msg = "FAILED PROXY REQUEST ($ipaddr:$ipport)\n";
@@ -406,6 +437,18 @@ while ($server->recv($datagram,1024,$flags)) {
 	# Control commands for this proxy were handled above. One forwarded to a daemon
 	# would arrive wrapped in the proxy key, and the daemon would obey it.
 	if ($datagram =~ /^\xff*C;/) {
+		next;
+	}
+
+	# Only game servers known to the daemon are forwarded: the daemon trusts the
+	# source address the proxy writes in front of each line, so anything else
+	# would reach it as if it came from a known server's network path.
+	if (!$allow_any_source && !defined($allowed_sources{"$ipaddr:$ipport"})) {
+		# At most one line a minute: any host on the internet can send these
+		if ($notallowed_warned < time() - 60) {
+			$notallowed_warned = time();
+			&printEvent("NOTICE", "Dropping log data from $ipaddr:$ipport: not a server in hlstats_Servers", 1);
+		}
 		next;
 	}
 
