@@ -63,7 +63,9 @@
     });
 
     $container->set(OptionService::class, function($c) {
-        $defaultScriptUrl = $_SERVER['PHP_SELF'] ?? getenv('PHP_SELF') ?: '/hlstats.php';
+        // SCRIPT_NAME, not PHP_SELF: PHP_SELF also carries whatever path the visitor
+        // adds after the script name, and every link on the page is built from this
+        $defaultScriptUrl = (string) ($_SERVER['SCRIPT_NAME'] ?? '') ?: '/hlstats.php';
 
         return new OptionService(
             $c->get(OptionsRepository::class),

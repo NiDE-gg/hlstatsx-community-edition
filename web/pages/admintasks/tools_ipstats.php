@@ -46,6 +46,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 ?>
 
 &nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width=9 height=6 class="imageformat"><b>&nbsp;<?php
+	// ?hostgroup[]= is not a host group
+	if (isset($_GET['hostgroup']) && !is_string($_GET['hostgroup'])) {
+		unset($_GET['hostgroup']);
+	}
+
 	if (isset($_GET['hostgroup'])) {
         $hostgroup = $_GET['hostgroup'];
         

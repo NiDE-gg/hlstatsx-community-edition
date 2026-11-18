@@ -46,10 +46,13 @@ use IO::Select;
 use bytes;
 use Scalar::Util;
 
-do "$::opt_libdir/HLstats_GameConstants.plib";
+do "$::opt_libdir/HLstats_GameConstants.plib" or die("Can't load $::opt_libdir/HLstats_GameConstants.plib: " . ($@ || $!) . "\n");
 
 my $VERSION = "1.00";
 my $TIMEOUT = 1.0;
+# Without it, a server that doesn't answer on its rcon port holds the
+# single-threaded daemon until the system gives up (about two minutes)
+my $CONNECT_TIMEOUT = 2;
 
 my $SERVERDATA_EXECCOMMAND        = 2;
 my $SERVERDATA_AUTH               = 3;
@@ -128,6 +131,7 @@ sub sendrecv
                                       		Proto=>"tcp",
                                             PeerAddr=>$server_object->{address}, 
                                             PeerPort=>$server_object->{port}, 
+                                            Timeout=>$CONNECT_TIMEOUT,
                             	);
     if (!$self->{"rcon_socket"}) {
       &::printEvent("TRCON", "Cannot setup TCP socket on ".$server_object->{address}.":".$server_object->{port}.": $!");

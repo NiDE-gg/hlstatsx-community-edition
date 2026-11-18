@@ -35,6 +35,7 @@
 #define IGNORE_SHOTS_START 35
 #define MAX_WEAPON_LEN 32
 #define CLANTAG_LEN 192
+#define CLANTAG_MAX_CHARS 16
 
 EngineVersion g_evCurrentVersion;
 
@@ -186,6 +187,7 @@ public void OnClientPostAdminCheck(int client)
 		char sClan[CLANTAG_LEN];
 
 		CS_GetClientClanTag(client, sClan, sizeof(sClan));
+		SanitizeClanTag(sClan);
 		LogPlayerProps(client, "triggered", "clantag", sClan);
 
 		g_sPlayerClanTag[client] = sClan;
@@ -471,6 +473,7 @@ public Action OnClientCommandKeyValues(int client, KeyValues kv)
 		float fNewTime = fCurTime + 10.0;
 
 		kv.GetString("tag", sClan, sizeof(sClan), "");
+		SanitizeClanTag(sClan);
 
 		// Flood protection 10s + ignore same tag
 		if ((g_fPlayerLastClanTagChange[client] <= fCurTime) && strcmp(sClan, "") != 0 && !StrEqual(g_sPlayerClanTag[client], sClan, false)) {
@@ -492,6 +495,52 @@ bool IsValidClient(int client, bool allowBots = true, bool allowDead = true)
 	}
 
 	return true;
+}
+
+// The tag is whatever the client sent: keep at most what a clan tag can hold (the characters may
+// be multi-byte) and drop quotes, control bytes and broken UTF-8, which do not belong in a quoted
+// log field.
+void SanitizeClanTag(char[] tag)
+{
+	int out = 0;
+	int chars = 0;
+	int i = 0;
+
+	while (tag[i] != '\0' && chars < CLANTAG_MAX_CHARS)
+	{
+		int c = tag[i] & 0xFF;
+		int bytes = GetCharBytes(tag[i]);
+		bool keep = (c >= 0x20 && c != 0x7F && c != '"');
+
+		// GetCharBytes() only looks at the lead byte: a multi-byte character is kept when its
+		// lead byte is valid (0xC2-0xF4) and every following byte is a continuation byte
+		// (10xxxxxx). Otherwise "\xC2\"" would copy the quote as part of the character.
+		if (keep && c >= 0x80)
+		{
+			keep = (c >= 0xC2 && c <= 0xF4);
+			for (int j = 1; keep && j < bytes; j++)
+			{
+				keep = ((tag[i + j] & 0xC0) == 0x80);
+			}
+		}
+
+		if (!keep)
+		{
+			// drop this byte only: the next one is checked on its own
+			i++;
+			continue;
+		}
+
+		chars++;
+
+		// in place: out never gets ahead of i
+		for (int j = 0; j < bytes; j++)
+		{
+			tag[out++] = tag[i++];
+		}
+	}
+
+	tag[out] = '\0';
 }
 
 void LogPlayerProps(int client, char[] verb, const char[] event, const char[] properties)

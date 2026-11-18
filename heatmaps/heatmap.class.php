@@ -132,7 +132,7 @@ class Heatmap {
                                 }
 
                                 //get the color index with new alpha
-                                $alphacolorxy = imagecolorallocatealpha( $src_im, ( $colorxy >> 16 ) & 0xFF, ( $colorxy >> 8 ) & 0xFF, $colorxy & 0xFF, $alpha );
+                                $alphacolorxy = imagecolorallocatealpha( $src_im, ( $colorxy >> 16 ) & 0xFF, ( $colorxy >> 8 ) & 0xFF, $colorxy & 0xFF, (int) $alpha );
 
                                 //set pixel with the new color + opacity
                                 if( !imagesetpixel( $src_im, $x, $y, $alphacolorxy ) ){
@@ -142,7 +142,7 @@ class Heatmap {
                 }
 
                 // The image copy
-                imagecopy($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h);
+                imagecopy($dst_im, $src_im, (int) $dst_x, (int) $dst_y, $src_x, $src_y, $src_w, $src_h);
         }
 
 		public static function generate($code, $map, $mode) {
@@ -208,8 +208,10 @@ class Heatmap {
 				closedir($handle);
 				}
 			} else {
-				if (!@mkdir(CACHE_DIR . "/$code")) {
+				// Recursive: CACHE_DIR itself doesn't exist on a fresh install
+				if (!@mkdir(CACHE_DIR . "/$code", 0777, true)) {
 					show::Event("CACHE", "Can't create cache_dir: " . CACHE_DIR . "/$code", 1);
+					return false;
 				}
 			}
 
@@ -266,7 +268,7 @@ class Heatmap {
               $x = ($row['pos_x'] + $mapinfo[$code][$map]['xoffset']) / $mapinfo[$code][$map]['scale'];
               $y = ($row['pos_y'] + $mapinfo[$code][$map]['yoffset']) / $mapinfo[$code][$map]['scale'];
 
-              $rgb = imagecolorat($overlay, $x, $y);
+              $rgb = imagecolorat($overlay, (int) $x, (int) $y);
               $colors = imagecolorsforindex($overlay, $rgb);
 
               if ($colors['red'] > $max_red) $max_red = $colors['red'];
@@ -315,7 +317,7 @@ class Heatmap {
 			}
 
 			if ($mapinfo[$code][$map]['thumbw'] > 0 && $mapinfo[$code][$map]['thumbh'] > 0) {
-				$thumb = imagecreatetruecolor(imagesx($img) * $mapinfo[$code][$map]['thumbw'], imagesy($img) * $mapinfo[$code][$map]['thumbh']);
+				$thumb = imagecreatetruecolor((int) (imagesx($img) * $mapinfo[$code][$map]['thumbw']), (int) (imagesy($img) * $mapinfo[$code][$map]['thumbh']));
 				imagecopyresampled($thumb, $img, 0, 0, 0, 0, imagesx($thumb), imagesy($thumb), imagesx($img), imagesy($img));
 				imagejpeg($thumb, $path . "/" . $map . "-" . $mode . "-thumb.jpg", 100);
 			}
@@ -341,7 +343,8 @@ class Heatmap {
 			$ignore_infected = Env::get('ignore_infected');
 			$timescope = (time() - 60*60*24*$mapinfo[$code][$map]['days']);
 
-			$map_query = 'SELECT
+			// Each branch in parentheses: "SELECT ... LIMIT n UNION ALL SELECT ..." is a syntax error
+			$map_query = '(SELECT
 							"frag" AS killtype,
 					 hef.id,
 							hef.map,
@@ -364,11 +367,11 @@ class Heatmap {
 					$map_query.= '                      AND hef.victimRole != "infected"
 ';
 			}
-					$map_query.= '                      LIMIT ' . KILL_LIMIT . '
+					$map_query.= '                      LIMIT ' . KILL_LIMIT . ')
 
 					UNION ALL
 
-					SELECT
+					(SELECT
 							"teamkill" AS killtype,
 							hef.id,
 							hef.map,
@@ -386,7 +389,7 @@ class Heatmap {
 					AND hef.pos_x IS NOT NULL
 					AND hef.pos_y IS NOT NULL
 					AND hef.eventTime >= FROM_UNIXTIME(' . $timescope . ')
-					LIMIT ' . KILL_LIMIT . '
+					LIMIT ' . KILL_LIMIT . ')
 			';
 			
 			Env::set('map_query', $map_query);
@@ -423,7 +426,8 @@ class Heatmap {
 			imagefill($hud, 0, 0, $trans_colour);
 			imagefilledrectangle($hud, 0, 0, imagesx($img) - 1, imagesy($img) - 1, $black);
 
-			$font = "./DejaVuSans.ttf";
+			// Absolute path: GD does not look for the font in the current directory
+			$font = dirname(__FILE__) . "/DejaVuSans.ttf";
 
 			// Copy the hud to the top of the image.
 			imagecopy($img, $hud, 0, 0, 0, 0, $hudx, $hudy);

@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	if ($auth->userdata["acclevel"] < 80) {
+	if ($auth->userdata["acclevel"] < 100) {
         die ("Access denied!");
 	}
 ?>
@@ -152,7 +152,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$where = "";
     $select_type = "";
 
-	if (isset($_GET['type']) && $_GET['type'] != '') {
+	if (isset($_GET['type']) && is_string($_GET['type']) && $_GET['type'] != '') {
 		$select_type = $_GET['type'];
 		$where = "WHERE eventType='" . $db->escape($_GET['type']) . "'";
 	}
@@ -187,8 +187,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 <form method="get" action="<?php echo $g_options["scripturl"]; ?>">
 <input type="hidden" name="mode" value="admin" />
 <input type="hidden" name="task" value="<?php echo $code; ?>" />
-<input type="hidden" name="sort" value="<?php echo $sort; ?>" />
-<input type="hidden" name="sortorder" value="<?php echo $sortorder; ?>" />
+<input type="hidden" name="sort" value="<?php echo eHtml($table->sort); ?>" />
+<input type="hidden" name="sortorder" value="<?php echo eHtml($table->sortorder); ?>" />
 
 <b style="padding-left:35px;">&#149;</b> Show only events of type: <?php
 	$resultTypes = $db->query("

@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	// Roles Details
 	
-	$role = valid_request($_GET['role'], false) or error('No role ID specified.');
+	$role = valid_request($_GET['role'] ?? '', false) or error('No role ID specified.');
 	$role_sql = $db->escape($role);
 	$game_sql = $db->escape($game);
 

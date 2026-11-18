@@ -36,6 +36,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 For support and installation notes visit http://www.hlxcommunity.com
 */
 
+if (!defined('IN_HLSTATS')) {
+	die('Do not access this file directly.');
+}
+
 // Helper functions for SteamID conversions
 
 	/**
@@ -193,6 +197,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 		function drawResults ($link_player=-1, $link_clan=-1)
 		{
 			global $g_options, $db;
+			// The admin panel passes its own links and searches every clan; the public
+			// search leaves out the clans hidden in the admin panel, like the clan list
+			$andhidden = ($link_clan == -1) ? "AND hlstats_Clans.hidden <> 1" : "";
 			if ($link_player == -1) $link_player = "mode=playerinfo&amp;player=%k";
 			if ($link_clan == -1) $link_clan = "mode=claninfo&amp;clan=%k";
 ?>
@@ -206,6 +213,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			$sr_query = preg_replace('/^STEAM_\d+?\:/i','',$this->query);
 			$sr_query = $db->escape(addcslashes($sr_query, '%_\\'));
 			$sr_query = preg_replace('/\s/', '%', $sr_query);
+			$numitems = 0;
 			if ($this->type == 'player')
 			{
 				$table = new Table
@@ -589,6 +597,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 							OR hlstats_Clans.name LIKE '%$sr_query%'
 						)
 						$andgame
+						$andhidden
 					ORDER BY
 						$table->sort $table->sortorder,
 						$table->sort2 $table->sortorder
@@ -602,10 +611,16 @@ For support and installation notes visit http://www.hlxcommunity.com
 						COUNT(*)
 					FROM
 						hlstats_Clans
+					LEFT JOIN hlstats_Games ON
+						hlstats_Games.code = hlstats_Clans.game
 					WHERE
-						hlstats_Clans.tag LIKE '%$sr_query%'
-						OR hlstats_Clans.name LIKE '%$sr_query%'
+						hlstats_Games.hidden = '0'
+						AND (
+							hlstats_Clans.tag LIKE '%$sr_query%'
+							OR hlstats_Clans.name LIKE '%$sr_query%'
+						)
 						$andgame
+						$andhidden
 				");
 				list($numitems) = $db->fetch_row($resultCount);
 				$table->draw($result, $numitems, 95);

@@ -38,37 +38,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 define('IN_HLSTATS', true);
 
-foreach ($_SERVER as $key => $entry) {
-	if ($key !== 'HTTP_COOKIE') {
-		$search_pattern  = array('/<script>/', '/<\/script>/', '/[^A-Za-z0-9.\-\/=:;_?#&~]/');
-		$replace_pattern = array('', '', '');
-		$entry = preg_replace($search_pattern, $replace_pattern, $entry);
-
-		if ($key == 'PHP_SELF') {
-			if ((strrchr($entry, '/') !== '/hlstats.php') &&
-				(strrchr($entry, '/') !== '/sig.php') &&
-				(strrchr($entry, '/') !== '/sig2.php') &&
-				(strrchr($entry, '/') !== '/index.php') &&
-				(strrchr($entry, '/') !== '/status.php') &&
-				(strrchr($entry, '/') !== '/top10.php') &&
-				(strrchr($entry, '/') !== '/config.php') &&
-				(strrchr($entry, '/') !== '/') &&
-				($entry !== '')) {
-				// hlstats.php next to this script, same scheme (it used to be http://host/hlstats.php)
-				$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-				header('Location: ' . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/') . '/hlstats.php');
-				exit;
-			} 
-		}
-		$_SERVER[$key] = $entry;
-	}
-}
- 
 require('config.php');
+hlxFilterServerVars();
 header('Content-Type: text/html; charset=utf-8');
-
-// do not report NOTICE warnings
-error_reporting(E_ALL ^ E_NOTICE);
 
 ///
 /// Classes
@@ -101,7 +73,11 @@ if (empty($g_options)) {
 }
 
 
-$g_options['scriptbase'] = str_replace('/status.php', '', $g_options['scripturl']);
+// This widget is made to be framed by other sites. It carries no script.
+sendPageSecurityHeaders(true);
+
+// Folder of this script: the links below point at hlstats.php next to it
+$g_options['scriptbase'] = rtrim(str_replace('\\', '/', dirname($g_options['scripturl'])), '/');
 
 ////
 //// Main Config
@@ -122,6 +98,15 @@ if (isset($_GET['server_id']) && is_numeric($_GET['server_id'])) {
 $width = '218';
 if (isset($_GET['width']) && is_numeric($_GET['width'])) {
 	$width = valid_request($_GET['width'], true);
+}
+
+// Team colors come from the admin panel and are printed inside style="": anything
+// but a hex color or a color name could add CSS rules or close the attribute
+function status_team_color($value, $default)
+{
+	$value = (string) $value;
+
+	return preg_match('/^(#[0-9a-f]{3,8}|[a-z]{1,20})\z/i', $value) ? $value : $default;
 }
 
 // Printed inside style="", after a #: anything but a hex color could add CSS rules
@@ -207,7 +192,8 @@ if (isset($_GET['show_map_wins']) && is_numeric($_GET['show_map_wins'])) {
 
 $top_players = '10';
 if (isset($_GET['top_players']) && is_numeric($_GET['top_players'])) {
-	$top_players = max(1, min(50, valid_request($_GET['top_players'], true)));
+	// 0 hides the list
+	$top_players = max(0, min(50, valid_request($_GET['top_players'], true)));
 }
 
 $players_images = '1';
@@ -251,10 +237,11 @@ else
 	$fsize = 'fNormal';
 }
 
-if ($server_data['addr'] != '')  {
-	echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
-	echo '<html>';
+if ($server_data && $server_data['addr'] != '')  {
+	echo '<!DOCTYPE html>';
+	echo '<html lang="en">';
 	echo '<head>';
+	echo '<meta charset="utf-8">';
 	echo '<title>' . eHtmlOnce($g_options["sitename"]) . '</title>';
 	echo '<style type="text/css">{margin:0px;padding:0px;}</style>';
 	echo '<link rel="stylesheet" type="text/css" href="'.asset_url('hlstats.css').'">';
@@ -270,11 +257,11 @@ if ($server_data['addr'] != '')  {
 		if ($logo) {
 			if ($server_name == 1)
 			{
-				echo '<a target="_blank" href="'.$g_options["siteurl"].'"><img src="'.IMAGE_PATH.'/icons/shorttitle-'.$game.'.png" style="width:'.$width.'px;border:0px;" alt="'.$g_options['sitename'].'" title="'.$g_options['sitename'].'" /></a>';
+				echo '<a target="_blank" rel="noopener" href="'.eHtmlOnce($g_options["siteurl"]).'"><img src="'.IMAGE_PATH.'/icons/shorttitle-'.$game.'.png" style="width:'.$width.'px;border:0px;" alt="'.eHtmlOnce($g_options['sitename']).'" title="'.eHtmlOnce($g_options['sitename']).'" /></a>';
 			}
 			else
 			{
-				echo '<a target="_blank" href="'.$g_options["siteurl"].'"><img src="'.IMAGE_PATH.'/icons/shorttitle-'.$game.'.png" style="width:'.$width.'px;border:0px;" alt="'.eHtml($server_data['name']).'" title="'.eHtml($server_data['name']).'" /></a>';
+				echo '<a target="_blank" rel="noopener" href="'.eHtmlOnce($g_options["siteurl"]).'"><img src="'.IMAGE_PATH.'/icons/shorttitle-'.$game.'.png" style="width:'.$width.'px;border:0px;" alt="'.eHtml($server_data['name']).'" title="'.eHtml($server_data['name']).'" /></a>';
 			}
 		}
 		else
@@ -287,7 +274,7 @@ if ($server_data['addr'] != '')  {
 	if ($server_name == 1)
 	{
 		echo '<tr><td align="center" colspan="2" class="'.$fsize.'">';
-		echo '<a target="_blank" href="'.$g_options['scriptbase'].'" title="View statistics"><b>'.eHtml($server_data['name']).'</b></a>';
+		echo '<a target="_blank" rel="noopener" href="'.$g_options['scriptbase'].'/hlstats.php" title="View statistics"><b>'.eHtml($server_data['name']).'</b></a>';
 		echo '</td></tr>';
 	}
 
@@ -307,16 +294,14 @@ if ($server_data['addr'] != '')  {
 
 	if ($map_image == 1)
 	{
-		$mapimg = getImage("/games/{$game}/maps/{$server_data['act_map']}");
-		if (!file_exists($mapimg['path'])) {
-			$mapimg = getImage("/games/{$game}/maps/default");
-			if (!file_exists($mapimg['path'])) {
-				$mapimg = getImage("/nomap");
-			}
-		}
+		// getImage() returns false when there is no such image
+		$mapimg = getImage("/games/{$game}/maps/{$server_data['act_map']}")
+			?: getImage("/games/{$game}/maps/default")
+			?: getImage("/nomap")
+			?: array('url' => '');
 		
 		echo '<tr><td align="center" colspan="2">';
-		echo '<a target="_blank" href="'.$g_options['scriptbase'].'/hlstats.php?mode=mapinfo&amp;map='.urlencode($server_data['act_map']).'&amp;game='.$game.'"><img src="'.$mapimg['url'].'" style="width:'.$width.'px;border:0px" alt="'.eHtml($server_data['act_map']).'" title="'.eHtml($server_data['act_map']).'" /></a>';
+		echo '<a target="_blank" rel="noopener" href="'.$g_options['scriptbase'].'/hlstats.php?mode=mapinfo&amp;map='.urlencode($server_data['act_map']).'&amp;game='.$game.'"><img src="'.eHtml($mapimg['url']).'" style="width:'.$width.'px;border:0px" alt="'.eHtml($server_data['act_map']).'" title="'.eHtml($server_data['act_map']).'" /></a>';
 		echo '</td></tr>';
 	}
 
@@ -439,7 +424,8 @@ if ($server_data['addr'] != '')  {
 					hits, 
 					connected, 
 					skill_change, 
-					cli_flag
+					cli_flag,
+					cli_country
 				FROM 
 					hlstats_Livestats 
 				WHERE 
@@ -461,9 +447,12 @@ if ($server_data['addr'] != '')  {
 		{
 			$j=0;
 			$thisteam = $teamdata[$curteam];
+			$thisteam['playerlist_bgcolor'] = status_team_color($thisteam['playerlist_bgcolor'], '#D5D5D5');
+			$thisteam['playerlist_color'] = status_team_color($thisteam['playerlist_color'], '#050505');
 			$teamcolor = 'background:'.$thisteam['playerlist_bgcolor'].';color:'.$thisteam['playerlist_color'];
-			$bordercolor = 'background:'.$$thisteam['playerlist_bgcolor'].';color:'.$thisteam['playerlist_color'].';border-top:1px '.$thisteam['playerlist_color'].' solid';
-			$team_display_name  = htmlspecialchars($thisteam['name']);
+			$bordercolor = 'background:'.$thisteam['playerlist_bgcolor'].';color:'.$thisteam['playerlist_color'].';border-top:1px '.$thisteam['playerlist_color'].' solid';
+			// No hlstats_Teams row for this team code (RIGHT JOIN): no name
+			$team_display_name  = eHtmlOnce($thisteam['name'] ?? '');
 
 			while (isset($playerdata[$curteam][$j]))
 			{
@@ -472,11 +461,10 @@ if ($server_data['addr'] != '')  {
 			echo '<td align="left" width="85%" style="'.$teamcolor.';padding-left:3px;" class="'.$fsize.'">';
 				if (isset($thisplayer))
 				{
-					if (strlen($thisplayer['name'])>50)
-					{
-						$thisplayer['name'] = substr($thisplayer['name'], 0, 50);
-					}
-					echo '<a target="_blank" style="color:'.$thisteam['playerlist_color'].';" href="'.$g_options['scriptbase'].'/hlstats.php?mode=playerinfo&amp;player='.$thisplayer['player_id'].'" title="Player Details">';
+					// Counted in characters: cutting a UTF-8 name on a byte left an invalid
+					// string, which htmlspecialchars() prints as nothing
+					$thisplayer['name'] = shortName($thisplayer['name'], 50, 50);
+					echo '<a target="_blank" rel="noopener" style="color:'.$thisteam['playerlist_color'].';" href="'.$g_options['scriptbase'].'/hlstats.php?mode=playerinfo&amp;player='.(int) $thisplayer['player_id'].'" title="Player Details">';
 					if ($show_flags == 1)
 					{
 					echo '<img src="'.getFlag($thisplayer['cli_flag']).'" alt="'.eHtmlOnce(ucfirst(strtolower($thisplayer['cli_country']))).'" title="'.eHtmlOnce(ucfirst(strtolower($thisplayer['cli_country']))).'">&nbsp;';
@@ -518,12 +506,6 @@ if ($server_data['addr'] != '')  {
 					echo '<tr style="'.$teamcolor.'">';
 					echo '<td align="left" width="85%" style="'.$bordercolor.';'.$teamcolor.';padding-left:3px;" class="'.$fsize.'">';
 					echo '&nbsp;<b>'.$team_display_name.'</b>';
-					if ($show_team_wins == 1) {
-						if (($map_teama_wins > 0) || ($map_teamb_wins > 0))
-						{
-							echo '&nbsp;('.$map_teama_wins.' wins)';
-						}
-					}
 					echo '</td>';
 					echo '<td align="right" width="15%" style="'.$bordercolor.';'.$teamcolor.';padding-right:3px" class="'.$fsize.'">';
 					if (count($teamdata[$curteam]) > 0)
@@ -586,8 +568,7 @@ if ($server_data['addr'] != '')  {
 				game='{$game_escaped}'
 				AND hideranking=0
 			ORDER BY
-				skill DESC, 
-				kpd DESC 
+				skill DESC
 			LIMIT 0,$top_players
 		");
 		echo '<tr><td colspan="2"><table border="0" cellpadding="0" cellspacing="0" style="width:100%">';
@@ -601,10 +582,8 @@ if ($server_data['addr'] != '')  {
 			$cut_pos = 15;
 			if ($small_fonts == 1)
 				$cut_pos += 10;
-			$display_name = $player['lastName'];
-			if (strlen($player['lastName']) > $cut_pos)
-				$display_name = substr($player['lastName'], 0, $cut_pos);
-			echo '<a target="_blank" href="'.$g_options["scriptbase"].'/hlstats.php?mode=playerinfo&amp;player='.$player['playerId'].'" title="Player Details">';
+			$display_name = shortName($player['lastName'], $cut_pos, $cut_pos);
+			echo '<a target="_blank" rel="noopener" href="'.$g_options["scriptbase"].'/hlstats.php?mode=playerinfo&amp;player='.$player['playerId'].'" title="Player Details">';
 			if ($show_flags == 1)
 			{
 				if ($player['country'] == '')

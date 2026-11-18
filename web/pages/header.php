@@ -158,10 +158,10 @@ For support and installation notes visit http://www.hlxcommunity.com
 	// Determine if we should show SourceBans links/Forum links
 	$extratabs = NULL;
 	if ($g_options['sourcebans_address'] && file_exists($iconpath . "/title-sourcebans.png")) {
-		$extratabs .= "<li class='header_tabs'><a href=\"". $g_options['sourcebans_address'] . "\" target=\"_blank\">Sourcebans</a></li>\n";
+		$extratabs .= "<li class='header_tabs'><a href=\"". eHtmlOnce($g_options['sourcebans_address']) . "\" target=\"_blank\" rel=\"noopener\">Sourcebans</a></li>\n";
 	}
 	if ($g_options['forum_address'] && file_exists($iconpath . "/title-forum.png")) {
-		$extratabs .= "<li class='header_tabs'><a href=\"" . $g_options['forum_address'] . "\" target=\"_blank\">Forums</a></li>\n";
+		$extratabs .= "<li class='header_tabs'><a href=\"" . eHtmlOnce($g_options['forum_address']) . "\" target=\"_blank\" rel=\"noopener\">Forums</a></li>\n";
 	}
 ?>
 <div class="block">
@@ -187,7 +187,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		
 		if ($num_games > 1 && $g_options['display_gamelist'] == 1) {
 ?>
-		<div class="header_gameslist"><?php @include(PAGE_PATH .'/gameslist.php'); ?></div>
+		<div class="header_gameslist"><?php include(PAGE_PATH .'/gameslist.php'); ?></div>
 <?php	
 		}
 ?>
@@ -276,7 +276,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	if ($g_options['bannerdisplay'] != 0 && ($mode == 'contents' || $g_options['bannerdisplay']==1)) {
 ?>    
 	<div class="block" style="text-align:center;">
-		<img src="<?php echo ((strncmp($g_options['bannerfile'], 'http:/', 6) == 0)?$g_options['bannerfile']:IMAGE_PATH.'/'.$g_options['bannerfile']); ?>" alt="Banner" />
+		<img src="<?php echo eHtmlOnce((preg_match('#^https?://#i', (string) $g_options['bannerfile'])) ? $g_options['bannerfile'] : IMAGE_PATH.'/'.$g_options['bannerfile']); ?>" alt="Banner" />
 	</div>
 <?php
 	}

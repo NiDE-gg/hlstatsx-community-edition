@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	if ($auth->userdata['acclevel'] < 80) {
+	if ($auth->userdata['acclevel'] < 100) {
         die ('Access denied!');
 	}
 
@@ -48,8 +48,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn('name', 'Server Name', 45, true, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('addr', 'Server IP or Hostname (Discord: invite link or server ID)', 20, true, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('password', 'Join password (shown to all visitors)', 20, false, 'text', '', 64);
-	$edlist->columns[] = new EditListColumn('UDPPort', 'UDP Port (TS only)', 6, false, 'text', '8767', 64);
-	$edlist->columns[] = new EditListColumn('queryPort', 'Query Port (TS)/Connect Port (Vent)', 6, true, 'text', '51234', 64);
+	$edlist->columns[] = new EditListColumn('UDPPort', 'Port (TeamSpeak only)', 6, false, 'text', '8767', 64);
+	$edlist->columns[] = new EditListColumn('queryPort', 'Connect Port (Ventrilo only)', 6, true, 'text', '51234', 64);
 	$edlist->columns[] = new EditListColumn('descr', 'Notes', 40, false, 'text', '', 64);
 	$edlist->columns[] = new EditListColumn('serverType', 'Server Type', 20, true, 'select', '0/Teamspeak;1/Ventrilo;2/Discord');
 
@@ -69,6 +69,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 
 ?>
+<p>
+	<strong>TeamSpeak</strong> and <strong>Ventrilo</strong> servers are listed with their connect link only: the live channel viewers were removed.
+</p>
 <p>
 	<strong>Discord</strong>: enter an invite link (<code>https://discord.gg/abc</code>, ideally one that never expires) or the server ID.
 	The ports and the password are not used. The member and online counts come from the invite.

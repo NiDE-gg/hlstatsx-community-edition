@@ -60,7 +60,7 @@ use Encode;
 use Syntax::Keyword::Try;
 
 require "$opt_libdir/ConfigReaderSimple.pm";
-do "$opt_libdir/HLstats.plib";
+do "$opt_libdir/HLstats.plib" or die("Can't load $opt_libdir/HLstats.plib: " . ($@ || $!) . "\n");
 
 $|=1;
 Getopt::Long::Configure ("bundling");
@@ -909,6 +909,8 @@ sub DoRibbons
 			");
 		while ( my($ribbonid, $code, $count, $special) = $result2->fetchrow_array ) {
 			# scan players for each ribbon ID
+			# Both go into the queries below as numbers
+			next unless ($ribbonid =~ /^\d+\z/ && $count =~ /^-?\d+\z/);
 			if ($special==2) {
 			# connection time
 				$result3 = &doQuery("
@@ -943,7 +945,7 @@ sub DoRibbons
 						AND hlstats_Players.hideranking=0
 					WHERE
 						hlstats_Players_Awards.game='".&quoteSQL($game)."' AND
-						hlstats_Awards.code='".$code."' AND
+						hlstats_Awards.code='".&quoteSQL($code)."' AND
 						hlstats_Awards.awardType<>'V'
 					GROUP BY
 						hlstats_Players_Awards.playerId    	
@@ -953,6 +955,7 @@ sub DoRibbons
 			}
 
 			while (my($playerid, $cnt) = $result3->fetchrow_array) {
+				next unless ($playerid =~ /^\d+\z/);
 				&execNonQuery("
 					INSERT INTO hlstats_Players_Ribbons
 						(playerId, ribbonId, game)
@@ -1255,6 +1258,13 @@ sub DoPruning
 	$result = &doQuery("SELECT `value` FROM hlstats_Options WHERE keyname='DeleteDays'");
 	my ($g_deletedays) = $result->fetchrow_array;
 	
+	# The value goes into "INTERVAL ... DAY" below: 0 or an empty value would delete
+	# every event and the whole player history
+	if (!defined($g_deletedays) || $g_deletedays !~ /^[1-9]\d*\z/) {
+		print "++ Cleaning up database: SKIPPED, the DeleteDays option must be a whole number of days, 1 or more (it is \"" . ($g_deletedays // "") . "\")\n";
+		return;
+	}
+
 	print "++ Cleaning up database: deleting events older than $g_deletedays days... ";
 	
 	foreach $eventTable (keys(%g_eventTables))

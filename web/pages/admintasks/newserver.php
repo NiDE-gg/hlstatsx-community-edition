@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	if ($auth->userdata["acclevel"] < 80) {
+	if ($auth->userdata["acclevel"] < 100) {
         die ("Access denied!");
 	}
 	
@@ -90,7 +90,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	function clean_data($data)
 	{
-		return trim(htmlspecialchars($data));
+		return is_string($data) ? trim(htmlspecialchars($data)) : '';
 	}
 
     $server_ip = (!empty($_POST['server_address'])) ? clean_data($_POST['server_address']) : "";

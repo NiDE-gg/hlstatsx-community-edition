@@ -127,6 +127,7 @@ EngineVersion g_evEngineVersion = Engine_Unknown;
 bool g_bTeamPlay;
 bool g_bLateLoad = false;
 bool g_bIgnoreNextTagChange = false;
+bool g_bProtectAddressRefused = false;
 ArrayList g_hCustomTags;
 bool g_bProtobuf;
 UserMsg g_umSayText = INVALID_MESSAGE_ID;
@@ -235,7 +236,7 @@ public void OnPluginStart()
 
 	hlx_block_chat_commands = CreateConVar("hlx_block_commands", "1", "If activated HLstatsX commands are blocked from the chat area");
 	hlx_message_prefix = CreateConVar("hlx_message_prefix", "", "Define the prefix displayed on every HLstatsX ingame message");
-	hlx_protect_address = CreateConVar("hlx_protect_address", "", "Address to be protected for logging/forwarding");
+	hlx_protect_address = CreateConVar("hlx_protect_address", "", "Address to be protected for logging/forwarding", FCVAR_PROTECTED);
 	hlx_server_tag = CreateConVar("hlx_server_tag", "1", "If enabled, adds \"HLstatsX:CE\" to server tags on supported games. 1 = Enabled (default), 0 = Disabled",
 		_, true, 0.0, true, 1.0);
 	hlx_block_status = CreateConVar("hlx_block_status", "0", "If enabled, blocks the status command when HLstatsX is installed. 1 = Enabled, 0 = Disabled (default)",
@@ -577,9 +578,41 @@ public void OnSVTagsChange(ConVar cvar, const char[] oldVal, const char[] newVal
 }
 
 
+/**
+ * hlx_protect_address ends up in a server command, so it may only hold what an address is made
+ * of. Anything else is refused and logged once, and the protection is off as with an empty cvar.
+ */
+bool IsProtectAddressUsable(const char[] address)
+{
+	if (address[0] == '\0')
+	{
+		return false;
+	}
+
+	for (int i = 0; address[i] != '\0'; i++)
+	{
+		int c = address[i];
+		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == ':' || c == '-')
+		{
+			continue;
+		}
+
+		if (!g_bProtectAddressRefused)
+		{
+			g_bProtectAddressRefused = true;
+			LogError("hlx_protect_address \"%s\" ignored: only letters, digits, '.', ':' and '-' are allowed", address);
+		}
+		return false;
+	}
+	return true;
+}
+
 public void OnProtectAddressChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	if (newVal[0] != '\0')
+	// a new value gets its own log entry if it is refused too
+	g_bProtectAddressRefused = false;
+
+	if (IsProtectAddressUsable(newVal))
 	{
 		LogToGame("Command: logaddress_add %s", newVal);
 		ServerCommand("logaddress_add %s", newVal);
@@ -595,7 +628,7 @@ public Action ProtectLoggingChange(int args)
 {
 	char protect_address[192];
 	hlx_protect_address.GetString(protect_address, sizeof(protect_address));
-	if (protect_address[0] != '\0' && args >= 1)
+	if (IsProtectAddressUsable(protect_address) && args >= 1)
 	{
 		char log_action[192];
 		GetCmdArg(1, log_action, sizeof(log_action));
@@ -613,7 +646,7 @@ public Action ProtectForwardingChange(int args)
 {
 	char protect_address[192];
 	hlx_protect_address.GetString(protect_address, sizeof(protect_address));
-	if (protect_address[0] != '\0' && args >= 1)
+	if (IsProtectAddressUsable(protect_address) && args >= 1)
 	{
 		// the tokenizer splits "ip:port" into several arguments, glue them back together
 		char log_action[192];
@@ -636,7 +669,7 @@ public Action ProtectForwardingDelallChange(int args)
 {
 	char protect_address[192];
 	hlx_protect_address.GetString(protect_address, sizeof(protect_address));
-	if (protect_address[0] != '\0')
+	if (IsProtectAddressUsable(protect_address))
 	{
 		ReaddProtectedAddress(protect_address);
 	}

@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-	if ($auth->userdata['acclevel'] < 80) {
+	if ($auth->userdata['acclevel'] < 100) {
 		die ('Access denied!');
     }
 
@@ -50,9 +50,6 @@ For support and installation notes visit http://www.hlxcommunity.com
         // get default values
         $db->query("DELETE FROM hlstats_Servers_Config WHERE serverId=$key;");
         $db->query("INSERT INTO hlstats_Servers_Config (serverId, parameter, value) SELECT $key,parameter,value FROM hlstats_Servers_Config_Default");
-        // get server ip and port
-        $db->query("SELECT CONCAT(address, ':', port) AS addr FROM hlstats_Servers WHERE serverId=$key;");
-        $r = $db->fetch_array();
     }
 	
 	if (isset($_GET['key'])) {
@@ -67,6 +64,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	if ($key==0)
 		die('Server ID not set!');
+
+	// Opening this page for a server without settings writes the default ones: only
+	// for a server that exists, or any ?key= would fill the table with orphan rows
+	$db->query("SELECT serverId FROM hlstats_Servers WHERE serverId=$key");
+	if ($db->num_rows() == 0)
+		die('No such server!');
 	
 	if (isset($_POST['sourceId'])) {
 		$sourceId = valid_request(intval($_POST['sourceId']),true);
@@ -107,16 +110,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$edlist->columns[] = new EditListColumn('value', 'Parameter value', 60, false, 'text', '', 128);
 	
 	if ($_POST)
-	if ($_POST['setdefaults']=='defaults') {
+	if (($_POST['setdefaults'] ?? '') == 'defaults') {
 		setdefaults($key);
 	} else 
-		if ($_POST['sourceId']!='0') {
+		if ($sourceId != 0) {
 			// copy server settings from another server
 			$db->query("DELETE FROM hlstats_Servers_Config WHERE serverId=$key");
 			$db->query("INSERT INTO hlstats_Servers_Config (serverId, parameter, value) SELECT $key,parameter,value FROM hlstats_Servers_Config WHERE serverId=$sourceId");
-			// get server ip and port
-			$db->query("SELECT CONCAT(address, ':', port) AS addr FROM hlstats_Servers WHERE serverId=$key;");
-			$r = $db->fetch_array();
 		} else {
 			if ($edlist->update())
 				message('success', 'Operation successful.');

@@ -139,7 +139,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 	");
 
 	$result = $db->query("
-		SELECT *, 
+		SELECT
+			tmp_clan_kills.map,
+			tmp_clan_kills.kills,
+			tmp_clan_kills.headshots,
+			tmp_clan_deaths.deaths,
 			IFNULL(kills/deaths, '-') AS kpd,
 			IFNULL(headshots / kills, '-') AS hpk,
 			ROUND(kills / $realkills * 100, 2) AS kpercent,

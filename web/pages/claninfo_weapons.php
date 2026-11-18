@@ -47,6 +47,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     $realgame = $gameRepo->getGameByCode($game, 'realgame');
 
 	$result  = $db->query("SELECT `code`,`name` FROM hlstats_Weapons WHERE game='$game'");
+	$fname = array();
 	while ($rowdata = $db->fetch_row($result)) {
 		$code = $rowdata[0];
 		$fname[strToLower($code)] = htmlspecialchars($rowdata[1]);

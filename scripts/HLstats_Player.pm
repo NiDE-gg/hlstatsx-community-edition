@@ -41,7 +41,7 @@ package HLstats_Player;
 use Encode;
 use Syntax::Keyword::Try;
 
-do "$::opt_libdir/HLstats_GameConstants.plib";
+do "$::opt_libdir/HLstats_GameConstants.plib" or die("Can't load $::opt_libdir/HLstats_GameConstants.plib: " . ($@ || $!) . "\n");
 
 sub new
 {
@@ -990,7 +990,9 @@ sub geoLookup
 				$self->{lat} = (($lat eq "")?undef:$lat);
 				$self->{lng} = (($lng eq "")?undef:$lng);
 			}
-		} else {
+		} elsif ($ip_address =~ /^\d{1,3}(?:\.\d{1,3}){3}\z/) {
+			# Only a dotted IPv4 address: anything else (the address comes from a log line or
+			# from rcon) could turn $ip_number into "Inf" or "NaN" and break the query
 			my @ipp = split (/\./,$ip_address);
 			my $ip_number = $ipp[0]*16777216+$ipp[1]*65536+$ipp[2]*256+$ipp[3];
 			my $query = "
@@ -1096,7 +1098,7 @@ sub getRank
 				)
 		";
 		my @vals = (
-			&::quoteSQL($self->{game}),
+			$self->{game},
 			$self->{skill},
 			$self->{skill},
 			$kpd
@@ -1123,7 +1125,7 @@ sub getRank
 				)
 		";
 		my @vals = (
-			&::quoteSQL($self->{game}),
+			$self->{game},
 			$kills,
 			$kills,
 			$kpd

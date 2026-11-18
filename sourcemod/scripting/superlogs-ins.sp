@@ -343,7 +343,12 @@ public Action Command_Chat(int client, int args)
 			message[lastchar] = '\0';
 			startidx += 1;
 		}
-		
+
+		// the text goes into a quoted log field, on one line
+		ReplaceString(message[startidx], sizeof(message) - startidx, "\"", "'");
+		ReplaceString(message[startidx], sizeof(message) - startidx, "\r", " ");
+		ReplaceString(message[startidx], sizeof(message) - startidx, "\n", " ");
+
 		if (message[0] == '1')
 		{
 			LogPlayerEvent(client, "say", message[startidx], false);

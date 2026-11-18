@@ -98,6 +98,94 @@ class EditList
 	var $helpKey;
 	var $helpDIV;
 
+	// Options of the select columns, by column name (see selectOptions())
+	private $selectOptions = array();
+
+	/**
+	 * The values a select column offers, as value => label.
+	 *
+	 * The datasource is "key/label;key/label", "key;key", or an SQL source
+	 * "table.column/keycolumn/where" (several can be joined with ";").
+	 */
+	function selectOptions($col)
+	{
+		global $db;
+
+		if (isset($this->selectOptions[$col->name])) {
+			return $this->selectOptions[$col->name];
+		}
+
+		$coldata = array();
+		foreach (explode(';', $col->datasource) as $v)
+		{
+			$sections = substr_count($v, '/');
+			if ($sections == 2)
+			{
+				// Split once on each separator: the where part may hold dots and
+				// slashes itself (game codes can contain dots)
+				list($col_table, $col_rest) = explode('.', $v, 2);
+				list($col_col, $col_key, $col_where) = explode('/', $col_rest, 3);
+				if ($col_where)
+				{
+					$col_where = "WHERE $col_where";
+				}
+				$col_result = $db->query("SELECT $col_key, $col_col FROM $col_table $col_where ORDER BY $col_col");
+				while (list($a, $b) = $db->fetch_row($col_result))
+				{
+					$coldata[$a] = $b;
+				}
+			}
+			else if ($sections > 0)
+			{
+				list($a, $b) = explode('/', $v, 2);
+				$coldata[$a] = $b;
+			}
+			else
+			{
+				$coldata[$v] = $v;
+			}
+		}
+
+		return $this->selectOptions[$col->name] = $coldata;
+	}
+
+	/**
+	 * The stored values of the select columns for the given rows, as
+	 * [row key][column name] => value. A row may hold a value its select no
+	 * longer offers (an award deleted since): saving the row unchanged must
+	 * still work.
+	 */
+	private function storedSelectValues(array $rows)
+	{
+		global $db;
+
+		$names = array();
+		foreach ($this->columns as $col) {
+			if ($col->type == 'select') {
+				$names[] = $col->name;
+			}
+		}
+
+		$keys = array();
+		foreach ($rows as $row) {
+			if (is_string($row)) {
+				$keys[] = "'" . $db->escape($row) . "'";
+			}
+		}
+
+		$stored = array();
+		if (!$names || !$keys) {
+			return $stored;
+		}
+
+		$result = $db->query("SELECT $this->keycol, " . implode(', ', $names) . " FROM $this->table WHERE $this->keycol IN (" . implode(', ', $keys) . ')');
+		while ($rowdata = $db->fetch_array($result)) {
+			$stored[(string) $rowdata[$this->keycol]] = $rowdata;
+		}
+
+		return $stored;
+	}
+
 	function __construct($keycol, $table, $icon, $showid = true, $drawDetailsLink = false, $DetailsLink = '', $deleteCallback = null)
 	{
 		$this->keycol = $keycol;
@@ -150,8 +238,11 @@ class EditList
 		global $db;
 
 		$okcols = 0;
+		$qcols = '';
+		$qvals = '';
 		foreach ($this->columns as $col) {
-			$value = (!empty($_POST["new_$col->name"]) && is_string($_POST["new_$col->name"])) ? $_POST["new_$col->name"] : '';
+			// isset(), not !empty(): "0" is a value (a rank from 0 kills, a ribbon for 0 awards)
+			$value = (isset($_POST["new_$col->name"]) && is_string($_POST["new_$col->name"])) ? $_POST["new_$col->name"] : '';
 			//  legacy code that should have never been here. these should never be html-escaped in the db.
 			//  if there's a problem with removing this, it needs to be fixed on the web/display end
 			//  -psychonic
@@ -178,6 +269,13 @@ class EditList
 				elseif ($passwordProblem !== null)
 				{
 					$this->errors[] = eHtml($passwordProblem);
+					$this->newerror = true;
+					$okcols++;
+				}
+				elseif ($col->type == 'select' && !array_key_exists($value, $this->selectOptions($col)))
+				{
+					// The browser only offers the listed values, a hand-made request can send anything
+					$this->errors[] = "Column '$col->title' has a value that is not in its list for new row";
 					$this->newerror = true;
 					$okcols++;
 				}
@@ -232,11 +330,13 @@ class EditList
 			$this->newerror = false;
 		}
 
-		if (!is_array($_POST['rows']))
+		if (!isset($_POST['rows']) || !is_array($_POST['rows']))
 		{
-			return true;
+			return !$this->error();
 		}
-		
+
+		$storedSelectValues = $this->storedSelectValues($_POST['rows']);
+
 		foreach ($_POST['rows'] as $row)
 		{
 			if (!is_string($row))
@@ -269,7 +369,7 @@ class EditList
 						continue;
 					}
 
-					$value = (!empty($_POST[$row . "_" . $col->name]) && is_string($_POST[$row . "_" . $col->name])) ? $_POST[$row . "_" . $col->name] : null;
+					$value = (isset($_POST[$row . "_" . $col->name]) && is_string($_POST[$row . "_" . $col->name])) ? $_POST[$row . "_" . $col->name] : '';
 					
 					//  legacy code that should have never been here. these should never be html-escaped in the db.
 					//  if there's a problem with removing this, it needs to be fixed on the web/display end
@@ -282,7 +382,7 @@ class EditList
 					}
 					*/
 
-					if ($col->type == 'checkbox' && ($value === null || $value === ''))
+					if ($col->type == 'checkbox' && $value === '')
 					{
 						$value = '0';
 					}
@@ -311,6 +411,20 @@ class EditList
 						$this->errors[] = eHtml($passwordProblem) . " (row '" . eHtml($row) . "')";
 						$rowerror = true;
 					}
+					elseif ($col->type == 'select' && $value !== ''
+						&& !array_key_exists($value, $this->selectOptions($col))
+						&& $value !== (string) ($storedSelectValues[$row][$col->name] ?? ''))
+					{
+						// Neither a listed value nor the one the row already has
+						$this->errors[] = "Column '$col->title' has a value that is not in its list for row '" . eHtml($row) . "'";
+						$rowerror = true;
+					}
+
+					if ($rowerror)
+					{
+						// Nothing is saved for this row: don't build its query (or hash a password) for nothing
+						continue;
+					}
 
 					if ($i > 0)
 					{
@@ -336,11 +450,7 @@ class EditList
 			}
 		}
 
-		if ($this->error()) {
-			return false;
-		}
-
-        return true;
+		return !$this->error();
 	}
 
 	function draw($result, $draw_new = true)
@@ -470,16 +580,13 @@ class EditList
 			if ($new)
 			{
 				$keyval = 'new';
-				$rowdata[$col->name] = $rowdata["new_$col->name"];
-				if ($stripslashes)
-					$rowdata[$col->name] = $rowdata[$col->name];
+				// Empty on a fresh form; the posted values when the new row had an error
+				$newValue = $rowdata["new_$col->name"] ?? null;
+				$rowdata[$col->name] = is_string($newValue) ? $newValue : null;
 			}
 			else
 			{
 				$keyval = $rowdata[$this->keycol];
-				if ($stripslashes)
-					$keyval = $keyval;
-
 			}
 
 			$keyvalHtml = eHtml($keyval);
@@ -502,38 +609,7 @@ class EditList
 			switch ($col->type)
 			{
 				case 'select':
-					unset($coldata);
-
-					// for manual datasource in format "key/value;key/value" or "key;key"
-					foreach (explode(';', $col->datasource) as $v)
-					{
-						$sections = preg_match_all('/\//', $v, $dsaljfdsaf);
-						if ($sections == 2)
-						{
-							// for SQL datasource in format "table.column/keycolumn/where"
-							list($col_table, $col_col) = explode('.', $v);
-							list($col_col, $col_key, $col_where) = explode('/', $col_col);
-							if ($col_where)
-							{
-								$col_where = "WHERE $col_where";
-							}
-							$col_result = $db->query("SELECT $col_key, $col_col FROM $col_table $col_where ORDER BY $col_col");
-							$coldata = array();
-							while (list($a, $b) = $db->fetch_row($col_result))
-							{
-								$coldata[$a] = $b;
-							}
-						}
-						else if ($sections > 0)
-						{
-							list($a, $b) = explode('/', $v);
-							$coldata[$a] = $b;
-						}
-						else
-						{
-							$coldata[$v] = $v;
-						}
-					}
+					$coldata = $this->selectOptions($col);
 
 					if ($col->width)
 					{
@@ -775,6 +851,7 @@ class PropertyPage_Property
 	var $name;
 	var $title;
 	var $type;
+	var $datasource;
 
 	function __construct($name, $title, $type, $datasource = '')
 	{
@@ -894,7 +971,6 @@ $admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 
 $admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 100, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
 $admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');
 $admintasks['tools_optimize'] = new AdminTask('Optimize Database', 100, 'tool', 'This operation tells the MySQL server to clean up the database tables, optimizing them for better performance. It is recommended that you run this at least once a month.');
-//$admintasks['tools_synchronize'] = new AdminTask('Synchronize Statistics', 80, 'tool', 'Sychronize all players with the offical global ELstatsNEO banlist with catched VAC cheaters.');
 $admintasks['tools_resetdbcollations'] = new AdminTask('Reset All DB Collations to UTF8', 100, 'tool', 'Reset DB Collations to UTF-8 if you receive collation errors after an upgrade from another HLstats(X)-based system.');
 
 // Sub-Tools
@@ -1036,7 +1112,7 @@ else
 }
 echo "</td>\n";
 
-if (!$selTask || !$admintasks[$selTask])
+if (!$selTask || empty($admintasks[$selTask]))
 {
 	echo '<td width="50%">';
 ?>

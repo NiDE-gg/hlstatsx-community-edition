@@ -1,1 +1,10 @@
-deny from all
+# These folders hold PHP that is only meant to be included: nothing here is served.
+# Apache 2.4 syntax, with the 2.2 one kept for old servers. nginx and Caddy ignore
+# this file: deny the same folders in their configuration (see README).
+<IfModule mod_authz_core.c>
+	Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+	Order deny,allow
+	Deny from all
+</IfModule>

@@ -41,7 +41,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 	// Action Details
 
-	$rank = valid_request($_GET['rank'], true) or error('No rank ID specified.');
+	$rank = valid_request($_GET['rank'] ?? '', true) or error('No rank ID specified.');
 	
 	$db->query("
 		SELECT
@@ -53,11 +53,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 	");
 	
 	if ($db->num_rows() != 1) {
-		$act_name = ucfirst($action);
+		error('No such rank.');
 	} else {
 		$actiondata = $db->fetch_array();
 		$db->free_result();
-		$act_name = $actiondata['description'];
+		$act_name = $actiondata['rankName'];
 	}
 
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");

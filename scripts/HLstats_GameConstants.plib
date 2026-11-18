@@ -56,3 +56,5 @@ use constant {
 	'dinodday' => DDD(),
 	'csgo' => CSGO(),
 );
+
+1;

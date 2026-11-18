@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Map Details
 	
-	$map = valid_request($_GET['map'], false) or error('No map specified.');
+	$map = valid_request($_GET['map'] ?? '', false) or error('No map specified.');
 	$map_sql = $db->escape($map);
 	$game_sql = $db->escape($game);
 
@@ -180,15 +180,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 				echo "<img class=\"mapinfo_thumb\" src=\"$mapimg\" alt=\"$map\" />";
 			}
 
-			// Called while the page renders with a name from the URL: known maps only, and quickly
+			// The link is printed without checking that the file exists: the check was a
+			// request to the download server on every page view (up to 3 seconds each)
 			if ($g_options['map_dlurl'] && $numitems > 0 && preg_match('/^[A-Za-z0-9_.-]+\z/', $map))
 			{
 				$map_dlurl = str_replace("%MAP%", $map, $g_options['map_dlurl']);
 				$map_dlurl = str_replace("%GAME%", $game, $map_dlurl);
-				$mapdlContext = stream_context_create(array('http' => array('method' => 'HEAD', 'timeout' => 3, 'follow_location' => 0)));
-				$mapdlheader = @get_headers($map_dlurl, false, $mapdlContext);
-				if ($mapdlheader && preg_match("|200|", $mapdlheader[0])) {
-					echo '<p><a href="' . eHtml($map_dlurl) . '">Download this map...</a></p>';
+				if (preg_match('#^https?://#i', $map_dlurl)) {
+					echo '<p><a href="' . eHtml($map_dlurl) . '" rel="noopener">Download this map...</a></p>';
 				}
 			}
 

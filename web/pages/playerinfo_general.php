@@ -156,7 +156,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 					<td style="width:50%;">Member of Clan:</td>
 					<td style="width:50%;">
 						<?php
-							if ($playerdata['clan'])
+							// clan_name is NULL when the clan is hidden
+							if ($playerdata['clan'] && $playerdata['clan_name'] !== null)
 							{
 								echo '&nbsp;<a href="' . $g_options['scripturl'] . '?mode=claninfo&amp;clan=' . $playerdata['clan'] . '">' . htmlspecialchars($playerdata['clan_name'], ENT_COMPAT) . '</a>';
 							}
@@ -375,7 +376,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 							$image = getImage("/games/$game/weapons/$fav_weapon");
 						// Check if image exists
-							$weaponlink = "<a href=\"hlstats.php?mode=weaponinfo&amp;weapon=$fav_weapon&amp;game=$game\">";
+							$weaponlink = "<a href=\"hlstats.php?mode=weaponinfo&amp;weapon=" . urlencode((string) $fav_weapon) . "&amp;game=$game\">";
 							if ($image)
 							{
 								$cellbody = "\t\t\t\t\t<td style=\"text-align: center\">$weaponlink<img src=\"" . $image['url'] . "\" alt=\"$weap_name\" title=\"$weap_name\" />";
@@ -901,11 +902,16 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$ribbonName=$result['ribbonName'];
 		if(!isset($awards_done[$ribbonCode]))
 		{
-			if (file_exists(IMAGE_PATH."/games/$game/ribbons/".$result['image']))
+			// A file name set in the admin panel: it must stay inside the ribbons folder
+			if (!preg_match('/^[A-Za-z0-9_.-]+\z/', (string) $result['image']) || strpos($result['image'], '..') !== false) {
+				$result['image'] = '';
+			}
+
+			if ($result['image'] !== '' && file_exists(IMAGE_PATH."/games/$game/ribbons/".$result['image']))
 			{
 				$image = IMAGE_PATH."/games/$game/ribbons/".$result['image'];
 			}
-			elseif (file_exists(IMAGE_PATH."/games/$realgame/ribbons/".$result['image']))
+			elseif ($result['image'] !== '' && file_exists(IMAGE_PATH."/games/$realgame/ribbons/".$result['image']))
 			{
 				$image = IMAGE_PATH."/games/$realgame/ribbons/".$result['image'];
 			}

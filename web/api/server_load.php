@@ -65,47 +65,48 @@ switch ($range) {
         break;
 }
 
-$samples = $serverLoadRepo->getServerLoadSamples($serverId, $avgStep < 10);
-if ($samples === null) {
-    apiError('Failed to load server load data.', 500);
-}
-
 // Average rows into buckets of $avgStep samples each, newest first, same
 // bucketing show_graph.php's type=0 branch performs for the PNG.
 $dataArray = [];
 $bucket = [];
-foreach ($samples as $row) {
+$loaded = $serverLoadRepo->eachServerLoadSample($serverId, $avgStep < 10, function (array $row) use (&$dataArray, &$bucket, $avgStep) : void {
     $bucket[] = $row;
 
-    if (count($bucket) === $avgStep) {
-        $sumActPlayers = 0;
-        $sumMinPlayers = 0;
-        $sumMaxPlayers = 0;
-        $sumUptime = 0;
-        $sumFps = 0;
-        $map = '';
-
-        foreach ($bucket as $entry) {
-            $sumActPlayers += (int)$entry['act_players'];
-            $sumMinPlayers += (int)$entry['min_players'];
-            $sumMaxPlayers += (int)$entry['max_players'];
-            $sumUptime += (int)$entry['uptime'];
-            $sumFps += (int)$entry['fps'];
-            $map = $entry['map'];
-        }
-
-        $dataArray[] = [
-            'timestamp'   => (int)$bucket[(int)ceil($avgStep / 2) - 1]['timestamp'],
-            'act_players' => (int)round($sumActPlayers / $avgStep),
-            'min_players' => (int)round($sumMinPlayers / $avgStep),
-            'max_players' => (int)round($sumMaxPlayers / $avgStep),
-            'uptime'      => (int)round($sumUptime / $avgStep),
-            'fps'         => (int)round($sumFps / $avgStep),
-            'map'         => $map,
-        ];
-
-        $bucket = [];
+    if (count($bucket) !== $avgStep) {
+        return;
     }
+
+    $sumActPlayers = 0;
+    $sumMinPlayers = 0;
+    $sumMaxPlayers = 0;
+    $sumUptime = 0;
+    $sumFps = 0;
+    $map = '';
+
+    foreach ($bucket as $entry) {
+        $sumActPlayers += (int)$entry['act_players'];
+        $sumMinPlayers += (int)$entry['min_players'];
+        $sumMaxPlayers += (int)$entry['max_players'];
+        $sumUptime += (int)$entry['uptime'];
+        $sumFps += (int)$entry['fps'];
+        $map = $entry['map'];
+    }
+
+    $dataArray[] = [
+        'timestamp'   => (int)$bucket[(int)ceil($avgStep / 2) - 1]['timestamp'],
+        'act_players' => (int)round($sumActPlayers / $avgStep),
+        'min_players' => (int)round($sumMinPlayers / $avgStep),
+        'max_players' => (int)round($sumMaxPlayers / $avgStep),
+        'uptime'      => (int)round($sumUptime / $avgStep),
+        'fps'         => (int)round($sumFps / $avgStep),
+        'map'         => $map,
+    ];
+
+    $bucket = [];
+});
+
+if (!$loaded) {
+    apiError('Failed to load server load data.', 500);
 }
 
 // At the finest granularity, prepend a "right now" point straight from
@@ -137,6 +138,9 @@ if ($avgStep === 1) {
         'last_day'  => ($lastDay === null) ? null : round($lastDay, 1),
     ];
 }
+
+// A new sample is written every 5 minutes; only the finest range adds a live point
+header('Cache-Control: public, max-age=' . ($avgStep === 1 ? 60 : 300));
 
 echo json_encode([
     'server_id' => $serverId,

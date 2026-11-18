@@ -44,7 +44,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Addon created by Rufus (rufus@nonstuff.de)
 	
-	$action = valid_request($_GET['action'], false) or error('No action ID specified.');
+	$action = valid_request($_GET['action'] ?? '', false) or error('No action ID specified.');
 
 	$action_escaped=$db->escape($action);
 	$game_escaped=$db->escape($game);
@@ -197,7 +197,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 		");
 	}	
 		
-	list($numitems, $totalact) = $db->fetch_row($resultCount);
+	// Team actions have neither flag: no query has run yet, so there is nothing to fetch
+	$numitems = 0;
+	$totalact = 0;
+	if (isset($resultCount))
+	{
+		list($numitems, $totalact) = $db->fetch_row($resultCount);
+	}
   
 	if ($totalact == 0)
 	{

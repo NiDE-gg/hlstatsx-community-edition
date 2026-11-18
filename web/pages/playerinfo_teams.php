@@ -144,6 +144,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		WHERE
 			hlstats_Roles.game = '$game'
 	");
+	$fname = array();
 	while ($rowdata = $db->fetch_row($result))
 	{
 		$code = preg_replace("/[ \r\n\t]+/", "", $rowdata[0]);

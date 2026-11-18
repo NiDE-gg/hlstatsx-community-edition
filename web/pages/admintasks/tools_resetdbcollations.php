@@ -40,7 +40,7 @@ For support and installation notes visit http://www.hlxcommunity.com
         die('Do not access this file directly.');
     }
 
-    if ($auth->userdata['acclevel'] < 80) {
+    if ($auth->userdata['acclevel'] < 100) {
         die ('Access denied!');
     }
 ?>
@@ -53,7 +53,21 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$convert_to = DB_COLLATE;
 		$character_set = DB_CHARSET;
 
-		if ($_POST['printonly'] > 0) {
+		// The NULL and DEFAULT parts of a column, kept as they are: changing the
+		// collation must not change anything else. (This used to assign instead of
+		// compare, so every column without a default became NOT NULL DEFAULT ''.)
+		$columnNullAndDefault = function (array $row) use ($db) {
+			$isNullable = strtolower($row['Null']) == 'yes';
+
+			if ($row['Default'] === null)
+				$default = $isNullable ? ' DEFAULT NULL' : '';
+			else
+				$default = " DEFAULT '" . $db->escape($row['Default']) . "'";
+
+			return array($isNullable ? ' NULL' : ' NOT NULL', $default);
+		};
+
+		if (($_POST['printonly'] ?? 0) > 0) {
 			echo '<strong>Run these statements against your MySql database</strong><br><br>';
 			echo "ALTER DATABASE `".DB_NAME."` DEFAULT CHARACTER SET $character_set COLLATE $convert_to;<br>";
 
@@ -71,18 +85,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				{
 					if ($row['Collation'] == '')
 						continue;
-					if ( strtolower($row['Null']) == 'yes' )
-						$nullable = ' NULL ';
-					else
-						$nullable = ' NOT NULL';
-					if ( $row['Default'] === NULL && $nullable = ' NOT NULL ')
-						$default = " DEFAULT ''";
-					else if ( $row['Default'] === NULL )
-						$default = ' DEFAULT NULL';
-					else if ($row['Default']!='')
-						$default = " DEFAULT '".$db->escape($row['Default'])."'";
-					else
-						$default = '';
+					list($nullable, $default) = $columnNullAndDefault($row);
 					
 					$field = $db->escape($row['Field']);
 					echo "ALTER TABLE `$table` CHANGE `$field` `$field` $row[Type] CHARACTER SET $character_set COLLATE $convert_to $nullable $default;<br>";
@@ -111,18 +114,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				{
 					if ($row['Collation'] == '')
 						continue;
-					if ( strtolower($row['Null']) == 'yes' )
-						$nullable = ' NULL ';
-					else
-						$nullable = ' NOT NULL';
-					if ( $row['Default'] === NULL && $nullable = ' NOT NULL ')
-						$default = " DEFAULT ''";
-					else if ( $row['Default'] === NULL )
-						$default = ' DEFAULT NULL';
-					else if ($row['Default']!='')
-						$default = " DEFAULT '".$db->escape($row['Default'])."'";
-					else
-						$default = '';
+					list($nullable, $default) = $columnNullAndDefault($row);
 					
 					$field = $db->escape($row['Field']);
 					echo "<li>Converting Table: $table   Column: $field ... ";

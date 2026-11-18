@@ -200,7 +200,7 @@ function jsEscape($value)
  */
 function getFlag($flag, $type='url')
 {
-	$image = getImage('/flags/'.strtolower($flag));
+	$image = getImage('/flags/'.strtolower((string) $flag));
 	if ($image)
 		return $image[$type];
 	else
@@ -222,10 +222,16 @@ function valid_request($str, $numeric = false)
 	}
 
 	// No backslash in this list: legacy queries interpolate the result, and a value
-	// ending in one would escape the closing quote of the SQL string
-	$search_pattern = array("/[^A-Za-z0-9\[\]*.,=()!\"$%&^`ґ':;ЯІі#+~_\-|<>\/@{}дцьДЦЬ ]/");
-	$replace_pattern = array('');
-	$str = preg_replace($search_pattern, $replace_pattern, $str);
+	// ending in one would escape the closing quote of the SQL string.
+	// Letters and digits of any script are kept (the old byte-wise list cut UTF-8
+	// characters in half: "Müller" became "Mller"). Input that is not valid UTF-8
+	// makes preg_replace() return null, and is then reduced to ASCII.
+	$str = (string) ($str ?? '');
+	$clean = preg_replace('/[^\p{L}\p{N}\[\]*.,=()!"$%&^`´\':;#+~_\-|<>\/@{} ]/u', '', $str);
+	if ($clean === null) {
+		$clean = (string) preg_replace('/[^A-Za-z0-9\[\]*.,=()!"$%&^`\':;#+~_\-|<>\/@{} ]/', '', $str);
+	}
+	$str = $clean;
 
 	if (!$numeric) {
 		return htmlspecialchars($str, ENT_QUOTES);
@@ -369,7 +375,7 @@ function makeQueryString($key, $value, $notkeys = array())
  * @param mixed $location
  * @return
  */
-function pageHeader($title = '', $location = '')
+function pageHeader($title = '', $location = array())
 {
 	global $db, $g_options;
 	if ( defined('PAGE') && PAGE == 'HLSTATS' )
@@ -756,15 +762,3 @@ function tryHexToRgb($hexVal = '') : ?array
 	];
 }
 
-// Deprecated function
-function hex2rgb($hexVal = '')
-{
-	$hexVal = preg_replace('/[^a-fA-F0-9]/', '', $hexVal);
-	if (strlen($hexVal) != 6)
-	{
-		return 'ERR: Incorrect colorcode, expecting 6 chars (a-f, 0-9)';
-	}
-	$arrTmp = explode(' ', chunk_split($hexVal, 2, ' '));
-	$arrTmp = array_map('hexdec', $arrTmp);
-	return array('red' => $arrTmp[0], 'green' => $arrTmp[1], 'blue' => $arrTmp[2]);
-}

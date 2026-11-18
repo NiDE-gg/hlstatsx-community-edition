@@ -61,7 +61,7 @@ $heartbeat = 30;
 ## No need to edit below this line
 ##
 require "$opt_libdir/ConfigReaderSimple.pm";
-do "$opt_libdir/HLstats.plib";
+do "$opt_libdir/HLstats.plib" or die("Can't load $opt_libdir/HLstats.plib: " . ($@ || $!) . "\n");
 
 $|=1;
 Getopt::Long::Configure ("bundling");

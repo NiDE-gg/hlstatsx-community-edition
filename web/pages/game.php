@@ -84,8 +84,8 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	$query = "
 			SELECT
-				SUM(kills),
-				SUM(headshots),
+				IFNULL(SUM(kills), 0),
+				IFNULL(SUM(headshots), 0),
 				count(serverId)		
 			FROM
 				hlstats_Servers
@@ -416,7 +416,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			<table class="data-table">
 			<tr class="data-table-row">
 			  <td style="padding:0px;text-align:center;">
-				<a href="<?php $g_options['scripturl'] ?>?mode=servers&amp;server_id=<?php echo $server_id ?>&amp;game=<?php echo $game ?>" style="text-decoration:none;"><canvas class="server-load-chart" width="870" height="300" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Server Load Graph"></canvas></a>
+				<a href="<?php echo $g_options['scripturl'] ?>?mode=servers&amp;server_id=<?php echo $server_id ?>&amp;game=<?php echo $game ?>" style="text-decoration:none;"><canvas class="server-load-chart" width="870" height="300" data-server-id="<?php echo (int)$server_id; ?>" data-range="1" data-bg-color="<?php echo htmlspecialchars($g_options['graphbg_load']); ?>" data-text-color="<?php echo htmlspecialchars($g_options['graphtxt_load']); ?>" aria-label="Server Load Graph"></canvas></a>
 			  </td>
 			</tr>
 			</table>
@@ -505,7 +505,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 						$flag = '0.gif';
 						$alt = 'Unknown Country';
 						if ($awarddata['flag'] != '') {
-							$alt = ucfirst(strtolower($awarddata['country']));
+							$alt = eHtml(ucfirst(strtolower((string) $awarddata['country'])));
 						}
 						echo "<img src=\"" . getFlag($awarddata['flag']) . "\" hspace=\"4\" alt=\"$alt\" title=\"$alt\" /><a href=\"{$g_options['scripturl']}?mode=playerinfo&amp;player={$awarddata['d_winner_id']}\"><b>" . htmlspecialchars($awarddata['d_winner_name'], ENT_COMPAT) . "</b></a> ({$awarddata['d_winner_count']} " . htmlspecialchars($awarddata['verb']) . ")";
 					} else {

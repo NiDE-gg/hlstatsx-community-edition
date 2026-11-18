@@ -55,6 +55,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Weapons.game = '$game'
 	");
 
+	$fname = array();
 	while ($rowdata = $db->fetch_row($result)) {
 		$code = $rowdata[0];
 		$fname[strToLower($code)] = htmlspecialchars($rowdata[1]);

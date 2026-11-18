@@ -59,6 +59,7 @@ new bool:g_bGameCanDoMotd = true;
 new bool:g_bTrackColors4Chat;
 new bool:g_bLateLoad = false;
 new bool:g_bIgnoreNextTagChange = false;
+new bool:g_bProtectAddressRefused = false;
 new Handle:g_hCustomTags;
 new EngineVersion:CurrentVersion;
 
@@ -116,7 +117,7 @@ public OnPluginStart()
 	
 	hlx_block_chat_commands = CreateConVar("hlx_block_commands", "1", "If activated HLstatsX commands are blocked from the chat area");
 	hlx_message_prefix = CreateConVar("hlx_message_prefix", "", "Define the prefix displayed on every HLstatsX ingame message");
-	hlx_protect_address = CreateConVar("hlx_protect_address", "", "Address to be protected for logging/forwarding");
+	hlx_protect_address = CreateConVar("hlx_protect_address", "", "Address to be protected for logging/forwarding", FCVAR_PROTECTED);
 	hlx_server_tag = CreateConVar("hlx_server_tag", "1", "If enabled, adds \"HLstatsX:CE\" to server tags on supported games. 1 = Enabled (default), 0 = Disabled", _, true, 0.0, true, 1.0);
 	
 	g_hCustomTags = CreateArray(SVTAGSIZE);
@@ -298,14 +299,44 @@ public OnSVTagsChange(Handle:cvar, const String:oldVal[], const String:newVal[])
 	}
 }
 
+// hlx_protect_address ends up in a server command, so it may only hold what an address is made
+// of. Anything else is refused and logged once, and the protection is off as with an empty cvar.
+bool:IsProtectAddressUsable(const String:address[])
+{
+	if (address[0] == 0)
+	{
+		return false;
+	}
+
+	for (new i = 0; address[i] != 0; i++)
+	{
+		new c = address[i];
+		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == ':' || c == '-')
+		{
+			continue;
+		}
+
+		if (!g_bProtectAddressRefused)
+		{
+			g_bProtectAddressRefused = true;
+			LogError("hlx_protect_address \"%s\" ignored: only letters, digits, '.', ':' and '-' are allowed", address);
+		}
+		return false;
+	}
+	return true;
+}
+
 public OnProtectAddressChange(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	if (newVal[0] > 0)
+	// a new value gets its own log entry if it is refused too
+	g_bProtectAddressRefused = false;
+
+	if (IsProtectAddressUsable(newVal))
 	{
 		decl String: log_command[192];
 		Format(log_command, sizeof(log_command), "logaddress_add %s", newVal);
 		LogToGame("Command: %s", log_command);
-		ServerCommand(log_command);
+		ServerCommand("%s", log_command);
 	}
 }
 
@@ -315,7 +346,7 @@ public Action:ProtectLoggingChange(args)
 	{
 		decl String: protect_address[192];
 		GetConVarString(hlx_protect_address, protect_address, sizeof(protect_address));
-		if (strcmp(protect_address, "") != 0)
+		if (IsProtectAddressUsable(protect_address))
 		{
 			if (args >= 1)
 			{
@@ -338,7 +369,7 @@ public Action:ProtectForwardingChange(args)
 	{
 		decl String: protect_address[192];
 		GetConVarString(hlx_protect_address, protect_address, sizeof(protect_address));
-		if (strcmp(protect_address, "") != 0)
+		if (IsProtectAddressUsable(protect_address))
 		{
 			if (args == 1)
 			{
@@ -349,7 +380,7 @@ public Action:ProtectForwardingChange(args)
 					decl String: log_command[192];
 					Format(log_command, sizeof(log_command), "logaddress_add %s", protect_address);
 					LogToGame("HLstatsX address protection active, logaddress readded!");
-					ServerCommand(log_command);
+					ServerCommand("%s", log_command);
 				}
 			}
 			else if (args > 1)
@@ -366,7 +397,7 @@ public Action:ProtectForwardingChange(args)
 					decl String: log_command[192];
 					Format(log_command, sizeof(log_command), "logaddress_add %s", protect_address);
 					LogToGame("HLstatsX address protection active, logaddress readded!");
-					ServerCommand(log_command);
+					ServerCommand("%s", log_command);
 				}
 				
 			}
@@ -381,12 +412,12 @@ public Action:ProtectForwardingDelallChange(args)
 	{
 		decl String: protect_address[192];
 		GetConVarString(hlx_protect_address, protect_address, sizeof(protect_address));
-		if (strcmp(protect_address, "") != 0)
+		if (IsProtectAddressUsable(protect_address))
 		{
 			decl String: log_command[192];
 			Format(log_command, sizeof(log_command), "logaddress_add %s", protect_address);
 			LogToGame("HLstatsX address protection active, logaddress readded!");
-			ServerCommand(log_command);
+			ServerCommand("%s", log_command);
 		}
 	}
 	return Plugin_Continue;
@@ -678,7 +709,7 @@ public Action:hlx_sm_psay(args)
 				{
 					color_index = player_index;
 				}
-				PbSayText2(player_index, color_index, false, display_message);
+				PbSayText2(player_index, color_index, false, "%s", display_message);
 			}
 		}
 	}
@@ -1417,21 +1448,6 @@ stock PrintToChatRecipients(const String:message[])
 	}
 }
 
-stock PrintToChatRecipientsFF(const String:message[])
-{
-	while (IsStackEmpty(message_recipients) == false)
-	{
-		new recipient_client = -1;
-		PopStackCell(message_recipients, recipient_client);
-
-		new client = GetClientOfUserId(recipient_client);
-		if (client > 0 && !IsFakeClient(client) && IsClientInGame(client))
-		{	
-			PbSayText(client, 0, true, message);
-		}
-	}
-}
-
 stock PbSayText2(client, author = 0, bool:bWantsToChat = false, const String:szFormat[], any:...)
 {
 	decl String:szSendMsg[192];
@@ -1455,32 +1471,7 @@ stock PbSayText2(client, author = 0, bool:bWantsToChat = false, const String:szF
 	{
 		BfWriteByte(pb, author); 
 		BfWriteByte(pb, bWantsToChat);
-		BfWriteString(pb, szFormat);
-	}
-	
-	EndMessage();
-}
-
-stock PbSayText(client, author = 0, bool:bWantsToChat = false, const String:szFormat[], any:...)
-{
-	decl String:szSendMsg[192];
-	VFormat(szSendMsg, sizeof(szSendMsg), szFormat, 5);
-	StrCat(szSendMsg, sizeof(szSendMsg), "\n");
-
-	new Handle:pb = StartMessageOne("SayText", client);
-
-	if (GetUserMessageType() == UM_Protobuf)
-	{
-		PbSetInt(pb, "ent_idx", author);
-		PbSetString(pb, "text", szSendMsg);
-		PbSetBool(pb, "chat", bWantsToChat);
-		
-	}
-	else
-	{
-		BfWriteByte(pb, author); // send as console
-		BfWriteString(pb, szFormat);
-		BfWriteByte(pb, bWantsToChat); // 1 to enable color parsing, 0 to not
+		BfWriteString(pb, szSendMsg);
 	}
 	
 	EndMessage();

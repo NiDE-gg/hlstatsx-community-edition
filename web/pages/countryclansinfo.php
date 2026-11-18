@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Country Details
 	
-	$flag = valid_request($_GET['flag'], false) or error('No country ID specified.');
+	$flag = valid_request($_GET['flag'] ?? '', false) or error('No country ID specified.');
 	$flag_sql = $db->escape($flag);
 	$game_sql = $db->escape($game);
 
@@ -82,8 +82,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	
 	$cl_name = str_replace(' ', '&nbsp;', htmlspecialchars($clandata['name']));
-	$cl_tag  = str_replace(' ', '&nbsp;', htmlspecialchars($clandata['tag']));
-	$cl_full = "$cl_tag $cl_name";
+	$cl_full = $cl_name;
 	
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game_sql'");
 	if ($db->num_rows() != 1)
@@ -118,7 +117,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 				<tr class="bg1">
 					<td>Country:</td>
 					<td colspan="2"><?php
-						echo '<img src="'.getFlag($clandata['flag']).'" alt="'.strtolower($playerdata['country']).'" title="'.strtolower($playerdata['country']).'" />&nbsp;'; 
+						echo '<img src="'.getFlag($clandata['flag']).'" alt="'.eHtml(strtolower($clandata['name'])).'" title="'.eHtml(strtolower($clandata['name'])).'" />&nbsp;'; 
 						echo '<strong>' . eHtml($clandata['name']) . '</strong>';
 					?></td>
 				</tr>

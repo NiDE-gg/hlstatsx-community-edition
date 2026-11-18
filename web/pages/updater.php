@@ -50,6 +50,13 @@
 		return;
 	}
 
+	// The options were read before the lock was taken: another update may have
+	// finished in between, and its scripts must not run a second time
+	$versionResult = $db->query("SELECT keyname, value FROM hlstats_Options WHERE keyname IN ('version', 'dbversion')");
+	while (list($versionKey, $versionValue) = $db->fetch_row($versionResult)) {
+		$g_options[$versionKey] = $versionValue;
+	}
+
 	echo "<div class=\"warning\">\n" .
 	"<span id=\"warning-header\"><strong>HLX:CE Database Updater log</span></strong><br /><br />\n";
 	// Check version since updater wasn't implemented until version 1.6.2

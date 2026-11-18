@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="129";
-SET @VERSION="1.15.1";
+SET @DBVERSION="130";
+SET @VERSION="1.16.0";
 
 -- --------------------------------------------------------
 
@@ -3926,7 +3926,7 @@ INSERT INTO `hlstats_Options` (`keyname`, `value`, `opttype`) VALUES
 ('siteurl', 'http://www.yoursite.com/stats/',2),
 ('style', 'sourcebans.css',2),
 ('imgpath', 'hlstatsimg',2),
-('map_dlurl', 'http://www.yoursite.com/fastdownload/%GAME%/%MAP%.bsp.bz2',2),
+('map_dlurl', '',2),
 ('awards_d_date', '2008-08-30',2),
 ('awards_numdays', '1',2),
 ('graphbg_trend', '282828',2),

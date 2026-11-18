@@ -41,7 +41,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 
     // Player History
-	$player = valid_request(intval($_GET['player']), true) or error('No player ID specified.');
+	$player = valid_request(intval($_GET['player'] ?? ''), true) or error('No player ID specified.');
 
 	$db->query("
 		SELECT
@@ -148,7 +148,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		(
 			eventType VARCHAR(32) NOT NULL,
 			eventTime DATETIME NOT NULL,
-			eventDesc VARCHAR(255) NOT NULL,
+			eventDesc TEXT NOT NULL,
 			serverName VARCHAR(255) NOT NULL,
 			map VARCHAR(64) NOT NULL,
 			INDEX idx_event_time (eventTime)

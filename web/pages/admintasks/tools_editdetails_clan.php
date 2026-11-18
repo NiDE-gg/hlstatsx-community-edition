@@ -49,6 +49,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		$id = valid_request($_GET['id'], true);
 	}
 
+	$mapselect = '';
 	$result = $db->query("SELECT `value` FROM hlstats_Options_Choices WHERE `keyname` = 'google_map_region' ORDER BY `value`");
     while ($rowdata = $db->fetch_row($result)) {
         $mapselect.=";".$rowdata[0]."/".ucwords(strtolower($rowdata[0]));
@@ -62,7 +63,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 <img src="<?php echo IMAGE_PATH; ?>/spacer.gif" width="1" height="8" border="0"><br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" class="imageformat" alt="" /><b>&nbsp;<?php echo "Edit Clan #$id"; ?></b><br /><br />
 
-<form method="post" action="<?php echo $g_options['scripturl'] . "?mode=admin&amp;task=$selTask&amp;id=$id&" . strip_tags(SID); ?>">
+<form method="post" action="<?php echo $g_options['scripturl'] . "?mode=admin&amp;task=$selTask&amp;id=$id"; ?>">
 <?php echo Auth::csrfField(); ?>
 <?php
 	$proppage = new PropertyPage("hlstats_Clans", "clanId", $id, array(
@@ -99,7 +100,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	echo "</span>";
 	
 	echo "<span class='fNormal'> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-		. "<a href=\"" . $g_options['scripturl'] . "?mode=claninfo&amp;clan=$id&amp;" . strip_tags(SID) . "\">"
+		. "<a href=\"" . $g_options['scripturl'] . "?mode=claninfo&amp;clan=$id\">"
 		. "(View Clan Details)</a></span>";
 ?><br /><br />
 

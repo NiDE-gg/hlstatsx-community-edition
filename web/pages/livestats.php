@@ -225,6 +225,12 @@ function printserverstats($server_id)
 			$j = 0;
 
             $thisteam = $teamdata[$curteam];
+			// Set from the admin panel and printed inside style="": hex colors or color names only
+			foreach (array('playerlist_bgcolor' => '#D5D5D5', 'playerlist_color' => '#050505') as $colorKey => $colorDefault) {
+				if (!preg_match('/^(#[0-9a-f]{3,8}|[a-z]{1,20})\z/i', (string) $thisteam[$colorKey])) {
+					$thisteam[$colorKey] = $colorDefault;
+				}
+			}
 			$teamcolor = 'background:'.$thisteam['playerlist_bgcolor'].';color:'.$thisteam['playerlist_color'];
 			$bordercolor = 'background:'.$thisteam['playerlist_bgcolor'].';color:'.$thisteam['playerlist_color'].';border-top:1px '.$thisteam['playerlist_color'].' solid';
             $team_display_name = empty($thisteam['name']) ? "Unknown team" : htmlspecialchars($thisteam['name']);
@@ -248,13 +254,11 @@ function printserverstats($server_id)
 		<td style="text-align:left;<?php echo $teamcolor ?>" class="fSmall"><?php
 				if (isset($thisplayer))
 				{
-					if (strlen($thisplayer['name'])>50)
-					{
-						$thisplayer['name'] = substr($thisplayer['name'], 0, 50);
-					}
+					// Counted in characters: a UTF-8 name cut on a byte was printed as nothing
+					$thisplayer['name'] = shortName($thisplayer['name'], 50, 50);
 					if ($g_options['countrydata'] == 1)
 					{
-						echo '<img src="'.getFlag($thisplayer['cli_flag']).'" alt="'.ucfirst(strtolower($thisplayer['cli_country'])).'" title="'.ucfirst(strtolower($thisplayer['cli_country'])).'" />&nbsp;';
+						echo '<img src="'.getFlag($thisplayer['cli_flag']).'" alt="'.eHtml(ucfirst(strtolower((string) $thisplayer['cli_country']))).'" title="'.eHtml(ucfirst(strtolower((string) $thisplayer['cli_country']))).'" />&nbsp;';
 					}
 					echo '<a style="color:'.$thisteam['playerlist_color'].'" href="'.$g_options['scripturl'].'?mode='.$mode.'&amp;player='.$thisplayer['player_id'].'">';
 					echo htmlspecialchars($thisplayer['name'], ENT_COMPAT).'</a>';

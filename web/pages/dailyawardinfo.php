@@ -41,7 +41,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 
 	// Daily Award Statistics
-	$award = valid_request($_GET['award'], true) or error('No award ID specified.');
+	$award = valid_request($_GET['award'] ?? '', true) or error('No award ID specified.');
 
 	$db->query("
 		SELECT
@@ -57,6 +57,9 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	$awarddata = $db->fetch_array();
 	$db->free_result();
+	if (!$awarddata) {
+		error('No such award.');
+	}
 	$awardname = $awarddata['name'];
 	$awardverb = $awarddata['verb'];
 	$awardtype = $awarddata['awardType'];

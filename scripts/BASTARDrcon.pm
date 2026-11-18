@@ -29,7 +29,8 @@ package BASTARDrcon;
 # 
 
 use strict;
-use sigtrap;
+# No "use sigtrap" here: it replaced the SIGTERM handler hlstats.pl had just
+# installed, so "docker stop" printed a stack trace instead of flushing.
 use Socket;
 use Sys::Hostname;
 use bytes;

@@ -41,7 +41,7 @@ For support and installation notes visit http://www.hlxcommunity.com
     }
 	// Weapon Details
 	
-	$weapon = valid_request($_GET['weapon'], false) or error('No weapon ID specified.');
+	$weapon = valid_request($_GET['weapon'] ?? '', false) or error('No weapon ID specified.');
 	$weapon_sql = $db->escape($weapon);
 	$game_sql = $db->escape($game);
 
@@ -168,11 +168,11 @@ For support and installation notes visit http://www.hlxcommunity.com
 		}
 		else
 		{
-			$wep_content = "<strong>$wep_name</strong>: ";
+			$wep_content = '<strong>' . eHtmlOnce($wep_name) . '</strong>: ';
 		}
 ?>
 		<div style="float:left;">
-			<?php echo $wep_content ?>&nbsp;From a total of <b><?php echo number_format(intval($totalkills)); ?></b> kills with <b><?php echo number_format($totalheadshots); ?></b> headshots (Last <?php echo $g_options['DeleteDays']; ?> Days)
+			<?php echo $wep_content ?>&nbsp;From a total of <b><?php echo number_format(intval($totalkills)); ?></b> kills with <b><?php echo number_format(intval($totalheadshots)); ?></b> headshots (Last <?php echo $g_options['DeleteDays']; ?> Days)
 		</div>
 		<div style="float:right;">
 			Back to <a href="<?php echo $g_options['scripturl']. "?mode=weapons&amp;game=$game"; ?>">Weapon Statistics</a>

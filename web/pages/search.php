@@ -51,7 +51,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	);
 
 	$sr_query = is_string($_GET['q'] ?? null) ? $_GET['q'] : '';
-	$sr_type = valid_request(strval($_GET['st'] ?? ''), false) ?: 'player';
+	$sr_type = valid_request($_GET['st'] ?? '', false) ?: 'player';
 	$sr_game = valid_game_code($_GET['game'] ?? $game);
 	$search = new Search($sr_query, $sr_type, $sr_game);
 	$search->drawForm(array('mode' => 'search'));

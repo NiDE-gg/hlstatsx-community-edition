@@ -58,7 +58,11 @@ The deployment depends on several environment variables for the database configu
 - `DB_USERNAME`: The username for accessing the database.
 - `DB_HOST`: The database host address.
 
-You can manage these environment variables securely using a **ConfigMap** or a **Secret** in Kubernetes.
+`DB_NAME`, `DB_USERNAME` and `DB_HOST` are placeholders (`$DB_NAME`...) to replace in both YAML files. `DB_PASSWORD` is not written in the files: both read it from the key `DB_PASSWORD` of a **Secret** named `hlstatsx-db`, which must exist before you deploy:
+
+```bash
+kubectl create secret generic hlstatsx-db --from-literal=DB_PASSWORD='<your database password>'
+```
 
 ### 4. Deploy to Kubernetes
 
@@ -133,35 +137,47 @@ spec:
         app: hlstatx
     spec:
       hostNetwork: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
+      - name: hlstatx-daemon
+        image: ghcr.io/nide-gg/hlstatsx-deamon:latest
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        ports:
         - name: hlstatx-daemon
-          image: ghcr.io/nide-gg/hlstatsx-deamon:latest
-          imagePullPolicy: Always
-          ports:
-            - name: hlstatx-daemon
-              containerPort: 32578
-              hostPort: 32578
-              protocol: UDP
-          env:
-            - name: DB_NAME
-              value: $DB_NAME
-            - name: DB_PASSWORD
-              value: $DB_PASSWORD
-            - name: DB_USERNAME
-              value: $DB_USERNAME
-            - name: DB_HOST
-              value: $DB_HOST
+          containerPort: 32578
+          hostPort: 32578
+          protocol: UDP
+        env:
+        - name: DB_NAME
+          value: $DB_NAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: hlstatsx-db
+              key: DB_PASSWORD
+        - name: DB_USERNAME
+          value: $DB_USERNAME
+        - name: DB_HOST
+          value: $DB_HOST
 ```
 
 ### `Deployment-jobs.yml`
 
 ```yaml
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: hlstatx-daemon-awards
 spec:
-  concurrencyPolicy: Allow
+  concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 1
   jobTemplate:
     metadata:
@@ -179,7 +195,10 @@ spec:
             - name: DB_NAME
               value: $DB_NAME
             - name: DB_PASSWORD
-              value: $DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hlstatsx-db
+                  key: DB_PASSWORD
             - name: DB_USERNAME
               value: $DB_USERNAME
             image: ghcr.io/nide-gg/hlstatsx-deamon:latest
@@ -188,20 +207,22 @@ spec:
             resources: {}
             securityContext:
               allowPrivilegeEscalation: false
-              capabilities: {}
+              capabilities:
+                drop:
+                - ALL
               privileged: false
               readOnlyRootFilesystem: false
-              runAsNonRoot: false
-            stdin: true
+              runAsNonRoot: true
             terminationMessagePath: /dev/termination-log
             terminationMessagePolicy: File
-            tty: true
           dnsPolicy: ClusterFirst
           restartPolicy: Never
           schedulerName: default-scheduler
-          securityContext: {}
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
           terminationGracePeriodSeconds: 30
-  schedule: "0 23 * * *"
+  schedule: 0 23 * * *
   successfulJobsHistoryLimit: 3
   suspend: false
 ```

@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Same Perl modules as scripts/Dockerfile.
       - name: Install Perl dependencies
@@ -39,6 +39,7 @@ jobs:
             libgeoip2-perl \
             libmaxmind-db-reader-perl
 
+      # The .plib files are loaded by hlstats.pl with do(), so "perl -c hlstats.pl" never compiles them.
       - name: Check Perl scripts and modules
         working-directory: scripts
         run: |
@@ -48,5 +49,5 @@ jobs:
               echo "::error file=scripts/${file}::perl -c failed for scripts/${file}"
               status=1
             fi
-          done < <(git ls-files -z -- '*.pl' '*.pm')
+          done < <(git ls-files -z -- '*.pl' '*.pm' '*.plib')
           exit "$status"

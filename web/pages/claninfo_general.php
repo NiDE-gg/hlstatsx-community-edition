@@ -263,12 +263,12 @@ printSectionTitle('Clan Information');
 						$fav_weapon = 'Unknown';
 					$image = getImage("/games/$game/weapons/$fav_weapon");
                     // check if image exists
-					$weaponlink = "<a href=\"hlstats.php?mode=weaponinfo&amp;weapon=$fav_weapon&amp;game=$game\">";
+					$weaponlink = "<a href=\"hlstats.php?mode=weaponinfo&amp;weapon=" . urlencode((string) $fav_weapon) . "&amp;game=$game\">";
 
                     if ($image) {
 						$cellbody = "$weaponlink<img src=\"" . $image['url'] . "\" alt=\"$weap_name\" title=\"$weap_name\" />";
                     } else {
-						$cellbody = "$weaponlink<strong> $weaponlink$weap_name</strong>";
+						$cellbody = "$weaponlink<strong>$weap_name</strong>";
                     }
 
 					$cellbody .= "</a>";

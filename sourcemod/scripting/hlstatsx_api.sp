@@ -12,6 +12,9 @@
 
 #define PLUGIN_VERSION "1.7.0"
 
+// A request the daemon has not answered after this many seconds will never be answered
+#define REQUEST_TIMEOUT 30.0
+
 int g_iRequestId = 0;
 ArrayList g_hRequestCallbacks;
 
@@ -79,6 +82,8 @@ public int Api_GetStats(Handle plugin, int numParams)
         return false;
     }
 
+    PurgeStaleRequests();
+
     int requestId = GetRequestId();
     Api_CallbackData data;
 
@@ -141,7 +146,17 @@ public Action _Api_Response(int args)
             int userId = GetArgumentParam(3, args);
             int client = GetClientOfUserId(userId);
 
-            if (requestCallbackIndex < 0 || !IsValidClient(client)) {
+            if (requestCallbackIndex < 0) {
+                return Plugin_Handled;
+            }
+
+            Api_CallbackData data;
+            g_hRequestCallbacks.GetArray(requestCallbackIndex, data);
+
+            // Nobody is left to answer: the player is gone, or the plugin that asked was unloaded
+            // (calling into it would throw before the pack is freed)
+            if (!IsValidClient(client) || !IsPluginRunning(data.Plugin)) {
+                g_hRequestCallbacks.Erase(requestCallbackIndex);
                 return Plugin_Handled;
             }
 
@@ -179,9 +194,6 @@ public Action _Api_Response(int args)
             // Done, so reset position to start (for other plugins)
             pack.Reset();
 
-            Api_CallbackData data;
-            g_hRequestCallbacks.GetArray(requestCallbackIndex, data);
-
             if ((data.Plugin != INVALID_HANDLE) && (data.Function != INVALID_FUNCTION)) {
 
                 Call_StartFunction(data.Plugin, data.Function);
@@ -190,7 +202,9 @@ public Action _Api_Response(int args)
                 Call_PushCell(data.Payload);
                 Call_PushCell(client);
 
-                Call_PushCellRef(pack);
+                // by reference, so on a copy: a callback that clears it must not stop the delete below
+                DataPack callbackPack = pack;
+                Call_PushCellRef(callbackPack);
                 Call_Finish(view_as<int>(result));
 
                 if (data.Limit == 1) {
@@ -252,6 +266,44 @@ public int FindRequestById(int requestId)
     }
 
     return index;
+}
+
+void PurgeStaleRequests()
+{
+    if (g_hRequestCallbacks == null) {
+        return;
+    }
+
+    float time = GetGameTime();
+
+    for (int i = g_hRequestCallbacks.Length - 1; i >= 0; i--) {
+
+        Api_CallbackData data;
+        g_hRequestCallbacks.GetArray(i, data);
+
+        // the game time starts again on a map change: those requests look like they come from the future
+        if (time - data.Time > REQUEST_TIMEOUT || data.Time > time) {
+            g_hRequestCallbacks.Erase(i);
+        }
+    }
+}
+
+bool IsPluginRunning(Handle plugin)
+{
+    bool running = false;
+    Handle iterator = GetPluginIterator();
+
+    while (MorePlugins(iterator)) {
+
+        if (ReadPlugin(iterator) == plugin) {
+            running = (GetPluginStatus(plugin) == Plugin_Running);
+            break;
+        }
+    }
+
+    delete iterator;
+
+    return running;
 }
 
 /**

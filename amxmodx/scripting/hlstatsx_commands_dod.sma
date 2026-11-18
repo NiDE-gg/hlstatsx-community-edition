@@ -254,20 +254,20 @@ stock get_team_index(team_name[16])
 
 stock remove_color_entities(message[192])
 {
-	replace_all(message, 192, "x04", "")
-	replace_all(message, 192, "x03", "")
-	replace_all(message, 192, "x01", "")
+	replace_all(message, charsmax(message), "x04", "")
+	replace_all(message, charsmax(message), "x03", "")
+	replace_all(message, charsmax(message), "x01", "")
 }
 
 stock color_entities(message[192])
 {
 	new replace_message[2]
 	replace_message[0] = 0x04
-	replace_all(message, 192, "x04", replace_message)
+	replace_all(message, charsmax(message), "x04", replace_message)
 	replace_message[0] = 0x03
-	replace_all(message, 192, "x03", replace_message)
+	replace_all(message, charsmax(message), "x03", replace_message)
 	replace_message[0] = 0x01
-	replace_all(message, 192, "x01", replace_message)
+	replace_all(message, charsmax(message), "x01", replace_message)
 }
 
 stock color_team_entities(message[192])
@@ -276,9 +276,9 @@ stock color_team_entities(message[192])
 		if (contain(message, "Axis") > -1) {
 			new replace_message[192]
 			replace_message[0] = 0x03
-			format(replace_message[1], 191, "%s", "Axis")
+			format(replace_message[1], charsmax(replace_message) - 1, "%s", "Axis")
 			replace_message[strlen("Axis") + 1] = 0x01
-			replace_all(message, 192, "Axis", replace_message)
+			replace_all(message, charsmax(message), "Axis", replace_message)
 			return axis_player_color
 		}
 	} 
@@ -286,9 +286,9 @@ stock color_team_entities(message[192])
 		if (contain(message, "Allies") > -1) {
 			new replace_message[192]
 			replace_message[0] = 0x03
-			format(replace_message[1], 191, "%s", "Allies")
+			format(replace_message[1], charsmax(replace_message) - 1, "%s", "Allies")
 			replace_message[strlen("Allies") + 1] = 0x01
-			replace_all(message, 192, "Allies", replace_message)
+			replace_all(message, charsmax(message), "Allies", replace_message)
 			return allies_player_color
 		}
 	}
@@ -304,21 +304,21 @@ stock color_player(color_type, player_index, client_message[192])
 	if (color_type == 1) {
 		new colored_player_name[192]
 		colored_player_name[0] = 0x03
-		format(colored_player_name[1], 191, "%s", client_name)
+		format(colored_player_name[1], charsmax(colored_player_name) - 1, "%s", client_name)
 		colored_player_name[strlen(client_name) + 1] = 0x01
 
 		if (contain(client_message, client_name) > -1) {
-			replace_all(client_message, 192, client_name, colored_player_name)
+			replace_all(client_message, charsmax(client_message), client_name, colored_player_name)
 			return player_index
 		}
 	} else {
 		new colored_player_name[192]
 		colored_player_name[0] = 0x04
-		format(colored_player_name[1], 191, "%s", client_name)
+		format(colored_player_name[1], charsmax(colored_player_name) - 1, "%s", client_name)
 		colored_player_name[strlen(client_name) + 1] = 0x01
 
 		if (contain(client_message, client_name) > -1) {
-  		   replace_all(client_message, 192, client_name, colored_player_name)
+  		   replace_all(client_message, charsmax(client_message), client_name, colored_player_name)
   		}
 	}
 	return color_player_index
@@ -429,11 +429,11 @@ psay (client_id[], client_message[192])
 			*/
 			remove_color_entities(client_message)
 			static message_prefix[64]
-			get_pcvar_string(g_hlx_message_prefix, message_prefix, 64)
+			get_pcvar_string(g_hlx_message_prefix, message_prefix, charsmax(message_prefix))
 			if (strcmp(message_prefix, "") == 0) {
-				format(display_message, 192, "%s", client_message)
+				format(display_message, charsmax(display_message), "%s", client_message)
 			} else {
-				format(display_message, 192, "%s %s", message_prefix, client_message)
+				format(display_message, charsmax(display_message), "%s %s", message_prefix, client_message)
 			}
 
 			message_begin(MSG_ONE, g_msgSayText, {0,0,0}, player_index)
@@ -613,11 +613,11 @@ public hlx_amx_psay2(id, level, cid)
 
 			static display_message[192]
 			static message_prefix[64]
-			get_pcvar_string(g_hlx_message_prefix, message_prefix, 64)
+			get_pcvar_string(g_hlx_message_prefix, message_prefix, charsmax(message_prefix))
 			if (strcmp(message_prefix, "") == 0) {
-				format(display_message, 192, "%s", client_message)
+				format(display_message, charsmax(display_message), "%s", client_message)
 			} else {
-				format(display_message, 192, "%s %s", message_prefix, client_message)
+				format(display_message, charsmax(display_message), "%s %s", message_prefix, client_message)
 			}
 
 			message_begin(MSG_ONE, g_msgSayText, {0,0,0}, player_index)
@@ -640,7 +640,7 @@ public hlx_amx_say(id, level, cid)
 	remove_quotes(message)
 
 	static message_prefix[64]
-	get_pcvar_string(g_hlx_message_prefix, message_prefix, 64)
+	get_pcvar_string(g_hlx_message_prefix, message_prefix, charsmax(message_prefix))
 	if (strcmp(message_prefix, "") == 0) {
 		client_print(0, print_chat, "%s", message)
 	} else {
@@ -826,7 +826,7 @@ public handle_internal_menu(id, key)
 			static player_event[192]
 			new slot = key
 			slot++
-			num_to_str(slot, player_event, 192)
+			num_to_str(slot, player_event, charsmax(player_event))
 			log_player_event(client, "selected", player_event, 0)
 		} else {
 			new player_event[192] = "cancel"
@@ -1082,7 +1082,7 @@ public hlx_block_commands(client)
 		new block_chat_commands = get_pcvar_num(g_hlx_block_commands)
 		
 		static user_command[192]
-		read_args(user_command, 192)
+		read_args(user_command, charsmax(user_command))
 		static origin_command[192]
 		
 		new start_index = 0
@@ -1099,7 +1099,7 @@ public hlx_block_commands(client)
 				start_index++
 			}
 
-			copy(origin_command, 192, user_command[start_index])
+			copy(origin_command, charsmax(origin_command), user_command[start_index])
 		}
 		
 		if (command_length > 0) {

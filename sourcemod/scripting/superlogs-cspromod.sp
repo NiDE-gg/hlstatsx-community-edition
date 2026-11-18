@@ -52,6 +52,11 @@ public void Event_PlayerConnect(Handle event, const char[] name, bool dontBroadc
 	GetEventString(event, "networkid", steamid, sizeof(steamid));
 	char ip[32];
 	GetEventString(event, "address", ip, sizeof(ip));
+
+	// the name goes into a quoted log field, on one line
+	ReplaceString(cname, sizeof(cname), "\"", "'");
+	ReplaceString(cname, sizeof(cname), "\r", " ");
+	ReplaceString(cname, sizeof(cname), "\n", " ");
 		
 	LogToGame("\"%s<%d><%s><>\" connected, address \"%s\"", cname, GetEventInt(event, "userid"), steamid, ip);
 }
@@ -66,6 +71,14 @@ public void Event_PlayerDisconnect(Handle event, const char[] name, bool dontBro
 	GetEventString(event, "networkid", cauth, sizeof(cauth));
 	char creason[128];
 	GetEventString(event, "reason", creason, sizeof(creason));
+
+	// the name and the reason (which the client can choose) go into quoted log fields, on one line
+	ReplaceString(cname, sizeof(cname), "\"", "'");
+	ReplaceString(cname, sizeof(cname), "\r", " ");
+	ReplaceString(cname, sizeof(cname), "\n", " ");
+	ReplaceString(creason, sizeof(creason), "\"", "'");
+	ReplaceString(creason, sizeof(creason), "\r", " ");
+	ReplaceString(creason, sizeof(creason), "\n", " ");
 
 	LogToGame("\"%s<%d><%s><>\" disconnected (reason \"%s\")", cname, GetEventInt(event, "userid"), cauth, creason);
 }

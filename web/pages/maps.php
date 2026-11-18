@@ -165,7 +165,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	<?php printSectionTitle('Map Statistics'); ?>
 	<div class="subblock">
 		<div style="float:left;">
-			From a total of <strong><?php echo number_format($realkills); ?></strong> kills with <strong><?php echo number_format($realheadshots); ?></strong> headshots
+			From a total of <strong><?php echo number_format(intval($realkills)); ?></strong> kills with <strong><?php echo number_format(intval($realheadshots)); ?></strong> headshots
 		</div>
 		<div style="clear:both;"></div>
 	</div>

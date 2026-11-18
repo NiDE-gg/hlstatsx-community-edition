@@ -55,11 +55,12 @@ For support and installation notes visit http://www.hlxcommunity.com
 <img src="<?php echo IMAGE_PATH; ?>/spacer.gif" width="1" height="8" border="0" alt=""><br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="<?php echo IMAGE_PATH; ?>/downarrow.gif" width="9" height="6" class="imageformat" alt="" /><b>&nbsp;<?php echo "Edit Player #$id"; ?></b><br /><br />
 
-<form method="post" action="<?php echo $g_options['scripturl'] . "?mode=admin&amp;task=$selTask&amp;id=$id&amp;" . strip_tags(SID); ?>">
+<form method="post" action="<?php echo $g_options['scripturl'] . "?mode=admin&amp;task=$selTask&amp;id=$id"; ?>">
 <?php echo Auth::csrfField(); ?>
 <?php
 
   // get available country flag files
+	$flagselect = '';
 	$result = $db->query("SELECT `flag`,`name` FROM hlstats_Countries ORDER BY `name`");
     while ($rowdata = $db->fetch_row($result))
     {
@@ -106,7 +107,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	echo '</span>';
 	
 	echo '<span class="fNormal">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-		. '<a href="' . $g_options['scripturl'] . "?mode=playerinfo&amp;player=$id&amp;" . strip_tags(SID) . '">'
+		. '<a href="' . $g_options['scripturl'] . "?mode=playerinfo&amp;player=$id" . '">'
 		. '(View Player Details)</a></span>';
 ?><br /><br />
 

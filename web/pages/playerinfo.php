@@ -42,7 +42,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 
 	// Player Details
 	$player = valid_request(intval($_GET['player'] ?? ''), true);
-	$uniqueid = valid_request(strval($_GET['uniqueid'] ?? ''), false);
+	$uniqueid = valid_request($_GET['uniqueid'] ?? '', false);
 	$game = valid_game_code($_GET['game'] ?? '');
 
 	if (!$player && $uniqueid) {
@@ -114,6 +114,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 			hlstats_Clans
 		ON
 			hlstats_Clans.clanId = hlstats_Players.clan
+			AND hlstats_Clans.hidden <> 1
 		WHERE
 			hlstats_Players.playerId = '$player'
 		LIMIT
@@ -217,7 +218,7 @@ $db->query("
 
 		foreach ($tabs as $tab) {
 			if (file_exists(PAGE_PATH . "/playerinfo_$tab.php")) {
-				@include(PAGE_PATH . "/playerinfo_$tab.php");
+				include(PAGE_PATH . "/playerinfo_$tab.php");
 			}
 		}
 

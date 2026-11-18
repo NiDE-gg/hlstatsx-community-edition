@@ -486,8 +486,7 @@ public void OnGameFrame()
 		}
 	}
 	
-	int cnt = GetClientCount();
-	for (int i = 1; i <= cnt; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && GetEntData(i, g_iCarryingOffs, 1))
 			g_bCarryingObject[i] = true;
@@ -837,6 +836,7 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	int bits = GetEventInt(event, "damagebits");
 	if(b_heals && playerClass[client] != TFClass_Medic) // medic_death event handles this for dead medics
 		DumpHeals(client);
+	int jump = jumpStatus[client]; // dying in the air is a failed jump: read it before the reset
 	jumpStatus[client] = JUMP_NONE; // Not jumping
 	g_bCarryingObject[client] = false;
 	if(b_actions)
@@ -845,7 +845,7 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 			LogPlayerEvent(client, "triggered", "force_suicide");
 		else
 		{
-			switch(jumpStatus[client])
+			switch(jump)
 			{
 				case 2:
 				{
@@ -1331,7 +1331,7 @@ void DumpHeals(int client, char[] addProp = "")
 	int lifeHeals = curHeals - healPoints[client];
 	if(lifeHeals > 0)
 	{
-		char szProperties[32];
+		char szProperties[64];
 		Format(szProperties, sizeof(szProperties), " (healing \"%d\")%s", lifeHeals, addProp);
 		LogPlayerEvent(client, "triggered", "healed", _, szProperties);
 	}

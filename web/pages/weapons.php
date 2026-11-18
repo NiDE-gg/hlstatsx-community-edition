@@ -68,6 +68,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		WHERE
 			hlstats_Weapons.game = '$game'
 	");
+	$fname = array();
 	while ($rowdata = $db->fetch_row($result))
 	{ 
 		$code = $rowdata[0];
