@@ -81,16 +81,30 @@ class Heatmap {
                         WHERE 1=1
                         ORDER BY code ASC, game ASC, map ASC';
 
+                $mapinfo = array();
                 $result = DB::doQuery($query);
                 if (DB::numRows($result)) {
                         while ($row = DB::getAssoc($result)) {
+                                // These names become file and folder names (source image, output,
+                                // cache), a regular expression and SQL strings: a map called
+                                // "../x" or holding a quote would write outside the heatmap
+                                // folders or break the queries. Map and game codes only use these.
+                                if (!self::safeName($row['code']) || !self::safeName($row['game']) || !self::safeName($row['map'])) {
+                                        show::Event("SKIP", "Unusable name in " . DB_PREFIX . "_Heatmap_Config (game " . json_encode($row['game']) . ", map " . json_encode($row['map']) . ")", 1);
+                                        continue;
+                                }
                                 foreach ($row as $key => $val) {
                                         $mapinfo[$row['code']][$row['map']][$key] = $val;
                                 }
                         }
-
-                        Env::set('mapinfo', $mapinfo);
                 }
+                Env::set('mapinfo', $mapinfo);
+        }
+
+        // Letters, digits, "_", "-", "!", "+" and "." (not first), at most 64 characters
+        // (a shipped map is called grubas_nabijacz!_v6)
+        public static function safeName($name) {
+                return is_string($name) && preg_match('/^[A-Za-z0-9_!+-][A-Za-z0-9_.!+-]{0,63}\z/', $name) === 1;
         }
 
         private static function printHeatDot($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct){
@@ -181,7 +195,7 @@ class Heatmap {
 			if (is_dir(CACHE_DIR . "/$code")) {
 			if ($handle = opendir(CACHE_DIR. "/$code")) {
 				while (false !== ($file = readdir($handle))) {
-					if ($file != "." && $file != ".." && preg_match(str_replace("\$","\\\$","/{$map}_(\d+).png/i"), $file, $matches)) {
+					if ($file != "." && $file != ".." && preg_match('/^' . preg_quote($map, '/') . '_(\d+)\.png\z/i', $file, $matches)) {
 					$cache_file = CACHE_DIR . "/$code/$file";
 					$oldtimestamp = $matches[1];
 
@@ -341,11 +355,14 @@ class Heatmap {
 			$mapinfo = Env::get('mapinfo');
 			Env::set('code', $code);
 			$ignore_infected = Env::get('ignore_infected');
-			$timescope = (time() - 60*60*24*$mapinfo[$code][$map]['days']);
+			$timescope = (time() - 60*60*24*(int) $mapinfo[$code][$map]['days']);
+			// Single quotes: double-quoted strings are identifiers under ANSI_QUOTES
+			$sqlMap = DB::escape($map);
+			$sqlCode = DB::escape($code);
 
 			// Each branch in parentheses: "SELECT ... LIMIT n UNION ALL SELECT ..." is a syntax error
 			$map_query = '(SELECT
-							"frag" AS killtype,
+							\'frag\' AS killtype,
 					 hef.id,
 							hef.map,
 							hs.game,
@@ -356,15 +373,15 @@ class Heatmap {
 							hlstats_Events_Frags as hef,
 							hlstats_Servers as hs
 					WHERE 1=1
-					AND hef.map = "' . $map . '"
+					AND hef.map = \'' . $sqlMap . '\'
 					AND hs.serverId = hef.serverId
-					AND hs.game = "' . $code. '"
+					AND hs.game = \'' . $sqlCode . '\'
 					AND hef.pos_x IS NOT NULL
 					AND hef.pos_y IS NOT NULL
 					AND hef.eventTime >= FROM_UNIXTIME(' . $timescope . ')
 ';
 			if ($ignore_infected) {
-					$map_query.= '                      AND hef.victimRole != "infected"
+					$map_query.= '                      AND hef.victimRole != \'infected\'
 ';
 			}
 					$map_query.= '                      LIMIT ' . KILL_LIMIT . ')
@@ -372,7 +389,7 @@ class Heatmap {
 					UNION ALL
 
 					(SELECT
-							"teamkill" AS killtype,
+							\'teamkill\' AS killtype,
 							hef.id,
 							hef.map,
 							hs.game,
@@ -383,9 +400,9 @@ class Heatmap {
 							hlstats_Events_Teamkills as hef,
 							hlstats_Servers as hs
 					WHERE 1=1
-					AND hef.map = "' . $map . '"
+					AND hef.map = \'' . $sqlMap . '\'
 					AND hs.serverId = hef.serverId
-					AND hs.game = "' . $code. '"
+					AND hs.game = \'' . $sqlCode . '\'
 					AND hef.pos_x IS NOT NULL
 					AND hef.pos_y IS NOT NULL
 					AND hef.eventTime >= FROM_UNIXTIME(' . $timescope . ')
@@ -578,6 +595,10 @@ class DB {
 		mysqli_select_db(self::$connect, DB_NAME);
 
 		show::Event("DB", "Connected to " . DB_NAME . " as " . DB_USER . "@" . DB_HOST, 1);
+	}
+
+	public static function escape ($value) {
+		return mysqli_real_escape_string(self::$connect, (string) $value);
 	}
 
 	public static function doQuery ($query) {
