@@ -27,7 +27,7 @@
 #include <sdkhooks>
 
 #define NAME "SuperLogs: Nuclear Dawn"
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
 
 #define MAX_LOG_WEAPONS 28
@@ -136,13 +136,13 @@ public void OnClientPutInServer(int client)
 	reset_player_stats(client);
 }
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
-	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim   = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	
 	char weapon[MAX_WEAPON_LEN];
-	GetEventString(event, "weapon", weapon, sizeof(weapon));
+	event.GetString("weapon", weapon, sizeof(weapon));
 	
 	if (attacker <= 0 || victim <= 0)
 	{
@@ -152,16 +152,16 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	// Which commander ablilty?!
 	if(StrEqual(weapon, "commander ability"))
 	{
-		int damagebits = GetEventInt(event, "damagebits");
+		int damagebits = event.GetInt("damagebits");
 		if(damagebits & DMG_ENERGYBEAM)
 		{
 			Format(weapon, sizeof(weapon), "commander poison");
-			SetEventString(event, "weapon", weapon);
+			event.SetString("weapon", weapon);
 		}
 		else if(damagebits & DMG_BLAST)
 		{
 			Format(weapon, sizeof(weapon), "commander damage");
-			SetEventString(event, "weapon", weapon);
+			event.SetString("weapon", weapon);
 		}
 	}
 	
@@ -283,27 +283,27 @@ public void Hook_TraceAttackPost(int victim, int attacker, int inflictor, float 
 	}
 }
 
-public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
 
-public void Event_RoundWin(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundWin(Event event, const char[] name, bool dontBroadcast)
 {
-	int team = GetEventInt(event, "team");
+	int team = event.GetInt("team");
 	if(team >= 2)
 	{
 		LogTeamEvent(team, "triggered", "round_win");
@@ -315,23 +315,23 @@ public void Event_RoundWin(Handle event, const char[] name, bool dontBroadcast)
 	WstatsDumpAll();
 }
 
-public void Event_PromotedToCommander(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PromotedToCommander(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "promoted_to_commander");
+	LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "promoted_to_commander");
 }
 
-public void Event_ResourceCaptured(Handle event, const char[] name, bool dontBroadcast)
+public void Event_ResourceCaptured(Event event, const char[] name, bool dontBroadcast)
 {
-	int team = GetEventInt(event, "team");
+	int team = event.GetInt("team");
 	if(team >= 2)
 		LogTeamEvent(team, "triggered", "resource_captured");
 }
 
-public void Event_StructureDamageSparse(Handle event, const char[] name, bool dontBroadcast)
+public void Event_StructureDamageSparse(Event event, const char[] name, bool dontBroadcast)
 {
-	if(!GetEventBool(event, "bunker"))
+	if(!event.GetBool("bunker"))
 		return;
-	int team = GetEventInt(event, "ownerteam");
+	int team = event.GetInt("ownerteam");
 	if(team >= 2)
 	{
 		g_iBunkerAttacked[team-2]++;
@@ -344,10 +344,10 @@ public void Event_StructureDamageSparse(Handle event, const char[] name, bool do
 	}
 }
 
-public void Event_StructureDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_StructureDeath(Event event, const char[] name, bool dontBroadcast)
 {
-	int iEnt = GetEventInt(event, "entindex");
-	int iAttacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int iEnt = event.GetInt("entindex");
+	int iAttacker = GetClientOfUserId(event.GetInt("attacker"));
 	if(iAttacker > 0 && iAttacker <= MaxClients && iEnt != -1 && IsValidEntity(iEnt))
 	{
 		char sBuffer[32];

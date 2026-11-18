@@ -27,7 +27,7 @@
 #include <sdkhooks>
 
 #define NAME "SuperLogs: HL2MP"
-#define VERSION "1.1.4"
+#define VERSION "1.1.5"
 
 #define MAX_LOG_WEAPONS 6
 #define MAX_WEAPON_LEN 14
@@ -45,9 +45,9 @@ char g_weapon_list[MAX_LOG_WEAPONS][MAX_WEAPON_LEN] = {
 									"shotgun"
 								};
 
-Handle g_cvar_headshots = INVALID_HANDLE;
-Handle g_cvar_locations = INVALID_HANDLE;
-Handle g_cvar_teamplay = INVALID_HANDLE;
+ConVar g_cvar_headshots = null;
+ConVar g_cvar_locations = null;
+ConVar g_cvar_teamplay = null;
 
 bool g_logheadshots = true;
 bool g_loglocations = true;
@@ -59,7 +59,7 @@ int g_bTeamPlay;
 
 int g_iCrossBowOwnerOffs = -1;
 
-Handle g_hBoltChecks = INVALID_HANDLE;
+ArrayStack g_hBoltChecks = null;
 
 #include <loghelper>
 #include <wstatshelper>
@@ -96,8 +96,8 @@ public void OnPluginStart()
 	
 	g_cvar_headshots = CreateConVar("superlogs_headshots", "1", "Enable logging of headshot player action (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_locations = CreateConVar("superlogs_locations", "1", "Enable logging of location on player death (default on)", 0, true, 0.0, true, 1.0);
-	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
-	HookConVarChange(g_cvar_locations, OnCvarLocationsChange);
+	g_cvar_headshots.AddChangeHook(OnCvarHeadshotsChange);
+	g_cvar_locations.AddChangeHook(OnCvarLocationsChange);
 	CreateConVar("superlogs_hl2mp_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	
 	g_iCrossBowOwnerOffs = FindSendPropInfo("CCrossbowBolt", "m_hOwnerEntity");
@@ -108,13 +108,13 @@ public void OnPluginStart()
 	CreateTimer(1.0, LogMap);
 	
 	g_cvar_teamplay = FindConVar("mp_teamplay");
-	if (g_cvar_teamplay != INVALID_HANDLE)
+	if (g_cvar_teamplay != null)
 	{
-		g_bTeamPlay = GetConVarBool(g_cvar_teamplay);
-		HookConVarChange(g_cvar_teamplay, OnTeamPlayChange);
+		g_bTeamPlay = g_cvar_teamplay.BoolValue;
+		g_cvar_teamplay.AddChangeHook(OnTeamPlayChange);
 	}
 	
-	g_hBoltChecks = CreateStack();
+	g_hBoltChecks = new ArrayStack();
 
 	GetTeams();
 
@@ -165,15 +165,16 @@ public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (strcmp(classname, "crossbow_bolt") == 0)
 	{
-		PushStackCell(g_hBoltChecks, entity);
+		g_hBoltChecks.Push(entity);
 	}
 }
 
 public void OnGameFrame()
 {
 	int bowent;
-	while (PopStackCell(g_hBoltChecks, bowent))
+	while (!g_hBoltChecks.Empty)
 	{
+		bowent = g_hBoltChecks.Pop();
 		if (!IsValidEntity(bowent))
 			continue;
 			
@@ -261,14 +262,14 @@ public void OnTakeDamage(int victim, int attacker, int inflictor, float damage, 
 }
 
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID who died                             
 	// "attacker"      "short"         // user ID who killed
 	// "weapon"        "string"        // weapon name killer used 
 	
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int victim = GetClientOfUserId(event.GetInt("userid"));
 	
 	if (g_loglocations)
 	{
@@ -277,7 +278,7 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	if (g_logheadshots)
 	{
 		char weapon[64];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
+		event.GetString("weapon", weapon, sizeof(weapon));
 		if (strcmp(weapon, "crossbow_bolt") == 0)
 		{
 			if (g_iNextBowHitgroup[victim] == HITGROUP_HEAD)
@@ -294,22 +295,22 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	return Plugin_Continue;
 }
 
-public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
 	// this extents the original player_death by a new fields
 	// "userid"        "short"         // user ID who died                             
 	// "attacker"      "short"         // user ID who killed
 	// "weapon"        "string"        // weapon name killer used 
 	
-	int victim   = GetClientOfUserId(GetEventInt(event, "userid"));
+	int victim   = GetClientOfUserId(event.GetInt("userid"));
 	
 	if (victim > 0)
 	{
-		int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+		int attacker = GetClientOfUserId(event.GetInt("attacker"));
 		if (attacker != victim && attacker > 0)
 		{
 			char weapon[MAX_WEAPON_LEN];
-			GetEventString(event, "weapon", weapon, sizeof(weapon));
+			event.GetString("weapon", weapon, sizeof(weapon));
 			int weapon_index = get_weapon_index(weapon);
 			if (weapon_index > -1)
 			{
@@ -325,25 +326,25 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	}
 }
 
-public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	// "userid"        "short"         // user ID on server          
 
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0)
 	{
 		reset_player_stats(client);
 	}
 }
 
-public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	WstatsDumpAll();
 }
 
-public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	OnPlayerDisconnect(client);
 	return Plugin_Continue;
 }
@@ -356,10 +357,10 @@ public Action LogMap(Handle timer)
 	return Plugin_Stop;
 }
 
-public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarHeadshotsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logheadshots;
-	g_logheadshots = GetConVarBool(g_cvar_headshots);
+	g_logheadshots = g_cvar_headshots.BoolValue;
 	
 	if (old_value != g_logheadshots)
 	{
@@ -374,10 +375,10 @@ public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarLocationsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_loglocations;
-	g_loglocations = GetConVarBool(g_cvar_locations);
+	g_loglocations = g_cvar_locations.BoolValue;
 	
 	if (old_value != g_loglocations)
 	{
@@ -392,7 +393,7 @@ public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnTeamPlayChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnTeamPlayChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	g_bTeamPlay = GetConVarBool(g_cvar_teamplay);
+	g_bTeamPlay = g_cvar_teamplay.BoolValue;
 }

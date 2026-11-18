@@ -10,7 +10,7 @@
 #define REQUIRE_EXTENSIONS
 #define REQUIRE_PLUGIN
 
-#define PLUGIN_VERSION "1.7.0"
+#define PLUGIN_VERSION "1.7.1"
 
 // A request the daemon has not answered after this many seconds will never be answered
 #define REQUEST_TIMEOUT 30.0
@@ -55,7 +55,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginEnd()
 {
-    if (g_hRequestCallbacks != null && g_hRequestCallbacks != INVALID_HANDLE) {
+    if (g_hRequestCallbacks != null && g_hRequestCallbacks != null) {
         delete g_hRequestCallbacks;
     }
 }
@@ -95,7 +95,7 @@ public int Api_GetStats(Handle plugin, int numParams)
     data.Payload = callbackPayload;
     data.Limit = callbackLimit;
 
-    if (g_hRequestCallbacks != null && g_hRequestCallbacks != INVALID_HANDLE) {
+    if (g_hRequestCallbacks != null && g_hRequestCallbacks != null) {
 
         g_hRequestCallbacks.PushArray(data);
 
@@ -194,7 +194,7 @@ public Action _Api_Response(int args)
             // Done, so reset position to start (for other plugins)
             pack.Reset();
 
-            if ((data.Plugin != INVALID_HANDLE) && (data.Function != INVALID_FUNCTION)) {
+            if ((data.Plugin != null) && (data.Function != INVALID_FUNCTION)) {
 
                 Call_StartFunction(data.Plugin, data.Function);
                 Call_PushCell(HLX_CALLBACK_TYPE_PLAYER_INFO);
@@ -258,7 +258,7 @@ public int FindRequestById(int requestId)
         Api_CallbackData data;
         g_hRequestCallbacks.GetArray(i, data);
 
-        if (data.Id == requestId && (data.Plugin != INVALID_HANDLE) && (data.Function != INVALID_FUNCTION)) {
+        if (data.Id == requestId && (data.Plugin != null) && (data.Function != INVALID_FUNCTION)) {
 
             index = i;
             break;
@@ -291,11 +291,11 @@ void PurgeStaleRequests()
 bool IsPluginRunning(Handle plugin)
 {
     bool running = false;
-    Handle iterator = GetPluginIterator();
+    PluginIterator iterator = new PluginIterator();
 
-    while (MorePlugins(iterator)) {
+    while (iterator.Next()) {
 
-        if (ReadPlugin(iterator) == plugin) {
+        if (iterator.Plugin == plugin) {
             running = (GetPluginStatus(plugin) == Plugin_Running);
             break;
         }

@@ -29,7 +29,7 @@
 #include <sdkhooks> // http://forums.alliedmods.net/showthread.php?t=106748
 #define REQUIRE_EXTENSIONS
 
-#define VERSION "2.0.33"
+#define VERSION "2.0.34"
 #define NAME "SuperLogs: TF2"
 
 #define UNLOCKABLE_BIT (1<<30)
@@ -72,20 +72,20 @@ public Plugin myinfo = {
 };
 
 // Convars we need to monitor
-Handle cvar_crits; // tf_weapon_criticals - Needs to be on for weapon stats
+ConVar cvar_crits; // tf_weapon_criticals - Needs to be on for weapon stats
 
 // Our convars
-Handle cvar_actions;
-Handle cvar_teleports;
-Handle cvar_teleports_again;
-Handle cvar_headshots;
-Handle cvar_backstabs;
-Handle cvar_sandvich;
-Handle cvar_fire;
-Handle cvar_wstats;
-Handle cvar_heals;
-Handle cvar_rolelogfix;
-Handle cvar_objlogfix;
+ConVar cvar_actions;
+ConVar cvar_teleports;
+ConVar cvar_teleports_again;
+ConVar cvar_headshots;
+ConVar cvar_backstabs;
+ConVar cvar_sandvich;
+ConVar cvar_fire;
+ConVar cvar_wstats;
+ConVar cvar_heals;
+ConVar cvar_rolelogfix;
+ConVar cvar_objlogfix;
 
 // Booleans to keep track of them
 bool b_actions;
@@ -104,25 +104,25 @@ bool b_objlogfix;
 bool b_sdkhookloaded = false;
 
 // Weapon trie
-Handle h_weapontrie;
+StringMap h_weapontrie;
 // Weapon Stats
 int weaponStats[MAXPLAYERS+1][MAX_LOG_WEAPONS][7];
 int nextHurt[MAXPLAYERS+1] = {-1, ...};
 // Loadout Info
 int playerLoadout[MAXPLAYERS+1][MAX_LOADOUT_SLOTS][2];
 bool playerLoadoutUpdated[MAXPLAYERS+1];
-Handle itemsKv;
-Handle slotsTrie;
+KeyValues itemsKv;
+StringMap slotsTrie;
 // Stunball id (so we aren't looking it up in gameframe)
 int stunBallId = -1;
 // Stacks for "object destroyed at spawn"
-Handle h_objList[MAXPLAYERS+1];
+ArrayStack h_objList[MAXPLAYERS+1];
 // Time storage for the same
 float f_objRemoved[MAXPLAYERS+1];
 // Stunball Stack
-Handle h_stunBalls;
+ArrayStack h_stunBalls;
 // Wearables Stack
-Handle h_wearables;
+ArrayStack h_wearables;
 
 // Teleporter Stat-Padding Fix: Keep track of last use of teleporter
 float f_lastTeleport[MAXPLAYERS+1][MAXPLAYERS+1];
@@ -229,33 +229,33 @@ public void OnPluginStart()
 	cvar_rolelogfix = CreateConVar("superlogs_rolelogfix", "1", "Enable logging of healpoints upon death (default on)", 0, true, 0.0, true, 1.0);
 	cvar_objlogfix = CreateConVar("superlogs_objlogfix", "1", "Enable logging of owner object destruction on team/class change (default on)", 0, true, 0.0, true, 1.0);
 
-	HookConVarChange(cvar_crits,OnConVarStatsChange);
-	HookConVarChange(cvar_actions,OnConVarActionsChange);
-	HookConVarChange(cvar_teleports,OnConVarTeleportsChange);
-	HookConVarChange(cvar_teleports_again,OnConVarTeleportsAgainChange);
-	HookConVarChange(cvar_headshots,OnConVarHeadshotsChange);
-	HookConVarChange(cvar_backstabs,OnConVarBackstabsChange);
-	HookConVarChange(cvar_sandvich,OnConVarSandvichChange);
-	HookConVarChange(cvar_fire,OnConVarFireChange);
-	HookConVarChange(cvar_wstats,OnConVarStatsChange);
-	HookConVarChange(cvar_heals,OnConVarHealsChange);
-	HookConVarChange(cvar_rolelogfix,OnConVarRolelogfixChange);
-	HookConVarChange(cvar_objlogfix,OnConVarObjlogfixChange);
+	cvar_crits.AddChangeHook(OnConVarStatsChange);
+	cvar_actions.AddChangeHook(OnConVarActionsChange);
+	cvar_teleports.AddChangeHook(OnConVarTeleportsChange);
+	cvar_teleports_again.AddChangeHook(OnConVarTeleportsAgainChange);
+	cvar_headshots.AddChangeHook(OnConVarHeadshotsChange);
+	cvar_backstabs.AddChangeHook(OnConVarBackstabsChange);
+	cvar_sandvich.AddChangeHook(OnConVarSandvichChange);
+	cvar_fire.AddChangeHook(OnConVarFireChange);
+	cvar_wstats.AddChangeHook(OnConVarStatsChange);
+	cvar_heals.AddChangeHook(OnConVarHealsChange);
+	cvar_rolelogfix.AddChangeHook(OnConVarRolelogfixChange);
+	cvar_objlogfix.AddChangeHook(OnConVarObjlogfixChange);
 
-	h_stunBalls = CreateStack();
-	h_wearables = CreateStack();
-	itemsKv = CreateKeyValues("items_game");
-	if(FileToKeyValues(itemsKv, "scripts/items/items_game.txt"))
-		KvJumpToKey(itemsKv, "items");
-	slotsTrie = CreateTrie();
-	SetTrieValue(slotsTrie, "primary", 0);
-	SetTrieValue(slotsTrie, "secondary", 1);
-	SetTrieValue(slotsTrie, "melee", 2);
-	SetTrieValue(slotsTrie, "pda", 3);
-	SetTrieValue(slotsTrie, "pda2", 4);
-	SetTrieValue(slotsTrie, "building", 5);
-	SetTrieValue(slotsTrie, "head", 6);
-	SetTrieValue(slotsTrie, "misc", 7);
+	h_stunBalls = new ArrayStack();
+	h_wearables = new ArrayStack();
+	itemsKv = new KeyValues("items_game");
+	if(itemsKv.ImportFromFile("scripts/items/items_game.txt"))
+		itemsKv.JumpToKey("items");
+	slotsTrie = new StringMap();
+	slotsTrie.SetValue("primary", 0);
+	slotsTrie.SetValue("secondary", 1);
+	slotsTrie.SetValue("melee", 2);
+	slotsTrie.SetValue("pda", 3);
+	slotsTrie.SetValue("pda2", 4);
+	slotsTrie.SetValue("building", 5);
+	slotsTrie.SetValue("head", 6);
+	slotsTrie.SetValue("misc", 7);
 
 	// Populate the Weapon Trie
 	// Creates it too, technically
@@ -263,7 +263,7 @@ public void OnPluginStart()
 
 	// Populate stacks
 	for(int i = 0; i <= MAXPLAYERS; i++)
-		h_objList[i] = CreateStack();
+		h_objList[i] = new ArrayStack();
 
 	// Hook Events
 	HookEvent("player_death", Event_PlayerDeath);
@@ -336,10 +336,10 @@ public void OnAllPluginsLoaded()
 public void OnEntityCreated(int entity, const char[] className)
 {
 	if(b_wstats && StrEqual(className, "tf_projectile_stun_ball"))
-		PushStackCell(h_stunBalls, EntIndexToEntRef(entity));
+		h_stunBalls.Push(EntIndexToEntRef(entity));
 	else if(StrEqual(className, "tf_wearable_item_demoshield") || StrEqual(className, "tf_wearable_item"))
 	{
-		PushStackCell(h_wearables, EntIndexToEntRef(entity));
+		h_wearables.Push(EntIndexToEntRef(entity));
 	}
 }
 
@@ -447,8 +447,9 @@ public void OnGameFrame()
 	char tempstring[15];
 	if(stunBallId > -1)
 	{
-		while(PopStackCell(h_stunBalls, entity))
+		while (!h_stunBalls.Empty)
 		{
+			entity = h_stunBalls.Pop();
 			if(IsValidEntity(entity))
 			{
 				owner = GetEntPropEnt(entity, Prop_Send, "m_hThrower");
@@ -457,8 +458,9 @@ public void OnGameFrame()
 			}
 		}
 	}
-	while(PopStackCell(h_wearables, entity))
+	while (!h_wearables.Empty)
 	{
+		entity = h_wearables.Pop();
 		if(IsValidEntity(entity))
 		{
 			owner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
@@ -466,10 +468,10 @@ public void OnGameFrame()
 			{
 				itemindex = GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex");
 				Format(tempstring, sizeof(tempstring), "%d", itemindex);
-				if(KvJumpToKey(itemsKv, tempstring))
+				if(itemsKv.JumpToKey(tempstring))
 				{
-					KvGetString(itemsKv, "item_slot", tempstring, sizeof(tempstring));
-					if(GetTrieValue(slotsTrie, tempstring, slot))
+					itemsKv.GetString("item_slot", tempstring, sizeof(tempstring));
+					if(slotsTrie.GetValue(tempstring, slot))
 					{
 						if(slot == 0 && playerClass[owner] == TFClass_DemoMan)
 							slot++;
@@ -480,7 +482,7 @@ public void OnGameFrame()
 						}
 						playerLoadout[owner][slot][1] = entity;
 					}
-					KvGoBack(itemsKv);
+					itemsKv.GoBack();
 				}
 			}
 		}
@@ -518,9 +520,9 @@ public void OnClientPutInServer(int client)
 	ResetWeaponStats(client);
 }
 
-public Action Event_PlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && IsClientInGame(client))
 	{
 		if(b_wstats) DumpWeaponStats(client);
@@ -540,18 +542,18 @@ void HookAllClients()
 		}
 }
 
-public Action Event_PlayerChangeclassPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerChangeclassPre(Event event, const char[] name, bool dontBroadcast)
 {
 	// Stop log entry!
 	return Plugin_Handled;
 }
 
-public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	float time = GetGameTime();
-	int userid = GetEventInt(event, "userid");
+	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
-	TFClassType spawnClass = view_as<TFClassType>(GetEventInt(event, "class"));
+	TFClassType spawnClass = view_as<TFClassType>(event.GetInt("class"));
 	jumpStatus[client] = JUMP_NONE; // Play it safe
 	if(b_wstats) DumpWeaponStats(client); // Changed class without death, dump and reset stats
 	//if(b_wstats) ResetWeaponStats(client);
@@ -565,8 +567,9 @@ public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcas
 			strcopy(player_authid, sizeof(player_authid), "UNKNOWN");
 		Format(owner, sizeof(owner), "\"%N<%d><%s><%s>\"", client, userid, player_authid, g_team_list[GetClientTeam(client)]);
 		int objecttype;
-		while(PopStackCell(h_objList[client], objecttype))
+		while (!h_objList[client].Empty)
 		{
+			objecttype = h_objList[client].Pop();
 			switch(objecttype)
 			{
 				case OBJ_DISPENSER:
@@ -617,49 +620,50 @@ public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcas
 	dalokohs[client] = -30.0;
 }
 
-public void Event_ObjectRemoved(Handle event, const char[] name, bool dontBroadcast)
+public void Event_ObjectRemoved(Event event, const char[] name, bool dontBroadcast)
 {
 	float time = GetGameTime();
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(time != f_objRemoved[client])
 	{
 		f_objRemoved[client] = time;
-		while(PopStack(h_objList[client]))
-			continue;
+		// Emptied by making a new one (delete then new, not Clear())
+		delete h_objList[client];
+		h_objList[client] = new ArrayStack();
 	}
-	int objtype = GetEventInt(event, "objecttype");
-	int objindex = GetEventInt(event, "index");
-	if (IsValidEdict(objindex) && GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
+	int objtype = event.GetInt("objecttype");
+	int objindex = event.GetInt("index");
+	if (IsValidEdict(objindex) && GetEntProp(event.GetInt("index"), Prop_Send, "m_bMiniBuilding", 1))
 	{
 		objtype = OBJ_SENTRYGUN_MINI;
 	}
-	PushStackCell(h_objList[client], objtype);
+	h_objList[client].Push(objtype);
 }
 
-public void Event_PlayerStealsandvich(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerStealsandvich(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlyrPlyrEvent(GetClientOfUserId(GetEventInt(event, "target")), GetClientOfUserId(GetEventInt(event, "owner")), "triggered", "steal_sandvich", true);
+	LogPlyrPlyrEvent(GetClientOfUserId(event.GetInt("target")), GetClientOfUserId(event.GetInt("owner")), "triggered", "steal_sandvich", true);
 }
 
-public void Event_PlayerStunned(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerStunned(Event event, const char[] name, bool dontBroadcast)
 {
 	char properties[33];
-	int stunner = GetClientOfUserId(GetEventInt(event, "stunner"));
+	int stunner = GetClientOfUserId(event.GetInt("stunner"));
 	if(stunner > 0) // Stunner == 0 would be map stun (ghost/trigger), natascha stun (slowdown), taunt kill stun (medic, sniper)
 	{
-		int victim = GetClientOfUserId(GetEventInt(event, "victim"));
-		if(GetEventBool(event, "victim_capping")) StrCat(properties, sizeof(properties), " (victim_capping)");
-		if(GetEventBool(event, "big_stun")) StrCat(properties, sizeof(properties), " (big_stun)");
+		int victim = GetClientOfUserId(event.GetInt("victim"));
+		if(event.GetBool("victim_capping")) StrCat(properties, sizeof(properties), " (victim_capping)");
+		if(event.GetBool("big_stun")) StrCat(properties, sizeof(properties), " (big_stun)");
 		LogPlyrPlyrEvent(stunner, victim, "triggered", "stun", true);
 		if((GetEntityFlags(victim) & (FL_ONGROUND | FL_INWATER)) == 0)
 			LogPlayerEvent(stunner, "triggered", "airshot_stun");
 	}
 }
 
-public void Event_PlayerTeleported(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerTeleported(Event event, const char[] name, bool dontBroadcast)
 {
-	int builderid = GetClientOfUserId(GetEventInt(event, "builderid"));
-	int userid = GetClientOfUserId(GetEventInt(event, "userid"));
+	int builderid = GetClientOfUserId(event.GetInt("builderid"));
+	int userid = GetClientOfUserId(event.GetInt("userid"));
 	float curTime = GetGameTime();
 	if(b_teleports_again && f_lastTeleport[builderid][userid] > curTime - TELEPORT_AGAIN_TIME)
 	{
@@ -688,34 +692,34 @@ public void Event_PlayerTeleported(Handle event, const char[] name, bool dontBro
 	f_lastTeleport[builderid][userid] = curTime;
 }
 
-public void Event_DeployBuffBanner(Handle event, const char[] name, bool dontBroadcast)
+public void Event_DeployBuffBanner(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "buff_owner")), "triggered", "buff_deployed");
+	LogPlayerEvent(GetClientOfUserId(event.GetInt("buff_owner")), "triggered", "buff_deployed");
 }
 
-public void Event_MedicDefended(Handle event, const char[] name, bool dontBroadcast)
+public void Event_MedicDefended(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "userid")), "triggered", "defended_medic");
+	LogPlayerEvent(GetClientOfUserId(event.GetInt("userid")), "triggered", "defended_medic");
 }
 
-public void Event_PlayerEscortScore(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerEscortScore(Event event, const char[] name, bool dontBroadcast)
 {
-	LogPlayerEvent(GetEventInt(event, "player"), "triggered", "escort_score");
+	LogPlayerEvent(event.GetInt("player"), "triggered", "escort_score");
 }
 
-public void Event_MedicDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_MedicDeath(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	healPoints[client] = GetEntProp(client, Prop_Send, "m_iHealPoints");
 }
 
-public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 {
 	// NOTE: The weaponid in this event is the weapon the player is HOLDING as of the event happening
 	// Thus, only if we don't have SDK Hooks do we use it for airshot detection.
 	if(!b_sdkhookloaded)
 	{
-		int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+		int attacker = GetClientOfUserId(event.GetInt("attacker"));
 		if(b_wstats)
 		{
 			if(nextHurt[attacker] > -1)
@@ -724,11 +728,11 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 		}
 		if(b_actions)
 		{
-			int client = GetClientOfUserId(GetEventInt(event, "userid"));
+			int client = GetClientOfUserId(event.GetInt("userid"));
 			if(client != attacker && client > 0 && client <= MaxClients && IsClientInGame(client)
 				&& IsPlayerAlive(client) && (GetEntityFlags(client) & (FL_ONGROUND | FL_INWATER)) == 0)
 			{
-				switch(GetEventInt(event, "weaponid"))
+				switch(event.GetInt("weaponid"))
 				{
 					case TF_WEAPON_ROCKETLAUNCHER, TF_WEAPON_DIRECTHIT:
 					{
@@ -750,7 +754,7 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 					}
 					case TF_WEAPON_FLAREGUN:
 					{
-						if(GetEventInt(event, "damageamount") > 10)
+						if(event.GetInt("damageamount") > 10)
 						{
 							LogPlayerEvent(attacker, "triggered", "airshot_flare");
 						}
@@ -765,9 +769,9 @@ public void Event_PlayerHurt(Handle event, const char[] name, bool dontBroadcast
 	}
 }
 
-public Action Event_ObjectDestroyedPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_ObjectDestroyedPre(Event event, const char[] name, bool dontBroadcast)
 {
-	if (GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
+	if (GetEntProp(event.GetInt("index"), Prop_Send, "m_bMiniBuilding", 1))
 	{
 		g_bBlockLog = true;
 	}
@@ -775,7 +779,7 @@ public Action Event_ObjectDestroyedPre(Handle event, const char[] name, bool don
 	return Plugin_Continue;
 }
 
-public void Event_ObjectDestroyed(Handle event, const char[] name, bool dontBroadcast)
+public void Event_ObjectDestroyed(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_bBlockLog)
 	{
@@ -784,21 +788,21 @@ public void Event_ObjectDestroyed(Handle event, const char[] name, bool dontBroa
 		char team[64];
 		char auth[32];
 		char properties[255];
-		GetEventString(event, "weapon", weapon, sizeof(weapon));
-		int victimuid = GetEventInt(event, "userid");
+		event.GetString("weapon", weapon, sizeof(weapon));
+		int victimuid = event.GetInt("userid");
 		int victim = GetClientOfUserId(victimuid);
 		if (victim == 0 || !IsClientInGame(victim))
 			return;
 		GetClientAuthId(victim, AuthId_Engine, auth, sizeof(auth));
 		GetTeamName(GetClientTeam(victim), team, sizeof(team));
 		Format(properties, sizeof(properties), " (object \"OBJ_SENTRYGUN_MINI\") (weapon \"%s\") (objectowner \"%N<%d><%s><%s>\")", weapon, victim, victimuid, auth, team);
-		LogPlayerEvent(GetClientOfUserId(GetEventInt(event, "attacker")), "triggered", "killedobject", true, properties);
+		LogPlayerEvent(GetClientOfUserId(event.GetInt("attacker")), "triggered", "killedobject", true, properties);
 	}
 }
 
-public Action Event_PlayerBuiltObjectPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerBuiltObjectPre(Event event, const char[] name, bool dontBroadcast)
 {
-	if (g_bCarryingObject[GetClientOfUserId(GetEventInt(event, "userid"))] || GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
+	if (g_bCarryingObject[GetClientOfUserId(event.GetInt("userid"))] || GetEntProp(event.GetInt("index"), Prop_Send, "m_bMiniBuilding", 1))
 	{
 		g_bBlockLog = true;
 	}
@@ -806,14 +810,14 @@ public Action Event_PlayerBuiltObjectPre(Handle event, const char[] name, bool d
 	return Plugin_Continue;
 }
 
-public void Event_PlayerBuiltObject(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerBuiltObject(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	
 	if (g_bBlockLog)
 	{
 		g_bBlockLog = false;
-		if (!g_bCarryingObject[client] && GetEntProp(GetEventInt(event, "index"), Prop_Send, "m_bMiniBuilding", 1))
+		if (!g_bCarryingObject[client] && GetEntProp(event.GetInt("index"), Prop_Send, "m_bMiniBuilding", 1))
 		{
 			LogPlayerEvent(client, "triggered", "builtobject", true, " (object \"OBJ_SENTRYGUN_MINI\")");
 		}
@@ -822,18 +826,18 @@ public void Event_PlayerBuiltObject(Handle event, const char[] name, bool dontBr
 	g_bCarryingObject[client] = false;
 }
 
-public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
-	int death_flags = GetEventInt(event, "death_flags");
+	int death_flags = event.GetInt("death_flags");
 	if((death_flags & TF_DEATHFLAG_DEADRINGER) == TF_DEATHFLAG_DEADRINGER) // Not a dead ringer death?
 	{
 		return;
 	}
 	
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	int customkill = GetEventInt(event, "customkill");
-	int bits = GetEventInt(event, "damagebits");
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int customkill = event.GetInt("customkill");
+	int bits = event.GetInt("damagebits");
 	if(b_heals && playerClass[client] != TFClass_Medic) // medic_death event handles this for dead medics
 		DumpHeals(client);
 	int jump = jumpStatus[client]; // dying in the air is a failed jump: read it before the reset
@@ -886,7 +890,7 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	if(b_wstats && client > 0 && attacker > 0 && attacker <= MaxClients)
 	{
 		char weaponlogname[MAX_WEAPON_LEN];
-		GetEventString(event, "weapon_logclassname", weaponlogname, sizeof(weaponlogname));
+		event.GetString("weapon_logclassname", weaponlogname, sizeof(weaponlogname));
 		int weapon_index = GetWeaponIndex(weaponlogname, attacker);
 		if(weapon_index != -1)
 		{
@@ -901,12 +905,12 @@ public void Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcas
 	}
 }
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
-	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	int customkill = GetEventInt(event, "customkill");
-	int inflictor = GetEventInt(event, "inflictor_entindex");
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int victim = GetClientOfUserId(event.GetInt("userid"));
+	int customkill = event.GetInt("customkill");
+	int inflictor = event.GetInt("inflictor_entindex");
 	if (!IsValidEdict(inflictor))
 	{
 		inflictor = 0;
@@ -928,21 +932,21 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 			if(b_fire)
 			{
 				char logweapon[64];
-				GetEventString(event, "weapon_logclassname", logweapon, sizeof(logweapon));
+				event.GetString("weapon_logclassname", logweapon, sizeof(logweapon));
 				if(logweapon[0] != 'd') // No changing reflects - was 'r' but it is deflects
 				{
-					SetEventString(event, "weapon_logclassname", "tf_projectile_arrow_fire");
+					event.SetString("weapon_logclassname", "tf_projectile_arrow_fire");
 				}
 			}
 		case TF_CUSTOM_TAUNT_UBERSLICE:
 			{
-				if(GetEventInt(event, "weaponid") == TF_WEAPON_BONESAW)
+				if(event.GetInt("weaponid") == TF_WEAPON_BONESAW)
 				{
-					SetEventString(event, "weapon_logclassname", "taunt_medic");
+					event.SetString("weapon_logclassname", "taunt_medic");
 					
 					// Might as well fix the kill icon, too, as long as we're here
 					// Courtesy of FlaminSarge
-					SetEventString(event, "weapon", "taunt_medic");
+					event.SetString("weapon", "taunt_medic");
 				}
 			}
 		
@@ -955,21 +959,21 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	return Plugin_Continue;
 }
 
-public void Event_WinPanel(Handle event, const char[] name, bool dontBroadcast)
+public void Event_WinPanel(Event event, const char[] name, bool dontBroadcast)
 {
 	if(b_actions)
 	{
-		LogPlayerEvent(GetEventInt(event, "player_1"), "triggered", "mvp1");
-		LogPlayerEvent(GetEventInt(event, "player_2"), "triggered", "mvp2");
-		LogPlayerEvent(GetEventInt(event, "player_3"), "triggered", "mvp3");
+		LogPlayerEvent(event.GetInt("player_1"), "triggered", "mvp1");
+		LogPlayerEvent(event.GetInt("player_2"), "triggered", "mvp2");
+		LogPlayerEvent(event.GetInt("player_3"), "triggered", "mvp3");
 	}
 	if(b_wstats)
 		DumpAllWeaponStats();
 }
 
-public void Event_RocketJump(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RocketJump(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	int status = jumpStatus[client];
 	if(status == JUMP_ROCKET_START) // Taunt kills trigger one event, rocket jumps two
 	{
@@ -980,9 +984,9 @@ public void Event_RocketJump(Handle event, const char[] name, bool dontBroadcast
 		jumpStatus[client] = JUMP_ROCKET_START;
 }
 
-public void Event_StickyJump(Handle event, const char[] name, bool dontBroadcast)
+public void Event_StickyJump(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(jumpStatus[client] != JUMP_STICKY)
 	{
 		jumpStatus[client] = JUMP_STICKY;
@@ -990,16 +994,16 @@ public void Event_StickyJump(Handle event, const char[] name, bool dontBroadcast
 	}
 }
 
-public void Event_JumpLanded(Handle event, const char[] name, bool dontBroadcast)
+public void Event_JumpLanded(Event event, const char[] name, bool dontBroadcast)
 {
-	jumpStatus[GetClientOfUserId(GetEventInt(event, "userid"))] = JUMP_NONE;
+	jumpStatus[GetClientOfUserId(event.GetInt("userid"))] = JUMP_NONE;
 }
 
-public void Event_ObjectDeflected(Handle event, const char[] name, bool dontBroadcast)
+public void Event_ObjectDeflected(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
-	int owner = GetClientOfUserId(GetEventInt(event, "ownerid"));
-	switch(GetEventInt(event, "weaponid"))
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int owner = GetClientOfUserId(event.GetInt("ownerid"));
+	switch(event.GetInt("weaponid"))
 	{
 		case TF_WEAPON_NONE:
 		{
@@ -1066,9 +1070,9 @@ public void Event_ObjectDeflected(Handle event, const char[] name, bool dontBroa
 	}
 }
 
-public void Event_PostInventoryApplication(Handle event, const char[] name, bool dontBroadcast)
+public void Event_PostInventoryApplication(Event event, const char[] name, bool dontBroadcast)
 {
-	CreateTimer(0.2, CheckPlayerLoadout, GetEventInt(event, "userid"));
+	CreateTimer(0.2, CheckPlayerLoadout, event.GetInt("userid"));
 }
 
 public Action CheckPlayerLoadout(Handle timer, any userid)
@@ -1121,7 +1125,7 @@ public Action CheckPlayerLoadout(Handle timer, any userid)
 		return Plugin_Stop;
 	}
 	if (newLoadout)
-		LogWeaponLoadout(INVALID_HANDLE, userid);
+		LogWeaponLoadout(null, userid);
 		
 	return Plugin_Stop;
 }
@@ -1151,10 +1155,10 @@ public Action LogWeaponLoadout(Handle timer, any userid)
 	return Plugin_Stop;
 }
 
-public Action Event_PlayerJarated(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
+public Action Event_PlayerJarated(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
 {
-	int client = BfReadByte(bf);
-	int victim = BfReadByte(bf);
+	int client = bf.ReadByte();
+	int victim = bf.ReadByte();
 	
 	if (!victim || !IsClientInGame(victim))
 	{
@@ -1174,10 +1178,10 @@ public Action Event_PlayerJarated(UserMsg msg_id, Handle bf, const int[] players
 	return Plugin_Continue;
 }
 
-public Action Event_PlayerShieldBlocked(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
+public Action Event_PlayerShieldBlocked(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
 {
-	int victim = BfReadByte(bf);
-	int client = BfReadByte(bf);
+	int victim = bf.ReadByte();
+	int client = bf.ReadByte();
 
 	LogPlyrPlyrEvent(client, victim, "triggered", "shield_blocked", true);
 	return Plugin_Continue;
@@ -1225,47 +1229,47 @@ public Action LogMap(Handle timer)
 void PopulateWeaponTrie()
 {
 	// Create a Trie
-	h_weapontrie = CreateTrie();
+	h_weapontrie = new StringMap();
 	
 	// Initial populate
 	for(int i = 0; i < MAX_LOG_WEAPONS; i++)
-		SetTrieValue(h_weapontrie, weaponList[i], i);
+		h_weapontrie.SetValue(weaponList[i], i);
 
 	// Figure out the Bullet Weapon ids (based on the list of bullet weapons)
 	int index;
 	bulletWeapons = 0;
 	for(int i = 0; i < MAX_BULLET_WEAPONS; i++)
-		if(GetTrieValue(h_weapontrie, weaponBullet[i], index))
+		if(h_weapontrie.GetValue(weaponBullet[i], index))
 			bulletWeapons |= (1<<index);
 	
 	// Flag unlockable enabled weapons as such
 	for(int i = 0; i < MAX_UNLOCKABLE_WEAPONS; i++)
-		if(GetTrieValue(h_weapontrie, weaponUnlockables[i], index))
-			SetTrieValue(h_weapontrie, weaponUnlockables[i], index | UNLOCKABLE_BIT);
+		if(h_weapontrie.GetValue(weaponUnlockables[i], index))
+			h_weapontrie.SetValue(weaponUnlockables[i], index | UNLOCKABLE_BIT);
 
 	// Aux entries, based on the position of other entries in the list
 	// This is last so that we inherit unlockable weapon flags.
 	// Note: As of this writing, none of the below have unlockable variants anyway.
-	if(GetTrieValue(h_weapontrie, "tf_projectile_arrow", index))
+	if(h_weapontrie.GetValue("tf_projectile_arrow", index))
 	{
-		SetTrieValue(h_weapontrie, "compound_bow", index);
-		SetTrieValue(h_weapontrie, "tf_projectile_arrow_fire", index);
+		h_weapontrie.SetValue("compound_bow", index);
+		h_weapontrie.SetValue("tf_projectile_arrow_fire", index);
 	}
-	if(GetTrieValue(h_weapontrie, "tf_projectile_rocket", index))
-		SetTrieValue(h_weapontrie, "rocketlauncher", index);
-	if(GetTrieValue(h_weapontrie, "rocketlauncher_directhit", index))
-		SetTrieValue(h_weapontrie, "tf_projectile_rocket_dh", index);
-	if(GetTrieValue(h_weapontrie, "tf_projectile_pipe", index))
-		SetTrieValue(h_weapontrie, "grenadelauncher", index);
-	if(GetTrieValue(h_weapontrie, "tf_projectile_pipe_remote", index))
-		SetTrieValue(h_weapontrie, "pipebomblauncher", index);
-	if(GetTrieValue(h_weapontrie, "sticky_resistance", index))
-		SetTrieValue(h_weapontrie, "tf_projectile_pipe_remote_sr", index);
-	if(GetTrieValue(h_weapontrie, "flaregun", index))
-		SetTrieValue(h_weapontrie, "tf_projectile_flare", index);
-	if(GetTrieValue(h_weapontrie, "ball", index))
+	if(h_weapontrie.GetValue("tf_projectile_rocket", index))
+		h_weapontrie.SetValue("rocketlauncher", index);
+	if(h_weapontrie.GetValue("rocketlauncher_directhit", index))
+		h_weapontrie.SetValue("tf_projectile_rocket_dh", index);
+	if(h_weapontrie.GetValue("tf_projectile_pipe", index))
+		h_weapontrie.SetValue("grenadelauncher", index);
+	if(h_weapontrie.GetValue("tf_projectile_pipe_remote", index))
+		h_weapontrie.SetValue("pipebomblauncher", index);
+	if(h_weapontrie.GetValue("sticky_resistance", index))
+		h_weapontrie.SetValue("tf_projectile_pipe_remote_sr", index);
+	if(h_weapontrie.GetValue("flaregun", index))
+		h_weapontrie.SetValue("tf_projectile_flare", index);
+	if(h_weapontrie.GetValue("ball", index))
 	{
-		SetTrieValue(h_weapontrie, "tf_projectile_stun_ball", index);
+		h_weapontrie.SetValue("tf_projectile_stun_ball", index);
 		stunBallId = index;
 	}
 }
@@ -1281,7 +1285,7 @@ int GetWeaponIndex(const char[] weaponname, int client = 0, int weapon = -1)
 	// most weapons ("scattergun", "minigun", "deflect_rocket"...) from the stats.
 	int len = strlen(weaponname);
 	
-	if(GetTrieValue(h_weapontrie, weaponname, index))
+	if(h_weapontrie.GetValue(weaponname, index))
 	{
 		if(index & UNLOCKABLE_BIT)
 		{
@@ -1368,9 +1372,9 @@ void ResetWeaponStats(int client)
 		weaponStats[client][i] = {0,0,0,0,0,0,0};
 }
 
-public void OnConVarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarActionsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_actions);
+	bool newval = cvar_actions.BoolValue;
 	if(newval != b_actions)
 	{
 		if(newval)
@@ -1410,9 +1414,9 @@ public void OnConVarActionsChange(Handle cvar, const char[] oldVal, const char[]
 }
 
 
-public void OnConVarTeleportsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarTeleportsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_teleports);
+	bool newval = cvar_teleports.BoolValue;
 	if(newval != b_teleports)
 	{
 		if(newval)
@@ -1423,24 +1427,24 @@ public void OnConVarTeleportsChange(Handle cvar, const char[] oldVal, const char
 	}
 }
 
-public void OnConVarTeleportsAgainChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarTeleportsAgainChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	b_teleports_again = GetConVarBool(cvar_teleports_again);
+	b_teleports_again = cvar_teleports_again.BoolValue;
 }
 
-public void OnConVarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarHeadshotsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	b_headshots = GetConVarBool(cvar_headshots);
+	b_headshots = cvar_headshots.BoolValue;
 }
 
-public void OnConVarBackstabsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarBackstabsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	b_backstabs = GetConVarBool(cvar_backstabs);
+	b_backstabs = cvar_backstabs.BoolValue;
 }
 
-public void OnConVarSandvichChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarSandvichChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_sandvich);
+	bool newval = cvar_sandvich.BoolValue;
 	if(newval != b_sandvich)
 	{
 		if(newval)
@@ -1451,14 +1455,14 @@ public void OnConVarSandvichChange(Handle cvar, const char[] oldVal, const char[
 	}
 }
 
-public void OnConVarFireChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarFireChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	b_fire = GetConVarBool(cvar_fire);
+	b_fire = cvar_fire.BoolValue;
 }
 
-public void OnConVarStatsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarStatsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_crits) && GetConVarBool(cvar_wstats);
+	bool newval = cvar_crits.BoolValue && cvar_wstats.BoolValue;
 	if(newval != b_wstats)
 	{
 		if(!newval)
@@ -1469,9 +1473,9 @@ public void OnConVarStatsChange(Handle cvar, const char[] oldVal, const char[] n
 	}
 }
 
-public void OnConVarHealsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarHealsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_heals);
+	bool newval = cvar_heals.BoolValue;
 	if(newval != b_heals)
 	{
 		if(newval)
@@ -1489,9 +1493,9 @@ public void OnConVarHealsChange(Handle cvar, const char[] oldVal, const char[] n
 	}
 }
 
-public void OnConVarRolelogfixChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarRolelogfixChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_rolelogfix);
+	bool newval = cvar_rolelogfix.BoolValue;
 	if(newval != b_rolelogfix)
 	{
 		if(newval)
@@ -1502,9 +1506,9 @@ public void OnConVarRolelogfixChange(Handle cvar, const char[] oldVal, const cha
 	}
 }
 
-public void OnConVarObjlogfixChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnConVarObjlogfixChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
-	bool newval = GetConVarBool(cvar_objlogfix);
+	bool newval = cvar_objlogfix.BoolValue;
 	if(newval != b_objlogfix)
 	{
 		if(newval)

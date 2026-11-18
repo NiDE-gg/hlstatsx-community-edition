@@ -26,10 +26,10 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: NeoTokyo"
-#define VERSION "1.0.3"
+#define VERSION "1.0.4"
 
-Handle g_cvar_headshots = INVALID_HANDLE;
-Handle g_cvar_locations = INVALID_HANDLE;
+ConVar g_cvar_headshots = null;
+ConVar g_cvar_locations = null;
 
 bool g_logheadshots = true;
 bool g_loglocations = true;
@@ -51,8 +51,8 @@ public void OnPluginStart()
 	g_cvar_headshots = CreateConVar("superlogs_headshots", "1", "Enable logging of headshot player action (default off)", 0, true, 0.0, true, 1.0);
 	g_cvar_locations = CreateConVar("superlogs_locations", "1", "Enable logging of location on player death (default on)", 0, true, 0.0, true, 1.0);
 
-	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
-	HookConVarChange(g_cvar_locations, OnCvarLocationsChange);
+	g_cvar_headshots.AddChangeHook(OnCvarHeadshotsChange);
+	g_cvar_locations.AddChangeHook(OnCvarLocationsChange);
 
 	CreateConVar("superlogs_nts_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
@@ -73,16 +73,16 @@ public void OnMapStart()
 }
 
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
-	int attacker = GetEventInt(event, "attacker");
+	int attacker = event.GetInt("attacker");
 	if (attacker > 0)
 	{
 		if (g_loglocations)
 		{
-			LogKillLoc(GetClientOfUserId(attacker), GetClientOfUserId(GetEventInt(event, "userid")));
+			LogKillLoc(GetClientOfUserId(attacker), GetClientOfUserId(event.GetInt("userid")));
 		}
-		if (g_logheadshots && GetEventInt(event, "icon") == 2)
+		if (g_logheadshots && event.GetInt("icon") == 2)
 		{
 			LogPlayerEvent(GetClientOfUserId(attacker), "triggered", "headshot");
 		}
@@ -91,10 +91,10 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	return Plugin_Continue;
 }
 
-public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarHeadshotsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logheadshots;
-	g_logheadshots = GetConVarBool(g_cvar_headshots);
+	g_logheadshots = g_cvar_headshots.BoolValue;
 	
 	if (old_value != g_logheadshots)
 	{
@@ -109,10 +109,10 @@ public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarLocationsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_loglocations;
-	g_loglocations = GetConVarBool(g_cvar_locations);
+	g_loglocations = g_cvar_locations.BoolValue;
 	
 	if (old_value != g_loglocations)
 	{

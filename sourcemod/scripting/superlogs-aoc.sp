@@ -26,12 +26,12 @@
 #include <sdktools>
 
 #define NAME "SuperLogs: Age of Chivalry"
-#define VERSION "1.0.3"
+#define VERSION "1.0.4"
 
-Handle g_cvar_headshots = INVALID_HANDLE;
-Handle g_cvar_locations = INVALID_HANDLE;
-Handle g_cvar_classchanges = INVALID_HANDLE;
-Handle g_cvar_actions = INVALID_HANDLE;
+ConVar g_cvar_headshots = null;
+ConVar g_cvar_locations = null;
+ConVar g_cvar_classchanges = null;
+ConVar g_cvar_actions = null;
 
 bool g_logheadshots = true;
 bool g_loglocations = true;
@@ -58,10 +58,10 @@ public void OnPluginStart()
 	g_cvar_classchanges = CreateConVar("superlogs_classchanges", "1", "Enable logging of character changes (default on)", 0, true, 0.0, true, 1.0);
 	g_cvar_actions = CreateConVar("superlogs_actions", "1", "Enable logging of actions, such as \"Round_Win\" (default on)", 0, true, 0.0, true, 1.0);
 
-	HookConVarChange(g_cvar_locations, OnCvarLocationsChange);
-	HookConVarChange(g_cvar_headshots, OnCvarHeadshotsChange);
-	HookConVarChange(g_cvar_classchanges, OnCvarClasschangesChange);
-	HookConVarChange(g_cvar_actions, OnCvarActionsChange);
+	g_cvar_locations.AddChangeHook(OnCvarLocationsChange);
+	g_cvar_headshots.AddChangeHook(OnCvarHeadshotsChange);
+	g_cvar_classchanges.AddChangeHook(OnCvarClasschangesChange);
+	g_cvar_actions.AddChangeHook(OnCvarActionsChange);
 
 	CreateConVar("superlogs_aoc_version", VERSION, NAME, FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 		
@@ -103,15 +103,15 @@ public void OnMapStart()
 	GetTeams();
 }
 
-public Action Event_ClassChanged(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
+public Action Event_ClassChanged(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
 {
 	g_bLogClassNextSpawn[players[0]] = true;
 	return Plugin_Continue;
 }
 
-public Action Event_Spawn(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_Spawn(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0 && g_bLogClassNextSpawn[client])
 	{
 		switch (GetEntProp(client, Prop_Send, "m_iClass"))
@@ -142,7 +142,7 @@ public Action Event_Spawn(Handle event, const char[] name, bool dontBroadcast)
 }
 
 
-public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPre(Event event, const char[] name, bool dontBroadcast)
 {
 	//	"userid"	"short"   	// user ID who died				
 	//	"attacker"	"short"	 	// user ID who killed
@@ -153,8 +153,8 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 	//	"weaponid"	"short"		// Weapon ID
 	//	"team"		"short"		// victim's team
 	
-	int attacker = GetEventInt(event, "attacker");
-	int victim = GetEventInt(event, "userid");
+	int attacker = event.GetInt("attacker");
+	int victim = event.GetInt("userid");
 	
 	if (attacker > 0 && victim > 0)
 	{
@@ -165,9 +165,9 @@ public Action Event_PlayerDeathPre(Handle event, const char[] name, bool dontBro
 		
 		if (g_logheadshots)
 		{
-			bool headshot = GetEventBool(event, "headshot");
-			bool decapped = GetEventBool(event, "decapped");
-			bool headexplodie = GetEventBool(event, "headexplodie");
+			bool headshot = event.GetBool("headshot");
+			bool decapped = event.GetBool("decapped");
+			bool headexplodie = event.GetBool("headexplodie");
 			if (decapped)
 			{
 				//decapitation
@@ -194,15 +194,15 @@ public void OnClientPutInServer(int client)
 	g_bLogClassNextSpawn[client] = false;
 }
 
-public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	LogTeamEvent(GetEventInt(event, "winner"), "triggered", "Round_Win");
+	LogTeamEvent(event.GetInt("winner"), "triggered", "Round_Win");
 }
 
-public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarLocationsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_loglocations;
-	g_loglocations = GetConVarBool(g_cvar_locations);
+	g_loglocations = g_cvar_locations.BoolValue;
 	
 	if (old_value != g_loglocations)
 	{
@@ -217,10 +217,10 @@ public void OnCvarLocationsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarActionsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logactions;
-	g_logactions = GetConVarBool(g_cvar_actions);
+	g_logactions = g_cvar_actions.BoolValue;
 	
 	if (old_value != g_logactions)
 	{
@@ -235,10 +235,10 @@ public void OnCvarActionsChange(Handle cvar, const char[] oldVal, const char[] n
 	}
 }
 
-public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarHeadshotsChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logheadshots;
-	g_logheadshots = GetConVarBool(g_cvar_headshots);
+	g_logheadshots = g_cvar_headshots.BoolValue;
 	
 	if (old_value != g_logheadshots)
 	{
@@ -253,10 +253,10 @@ public void OnCvarHeadshotsChange(Handle cvar, const char[] oldVal, const char[]
 	}
 }
 
-public void OnCvarClasschangesChange(Handle cvar, const char[] oldVal, const char[] newVal)
+public void OnCvarClasschangesChange(ConVar cvar, const char[] oldVal, const char[] newVal)
 {
 	bool old_value = g_logclasschanges;
-	g_logclasschanges = GetConVarBool(g_cvar_classchanges);
+	g_logclasschanges = g_cvar_classchanges.BoolValue;
 	
 	if (old_value != g_logclasschanges)
 	{
