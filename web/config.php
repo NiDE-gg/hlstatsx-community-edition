@@ -168,6 +168,23 @@ define("IMAGE_UPDATE_INTERVAL", 300);
 
 define('GOOGLE_MAPS_API_KEY', $hlxEnv['GOOGLE_MAPS_API_KEY'] ?? "");
 
+// SITE_URL - Public address of the site (the folder holding hlstats.php), for example
+//            https://stats.example.com/. Optional. When set, absolute links use it
+//            instead of the request's Host header, and an https:// address marks the
+//            session cookie Secure even when PHP itself is reached over plain HTTP
+//            (behind a proxy that terminates TLS).
+$hlxSiteUrl = trim((string) ($hlxEnv['SITE_URL'] ?? ''));
+if ($hlxSiteUrl !== '' && !preg_match('#^https?://[A-Za-z0-9.:\[\]-]+(/[A-Za-z0-9._~/-]*)?$#', $hlxSiteUrl)) {
+	error_log('HLstats: SITE_URL in .env is not an http(s):// address, ignored');
+	$hlxSiteUrl = '';
+}
+define('SITE_URL', $hlxSiteUrl === '' ? '' : rtrim($hlxSiteUrl, '/') . '/');
+
+// TRUSTED_PROXIES - Comma-separated addresses or CIDR ranges of reverse proxies whose
+//                   X-Forwarded-Proto header is believed (for example 127.0.0.1,10.0.0.0/8).
+//                   Optional; the header is ignored from any other address.
+define('TRUSTED_PROXIES', trim((string) ($hlxEnv['TRUSTED_PROXIES'] ?? '')));
+
 // Add a chat delay to prevent real-time tracking and provide information that can help in-game.
 // Only allowed from 1 minute to CHAT_DELAY_MAX_TIME, other values ​​disable this.
 // Disabled by default.
@@ -178,6 +195,75 @@ define('ROOT_PATH', __DIR__);
 
 //define("DB_DEBUG", true);
 
-unset($hlxEnv, $hlxEnvFile, $hlxEnvLine, $hlxEnvKey, $hlxEnvValue);
+/**
+ * Whether $ip is one of the addresses or CIDR ranges in the comma-separated $list.
+ */
+function hlxIpInList($ip, $list)
+{
+	if (filter_var((string) $ip, FILTER_VALIDATE_IP) === false) {
+		return false;
+	}
+	$addr = inet_pton((string) $ip);
+	foreach (explode(',', (string) $list) as $entry) {
+		$entry = trim($entry);
+		if ($entry === '') {
+			continue;
+		}
+		$parts = explode('/', $entry, 2);
+		if (filter_var($parts[0], FILTER_VALIDATE_IP) === false) {
+			continue;
+		}
+		$net = inet_pton($parts[0]);
+		if (strlen($net) !== strlen($addr)) {
+			continue;
+		}
+		$bits = isset($parts[1]) ? (int) $parts[1] : strlen($net) * 8;
+		if ($bits < 0 || $bits > strlen($net) * 8) {
+			continue;
+		}
+		$bytes = intdiv($bits, 8);
+		if (substr($addr, 0, $bytes) !== substr($net, 0, $bytes)) {
+			continue;
+		}
+		$rest = $bits % 8;
+		if ($rest === 0 || ((ord($addr[$bytes]) ^ ord($net[$bytes])) & (0xFF << (8 - $rest)) & 0xFF) === 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Whether the visitor reached the site over HTTPS: PHP's own HTTPS flag, an
+ * https:// SITE_URL, or X-Forwarded-Proto: https from a trusted proxy.
+ */
+function hlxIsHttps()
+{
+	if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
+		return true;
+	}
+	if (strncmp(SITE_URL, 'https://', 8) === 0) {
+		return true;
+	}
+	return TRUSTED_PROXIES !== ''
+		&& strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0])) === 'https'
+		&& hlxIpInList($_SERVER['REMOTE_ADDR'] ?? '', TRUSTED_PROXIES);
+}
+
+/**
+ * Absolute address of the folder holding the entry point, ending with "/":
+ * SITE_URL when set, else built from the request.
+ */
+function hlxSiteUrl()
+{
+	if (SITE_URL !== '') {
+		return SITE_URL;
+	}
+	return (hlxIsHttps() ? 'https://' : 'http://')
+		. preg_replace('/[^A-Za-z0-9.:\[\]-]/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''))
+		. rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/'))), '/') . '/';
+}
+
+unset($hlxEnv, $hlxEnvFile, $hlxEnvLine, $hlxEnvKey, $hlxEnvValue, $hlxSiteUrl);
 
 ?>
