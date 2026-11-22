@@ -905,7 +905,7 @@ sub getAddress
 		
 		&::printNotice("rcon_getaddress");
 		my $result = $::g_servers{$s_addr}->rcon_getaddress($self->{uniqueid});
-		if ($result->{Address} ne "") {
+		if (ref($result) eq "HASH" && ($result->{Address} // "") ne "") {
 			$haveAddress = 1;
 			$self->{address}  = $result->{Address};
 			$self->{cli_port} = $result->{ClientPort};

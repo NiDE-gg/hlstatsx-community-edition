@@ -535,16 +535,18 @@ sub track_server_load
 				#0.00   0.00       0.00        0      0            00.00    0        0
 
 
-				$string = $self->dorcon("stats");
+				# A failed match keeps the capture groups of the previous match: only read them on success
+				my ($uptime, $fps) = (0, 0);
+				my $stats = $self->dorcon("stats") // "";
 
-				# Remove first line of output
-				$string =~ /CPU.*\n(.*)\n*L{0,1}.*\Z/;
-				$string = $1;
-
-				# Grab FPS and Uptime from the output
-				$string =~ /([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s*([^ ]*)/;
-				$uptime = $4;
-				$fps = $6;
+				# Skip the header line, then grab FPS and Uptime
+				if ($stats =~ /CPU.*\n(.*)\n*L{0,1}.*\Z/) {
+					my $values = $1;
+					if ($values =~ /([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s*([^ ]*)/) {
+						$uptime = $4;
+						$fps = $6;
+					}
+				}
 
 				my $act_players  = $self->{numplayers};
 				my $max_players  = $self->{maxplayers};
@@ -650,13 +652,13 @@ sub get_map
 			{  # no rcon or status command failed
 			STATUSFAIL:
 				my ($querymap, $queryhost, $querymax) = &::queryServer($self->{address}, $self->{port}, 'mapname', 'hostname', 'maxplayers');
-				if ($querymap ne "") {
+				if (defined($querymap) && $querymap ne "") {
 					$self->{map} = $querymap;
 					$update++;
 					
 					#if map is blank, query likely failed as a whole
 					
-					if (($querymax != -1) && ($querymax > 0)) {
+					if (($querymax // -1) > 0) {
 						if ($self->{maxplayers} != $querymax) {
 							$self->{maxplayers} = $querymax;
 							$update++;
