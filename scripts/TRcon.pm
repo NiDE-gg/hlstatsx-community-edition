@@ -61,6 +61,12 @@ my $SERVERDATA_AUTH_RESPONSE      = 2;
 my $REFRESH_SOCKET_COUNTER_LIMIT  = 100;
 my $AUTH_PACKET_ID                = 1;
 my $SPLIT_END_PACKET_ID           = 2;
+# A refused password comes back with id -1, read unsigned by unpack("V")
+my $AUTH_REFUSED_ID               = 0xFFFFFFFF;
+# Wait before trying to authenticate again after an attempt that got no
+# answer (map change, or our IP is banned): the daemon used to retry on every
+# command, about every 3 seconds (Z.ESCAPE, 22/11/2026)
+my $AUTH_RETRY_DELAY              = 60;
 
 #
 # Constructor
@@ -78,6 +84,8 @@ sub new
   $self->{"auth"}                   = 0;
   $self->{"refresh_socket_counter"} = 0;
   $self->{"packet_id"}              = 10;
+  $self->{"auth_refused"}           = 0;
+  $self->{"auth_retry_at"}          = 0;
   return $self;
 }
 
@@ -104,8 +112,11 @@ sub get_auth_code
     &::printEvent("TRCON", "Rcon password accepted");
     $auth = 1;
     $self->{"auth"} = 1;
-  } elsif( $id == -1) {
-    &::printEvent("TRCON", "Rcon password refused");
+  } elsif ($id == $AUTH_REFUSED_ID) {
+    # srcds bans our IP after sv_rcon_maxfailures refusals (every server on
+    # the host then rejects all its queries): never send this password again
+    &::printEvent("TRCON", "Rcon password refused, rcon disabled for this server until the daemon restarts: check its rcon password in the HLstatsX admin");
+    $self->{"auth_refused"} = 1;
     $self->{"auth"} = 0;
     $auth           = 0;
   } else {
@@ -122,7 +133,11 @@ sub sendrecv
 {
   my ($self, $msg, $splitted_answer) = @_;
   $splitted_answer //= 0;
-  
+
+  return if $self->{"auth_refused"};
+  # Not authenticated and the last attempt got no answer: don't even reconnect
+  return if (!$self->{"auth"} && time() < $self->{"auth_retry_at"});
+
   my $rs_counter = $self->{"refresh_socket_counter"};
   if ($rs_counter % $REFRESH_SOCKET_COUNTER_LIMIT == 0)  {
     # undef after a failed connect (e.g. the server was busy changing map): only shut down a real socket
@@ -160,15 +175,22 @@ sub sendrecv
         return;
       }
       my ($id, $command, $response) = $self->recieve_rcon($AUTH_PACKET_ID);
-      if($command == $SERVERDATA_AUTH_RESPONSE) {
-        $auth = $self->get_auth_code($id);
-      } elsif (($command == $SERVERDATA_RESPONSE_VALUE) && ($id == $AUTH_PACKET_ID)) {  
-         #Source servers sends one junk packet during the authentication step, before it responds 
-         # with the correct authentication response.  
+      if (($command == $SERVERDATA_RESPONSE_VALUE) && ($id == $AUTH_PACKET_ID)) {
+         #Source servers sends one junk packet during the authentication step, before it responds
+         # with the correct authentication response.
          &::printEvent("TRCON", "Junk packet from Source Engine");
-         my ($id, $command, $response) = $self->recieve_rcon($AUTH_PACKET_ID);
-         $auth = $self->get_auth_code($id);
-      }  
+         ($id, $command, $response) = $self->recieve_rcon($AUTH_PACKET_ID);
+      }
+      # recieve_rcon returns command -1 when nothing came back: not a refusal
+      if ($command == $SERVERDATA_AUTH_RESPONSE) {
+        $auth = $self->get_auth_code($id);
+      }
+      if ($auth == 0) {
+        return if $self->{"auth_refused"};
+        &::printEvent("TRCON", "No rcon access, next try in $AUTH_RETRY_DELAY seconds");
+        $self->{"auth_retry_at"} = time() + $AUTH_RETRY_DELAY;
+        return;
+      }
     }
     
     if ($auth == 1)  {
