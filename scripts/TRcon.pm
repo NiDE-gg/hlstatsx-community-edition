@@ -125,7 +125,8 @@ sub sendrecv
   
   my $rs_counter = $self->{"refresh_socket_counter"};
   if ($rs_counter % $REFRESH_SOCKET_COUNTER_LIMIT == 0)  {
-    if ($self->{"rcon_socket"} > 0) {
+    # undef after a failed connect (e.g. the server was busy changing map): only shut down a real socket
+    if ($self->{"rcon_socket"}) {
       shutdown($self->{"rcon_socket"}, 2);
       $self->{"rcon_socket"} = 0;
     }
