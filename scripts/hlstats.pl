@@ -2738,8 +2738,9 @@ while ($loop = &getLine()) {
 				my $killerUniqueId = $killerinfo->{"uniqueid"};
 				my $killer         = lookupPlayer($s_addr, $killerId, $killerUniqueId);
 				
-				# octo
-				if($killer->{role} eq "scout") {
+				# octo (TF2 roles); the killer may be unknown to the daemon (entity without a player slot)
+				my $killerRole = $killer ? ($killer->{role} // "") : "";
+				if($killerRole eq "scout") {
 					$ev_status = &doEvent_PlayerAction(
 						$killerinfo->{"userid"},
 						$killerinfo->{"uniqueid"},
@@ -2747,7 +2748,7 @@ while ($loop = &getLine()) {
 						"kill_as_scout"
 					);
 				}
-				if($killer->{role} eq "spy") {
+				if($killerRole eq "spy") {
 					$ev_status = &doEvent_PlayerAction(
 						$killerinfo->{"userid"},
 						$killerinfo->{"uniqueid"},
@@ -3364,7 +3365,11 @@ while ($loop = &getLine()) {
 					
 					if ($isCSGO) {
 						$ev_status = &doEvent_Connect($playerinfo->{userid}, $playerinfo->{uniqueid}, $playerinfo->{address});
-					}	
+					} else {
+						# Other games record the connection on the "connected, address" line: nothing to do here,
+						# but an empty status would be logged as "BAD DATA"
+						$ev_status = "(IGNORED) $ev_verb: connection recorded on the connected line";
+					}
 				}
 			}
 		} elsif ($s_output =~ /^Team "(.+?)" ([^"\(]+) "([^"]+)"(.*)$/) {
