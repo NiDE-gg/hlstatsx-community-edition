@@ -85,12 +85,14 @@ sub execute
 {
   my ($self, $command, $splitted_answer) = @_;
   if ($::g_stdin == 0) {
-    my $answer = $self->sendrecv($command, $splitted_answer);
+    # No answer (timeout, closed socket, unexpected packet id) is an empty string, never undef
+    my $answer = $self->sendrecv($command, $splitted_answer) // "";
     if ($answer =~ /bad rcon_password/i) {
       &::printEvent("TRCON", "Bad Password");
     }
     return $answer;
-  }  
+  }
+  return "";
 }
 
 sub get_auth_code
@@ -119,6 +121,7 @@ sub get_auth_code
 sub sendrecv
 {
   my ($self, $msg, $splitted_answer) = @_;
+  $splitted_answer //= 0;
   
   my $rs_counter = $self->{"refresh_socket_counter"};
   if ($rs_counter % $REFRESH_SOCKET_COUNTER_LIMIT == 0)  {
@@ -193,6 +196,8 @@ sub sendrecv
 sub send_rcon
 {
   my ($self, $id, $command, $string1, $string2) = @_;
+  $string1 //= "";
+  $string2 //= "";
   my $data = pack("VVZ*Z*", $id, $command, $string1, $string2);
   my $size = length($data);
   if($size > 4096) {
@@ -217,7 +222,9 @@ sub send_rcon
 sub recieve_rcon
 {
   my ($self, $packet_id, $splitted_answer) = @_;
-  my ($size, $id, $command, $msg);
+  $splitted_answer //= 0;
+  my ($size, $id, $command);
+  my $msg = "";
   my $tmp = "";
 
   my $r_socket  = $self->{"rcon_socket"};
@@ -228,10 +235,15 @@ sub recieve_rcon
   if (($r_socket) && ($r_socket->connected() )) {
     if(IO::Select->new($r_socket)->can_read($TIMEOUT)) {  # $TIMEOUT seconds timeout
       $r_socket->recv($tmp, 1500);
+      # Less than a packet header (size, id, command): the server closed the socket or sent nothing
+      if (!defined($tmp) || length($tmp) < 12) {
+        $self->{"refresh_socket_counter"} = 0;
+        return (-1, -1, "");
+      }
       $size    = unpack("V",  substr($tmp, 0, 4));
 	  if ($size == 0) {
 		$self->{"refresh_socket_counter"} = 0;
-		return (-1, -1, -1);
+		return (-1, -1, "");
 	  }
       $id      = unpack("V",  substr($tmp, 4, 4));
       $command = unpack("V",  substr($tmp, 8, 4));
@@ -245,6 +257,9 @@ sub recieve_rcon
             if(IO::Select->new($r_socket)->can_read($TIMEOUT)) {
               my $split_data;
               $r_socket->recv($split_data, 1500);
+              if (!defined($split_data) || length($split_data) < 12) {
+                last;
+              }
               my $split_size    = unpack("V",  substr($split_data, 0, 4));
               my $split_id      = unpack("V",  substr($split_data, 4, 4));
               my $split_command = unpack("V",  substr($split_data, 8, 4));
@@ -274,11 +289,11 @@ sub recieve_rcon
       return ($id, $command, $msg);
     } else {
       $self->{"refresh_socket_counter"} = 0;
-      return (-1, -1, -1);
+      return (-1, -1, "");
     }
   } else {
     $self->{"refresh_socket_counter"} = 0;
-    return (-1, -1, -1);
+    return (-1, -1, "");
   }
 }
 
