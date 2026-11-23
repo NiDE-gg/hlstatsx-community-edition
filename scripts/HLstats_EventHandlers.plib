@@ -2344,7 +2344,7 @@ sub doEvent_Chat
 		elsif ($message =~ /^\/?hlx_teams([ ][0-9])?$/i) {
 			my $steamid  = $player->{uniqueid};
 			my $mode = -1;
-			if (($1 eq " 0") || ($1 eq " 1")) {
+			if (defined($1) && (($1 eq " 0") || ($1 eq " 1"))) {
 				$mode = substr($1, 1, length($1)-1);
 			}
 			if (($mode > -1) && ($g_servers{$s_addr}->is_admin($steamid) == 1)) {
@@ -2473,7 +2473,7 @@ sub doEvent_Chat
 		elsif (($message =~ /^\/?kdratio([ ][0-9]+)?$/i) || ($message =~ /^\/?kdeath([ ][0-9]+)?$/i) || ($message =~ /^\/?kpd([ ][0-9]+)?$/i)) {
 			my $userid = 0;
 			my $found = 0;
-			if ($1 eq "") {
+			if (!defined($1) || ($1 eq "")) {
 				$found++;
 			} else {
 				$userid = $1;
