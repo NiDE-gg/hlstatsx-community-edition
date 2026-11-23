@@ -57,6 +57,9 @@ sub get_fav_weapon  {
 		LIMIT 1	
 	");
 	my ($fav_weapon, $fav_weapon_kills, $fav_weapon_headshots) = $result->fetchrow_array;
+	# No row when the player has no kill yet
+	$fav_weapon //= "";
+	$fav_weapon_kills //= 0;
 	$result->finish;
 
 	$result = &doQuery("
@@ -71,6 +74,7 @@ sub get_fav_weapon  {
 		LIMIT 0,1	
 	");
 	my ($fav_weapon_sm_acc) = $result->fetchrow_array;
+	$fav_weapon_sm_acc //= 0;
 	$result->finish;
 
 	$result = &doQuery("
@@ -92,6 +96,9 @@ sub get_fav_weapon  {
 	");
 
 	my ($s_fav_weapon, $s_fav_weapon_kills, $s_fav_weapon_headshots) = $result->fetchrow_array;
+	# No row when the player has no kill in this session
+	$s_fav_weapon //= "";
+	$s_fav_weapon_kills //= 0;
 	$result->finish;
 	my $s_fav_weapon_sm_acc = 0;
    
@@ -109,10 +116,16 @@ sub get_fav_weapon  {
 			LIMIT 0,1	
 		");
 		($s_fav_weapon_sm_acc) = $result->fetchrow_array;
+		$s_fav_weapon_sm_acc //= 0;
 		$result->finish;
 	}
    
-	return ($g_games{$g_servers{$s_addr}->{game}}{weapons}{$fav_weapon}{name}, $fav_weapon_kills, $fav_weapon_sm_acc, $g_games{$g_servers{$s_addr}->{game}}{weapons}{$s_fav_weapon}{name}, $s_fav_weapon_kills, $s_fav_weapon_sm_acc);
+	# Weapon display name, or its log code when the weapon is not in hlstats_Weapons
+	my $weapons = $g_games{$g_servers{$s_addr}->{game}}{weapons};
+	my $fav_weapon_name   = (($fav_weapon ne "") && $weapons->{$fav_weapon}) ? $weapons->{$fav_weapon}{name} // $fav_weapon : $fav_weapon;
+	my $s_fav_weapon_name = (($s_fav_weapon ne "") && $weapons->{$s_fav_weapon}) ? $weapons->{$s_fav_weapon}{name} // $s_fav_weapon : $s_fav_weapon;
+
+	return ($fav_weapon_name, $fav_weapon_kills, $fav_weapon_sm_acc, $s_fav_weapon_name, $s_fav_weapon_kills, $s_fav_weapon_sm_acc);
 }
 
 sub get_next_ranks
@@ -2395,7 +2408,7 @@ sub doEvent_Chat
 		### Skill Addon
 		elsif (($message =~ /^\/?skill([ ][0-9]+)?$/i) || ($message =~ /^\/?rank([ ][0-9]+)?$/i) || ($message =~ /^\/?points([ ][0-9]+)?$/i) || ($message =~ /^\/?place([ ][0-9]+)?$/i)) {
 			my $error = 0;
-			if ($1 ne "") {
+			if (defined($1) && ($1 ne "")) {
 				$userid   = substr($1, 1, length($1)-1);
 				my $found = 0;
 				while (my($pl, $s_player) = each(%g_players) ) {
@@ -2515,7 +2528,7 @@ sub doEvent_Chat
 		### Begin of Session stats
 		elsif (($message =~ /^\/?session([ ][0-9]+)?$/i) || ($message =~ /^\/?session_data([ ][0-9]+)?$/i)) {
 			my $error = 0;
-			if ($1 ne "") {
+			if (defined($1) && ($1 ne "")) {
 				$userid   = substr($1, 1, length($1)-1);
 				my $found = 0;
 				while (my($pl, $s_player) = each(%g_players) ) {
@@ -2602,7 +2615,7 @@ sub doEvent_Chat
 				my $url        = $g_servers{$s_addr}->{ingame_url};
 				my $server_id  = $g_servers{$s_addr}->{id};
 				my $game       = $g_servers{$s_addr}->{game};
-				if ($1 ne "") {
+				if (defined($1) && ($1 ne "")) {
 					$server_id = substr($1, 1, length($1)-1);
 				}
 				my $fullurl = $g_servers{$s_addr}->quoteparam(sprintf("%s/ingame.php?game=%s&mode=status&server_id=%s", $url, $game, $server_id));
