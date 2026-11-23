@@ -272,8 +272,14 @@ sub get_player_data
     if ($kills > 0) {
 		($fav_weapon, $fav_weapon_kills, $fav_weapon_acc, $s_fav_weapon, $s_fav_weapon_kills, $s_fav_weapon_acc) = get_fav_weapon($player);
     } else {
-		$fav_weapon   = "-";
-		$s_fav_weapon = "-";
+		# These are package globals: reset them all, or the menu shows the
+		# favourite weapon kills of the previous player looked up
+		$fav_weapon         = "-";
+		$fav_weapon_kills   = 0;
+		$fav_weapon_acc     = 0;
+		$s_fav_weapon       = "-";
+		$s_fav_weapon_kills = 0;
+		$s_fav_weapon_acc   = 0;
     }  
     
     if ($get_rank > 0) {
