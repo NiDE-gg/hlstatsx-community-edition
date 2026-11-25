@@ -50,7 +50,7 @@ of the License, or (at your option) any later version.
 
 	$rows = Auth::loginLog()->latest($filterUser, $filterAddress, 200);
 ?>
-<p>The latest 200 entries<?php echo $isAdministrator ? '' : ' of your account'; ?>, kept 90 days. A refused address is listed once a minute however often it tries.
+<p>The latest 200 entries<?php echo $isAdministrator ? '' : ' of your account'; ?>, kept 90 days. A refused address is listed once a minute however often it tries (an IPv6 /64 as one address).
 Failed and refused attempts are also written to the PHP error log, one line each, for fail2ban (see the README).</p>
 
 <?php if ($isAdministrator) { ?>

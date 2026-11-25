@@ -76,7 +76,8 @@ class Auth
 
 	// After the password, the code has to be typed within TWO_FACTOR_LIFETIME seconds
 	// and in at most TWO_FACTOR_MAX_TRIES tries, else the password is asked again.
-	// Every try is also counted like a password attempt (address and account).
+	// Every try is also counted for the address and, apart from the password attempts,
+	// for the account (see countCodeAttempt()).
 	const TWO_FACTOR_LIFETIME = 300;
 	const TWO_FACTOR_MAX_TRIES = 5;
 
@@ -218,8 +219,8 @@ class Auth
 
 		if ($twoFactor !== false) {
 			// The password was right: the address gets this attempt back, but the account's
-			// count goes on until the code is right too, so a known password doesn't reset
-			// the delay between code guesses. Any session already open here ends.
+			// count goes on until the code is right too. The codes are counted on their
+			// own key (countCodeAttempt()). Any session already open here ends.
 			self::loginFailures()->giveBack(self::ipFailureKey());
 			self::logout();
 			session_regenerate_id(true);
@@ -266,7 +267,7 @@ class Auth
 		$this->username = $user['username'];
 		$method = self::secondFactorMethod((string) $code);
 
-		$refused = self::countPasswordAttempt($user['username']);
+		$refused = self::countCodeAttempt($user['username']);
 		if ($refused !== null) {
 			self::recordSignIn($method, 'refused', $user['username']);
 			$this->error = $refused;
@@ -291,6 +292,7 @@ class Auth
 		}
 
 		self::passwordAttemptSucceeded($user['username']);
+		self::loginFailures()->clear(array(self::codeFailureKey($user['username'])));
 		self::startSession($user, !empty($pending['default']), $method);
 
 		$this->userdata = $user;
@@ -500,6 +502,10 @@ class Auth
 		global $g_options;
 
 		$address = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+		// A refused client is kept once per REFUSED_LOG_INTERVAL under its limiter address:
+		// an IPv6 client uses any address of its /64, and listing each one would add a row
+		// per request however long it is refused
+		$logAddress = $result === 'refused' ? self::addressKey($address) : $address;
 		$username = mb_substr((string) $username, 0, 64);
 		$now = time();
 
@@ -513,10 +519,10 @@ class Auth
 		}
 
 		$log = self::loginLog();
-		if ($result === 'refused' && $log->hasSince($address, 'refused', $now - self::REFUSED_LOG_INTERVAL)) {
+		if ($result === 'refused' && $log->hasSince($logAddress, 'refused', $now - self::REFUSED_LOG_INTERVAL)) {
 			return;
 		}
-		$log->add($now, $username, $address, $method, $result);
+		$log->add($now, $username, $logAddress, $method, $result);
 	}
 
 	// The account's last sign-in before this one and the failures since, or null
@@ -597,6 +603,33 @@ class Auth
 		return null;
 	}
 
+	// Counts a second-factor try on $accountName (a code from the app or a recovery
+	// code), like countPasswordAttempt() but on the account's own code key, which a
+	// known browser does not skip: that cookie only proves the browser signed in
+	// before, and whoever has it and the password could otherwise try codes as fast as
+	// the address limit lets them (and an IPv6 /48 holds 65536 addresses of that limit).
+	// Only someone who knows the password reaches this key, so guessing the password
+	// can't slow down the account's own code entry. Returns the message to show when
+	// the try is refused, or null when the code can be checked.
+	static function countCodeAttempt($accountName)
+	{
+		$failures = self::loginFailures();
+		$ipKey = self::ipFailureKey();
+		$now = time();
+
+		if (!$failures->take($ipKey, self::MAX_FAILURES_PER_IP, $now, $now - self::LOCKOUT_WINDOW)) {
+			$lockedFor = max(1, self::lockedFor($ipKey, self::MAX_FAILURES_PER_IP));
+			return 'Too many failed logins. Please try again in ' . (int) ceil($lockedFor / 60) . ' minute(s).';
+		}
+		$wait = $failures->takeDelayed(self::codeFailureKey($accountName), self::USER_FREE_FAILURES, self::USER_MAX_DELAY, $now, $now - self::LOCKOUT_WINDOW);
+		if ($wait > 0) {
+			$failures->giveBack($ipKey);
+			return 'Too many wrong codes for this account. Please try again in ' . $wait . ' second(s).';
+		}
+
+		return null;
+	}
+
 	// The password was right: the count for its own account ends. The address only gets
 	// this one attempt back: any account holder could otherwise reset the count for an
 	// address that is guessing another account's password.
@@ -655,6 +688,12 @@ class Auth
 	static function userFailureKey($username)
 	{
 		return 'user:' . mb_strtolower(mb_substr((string) $username, 0, 64));
+	}
+
+	// hlstats_LoginFailures key of the second-factor tries on an account
+	static function codeFailureKey($username)
+	{
+		return 'code:' . mb_strtolower(mb_substr((string) $username, 0, 64));
 	}
 
 	// An IPv6 client usually owns a whole /64 and can use any address in it, so those
