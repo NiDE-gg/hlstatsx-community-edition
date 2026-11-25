@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="172";
-SET @VERSION="1.19.0";
+SET @DBVERSION="173";
+SET @VERSION="1.19.1";
 
 -- --------------------------------------------------------
 
@@ -3878,6 +3878,25 @@ CREATE TABLE IF NOT EXISTS `hlstats_LoginFailures` (
   `failures` int(10) unsigned NOT NULL default '0',
   `last_failure` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY  (`key`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hlstats_LoginLog`
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_LoginLog` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `time` int(10) unsigned NOT NULL default '0',
+  `username` varchar(64) NOT NULL default '',
+  `address` varchar(45) NOT NULL default '',
+  `method` varchar(16) NOT NULL default '',
+  `result` varchar(16) NOT NULL default '',
+  PRIMARY KEY (`id`),
+  KEY `time` (`time`),
+  KEY `username` (`username`, `time`),
+  KEY `address` (`address`, `time`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

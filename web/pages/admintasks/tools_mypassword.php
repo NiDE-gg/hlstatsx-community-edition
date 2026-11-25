@@ -59,10 +59,13 @@ For support and installation notes visit http://www.hlxcommunity.com
 		// cookie, can't take the account over. Its checks count like failed logins.
 		$refused = Auth::countPasswordAttempt($auth->username);
 		if ($refused !== null) {
+			Auth::recordSignIn('confirm', 'refused', $auth->username);
 			message('warning', eHtml($refused));
 		} elseif (!Auth::verifyPassword($current, $auth->userdata['password'])) {
+			Auth::recordSignIn('confirm', 'failure', $auth->username);
 			message('warning', 'The current password is incorrect.');
 		} else {
+			Auth::recordSignIn('confirm', 'success', $auth->username);
 			Auth::passwordAttemptSucceeded($auth->username);
 			$problem = ($new === $repeat) ? $auth->changeOwnPassword($new) : 'The two new passwords do not match.';
 			if ($problem === null) {

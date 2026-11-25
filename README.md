@@ -58,6 +58,37 @@ The code cannot do these for you:
 - Set a `LogSecret` on every Source server (see above). The daemon names the servers without one when it starts.
 - Firewall the daemon's UDP port (32578 by default) so only your game servers can reach it.
 - Give staff the *Restricted* access level (80) only for clan tags, weapons, teams, roles, ranks, ribbons, awards and actions, editing player and clan details, host statistics and the player IP search. Restricted accounts can see players' IP and e-mail addresses. Everything else needs *Administrator* (100).
+- Have the admins turn on two-factor authentication (*Tools* → *Two-Factor Authentication*) or use a passkey, and set *Administrators must use two-factor authentication* in the settings.
+
+### :no_entry: Banning sign-in guessers with fail2ban
+
+The admin login already slows down and refuses repeated failures (per address, and per account). Each failed or refused attempt also writes one line to the PHP error log, and *Tools* → *Sign-in History* lists them:
+
+```
+HLstatsX auth failure from 203.0.113.7: method=password user="admin"
+HLstatsX auth refused from 203.0.113.7: method=code user="admin"
+```
+
+To ban such addresses at the firewall, point fail2ban at the log that receives PHP errors (the web server's error log, or PHP-FPM's `error_log`). For example, `/etc/fail2ban/filter.d/hlstatsx-auth.conf`:
+
+```ini
+[Definition]
+failregex = HLstatsX auth (?:failure|refused) from <HOST>: method=
+```
+
+and in `/etc/fail2ban/jail.local`:
+
+```ini
+[hlstatsx-auth]
+enabled  = true
+filter   = hlstatsx-auth
+logpath  = /var/log/apache2/error.log
+maxretry = 10
+findtime = 900
+bantime  = 3600
+```
+
+Behind a reverse proxy, PHP's `REMOTE_ADDR` must be the client's address (Apache `mod_remoteip`, nginx `real_ip`), or every failure is logged with the proxy's address and fail2ban bans the proxy. The login limits have the same requirement.
 
 ### :package: Game server plugins
 

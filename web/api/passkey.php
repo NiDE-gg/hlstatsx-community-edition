@@ -82,14 +82,17 @@ try {
 			// Counted like a password attempt, before anything is checked
 			$refused = $row !== null ? Auth::countPasswordAttempt($row['username']) : Auth::countAddressAttempt();
 			if ($refused !== null) {
+				Auth::recordSignIn('passkey', 'refused', $row['username'] ?? '');
 				passkeyAnswer(['error' => $refused], 429);
 			}
 			$user = $row !== null ? Auth::fetchUser($row['username']) : null;
 			if ($row === null || $user === null) {
+				Auth::recordSignIn('passkey', 'failure', $row['username'] ?? '');
 				passkeyAnswer(['error' => 'This passkey is not registered here.'], 403);
 			}
 			if (($userHandle !== null && $userHandle !== '' && !hash_equals($row['user_handle'], $userHandle))
 				|| !Passkeys::clientDataOk($clientDataJSON, 'webauthn.get')) {
+				Auth::recordSignIn('passkey', 'failure', $row['username']);
 				passkeyAnswer(['error' => 'The passkey sign-in could not be verified.'], 403);
 			}
 
@@ -98,7 +101,7 @@ try {
 
 			Auth::passwordAttemptSucceeded($user['username']);
 			$passkeys->touch((int) $row['id'], (int) ($webauthn->getSignatureCounter() ?? 0));
-			Auth::startSession($user, false);
+			Auth::startSession($user, false, 'passkey');
 			passkeyAnswer(['ok' => true]);
 
 		case 'register-options':
@@ -153,5 +156,8 @@ try {
 } catch (\lbuchs\WebAuthn\WebAuthnException $e) {
 	// The attempt stays counted
 	error_log('HLstats passkey ' . $action . ' refused: ' . $e->getMessage());
+	if ($action === 'login') {
+		Auth::recordSignIn('passkey', 'failure', $row['username'] ?? '');
+	}
 	passkeyAnswer(['error' => 'The passkey could not be verified.'], 403);
 }
