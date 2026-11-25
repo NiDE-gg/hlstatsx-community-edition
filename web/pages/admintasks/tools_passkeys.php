@@ -68,16 +68,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 		if (isset($_POST['confirm_password'])) {
 			// Adding or removing a passkey needs a recent password check, so an open
 			// session alone can't put an attacker's passkey on the account
-			$refused = Auth::countPasswordAttempt($auth->username);
-			if ($refused !== null) {
-				message('warning', eHtml($refused));
-			} elseif (!Auth::verifyPassword(is_string($_POST['confirm_password']) ? $_POST['confirm_password'] : '', $auth->userdata['password'])) {
-				message('warning', 'The password is incorrect.');
-			} else {
-				Auth::passwordAttemptSucceeded($auth->username);
-				$_SESSION['authreauthTime'] = time();
-				message('success', 'Password confirmed for ' . (int) (Passkeys::REAUTH_WINDOW / 60) . ' minutes.');
-			}
+			$auth->confirmPassword();
 		} elseif (isset($_POST['rename']) && $postId > 0) {
 			$label = mb_substr(trim(preg_replace('/[\x00-\x1F\x7F]/u', '', is_string($_POST['label'] ?? null) ? $_POST['label'] : '') ?? ''), 0, 64);
 			if ($label !== '' && $passkeyRepo->rename($postId, $auth->username, $label)) {

@@ -10,6 +10,7 @@
     use Repository\DiscordCacheRepository;
     use Repository\GameRepository;
     use Repository\LoginFailureRepository;
+    use Repository\LoginLogRepository;
     use Repository\PasskeyRepository;
     use Repository\PlayerRepository;
     use Repository\ServerLoadRepository;
@@ -102,6 +103,10 @@
 
     $container->set(LoginFailureRepository::class, function($c) {
         return new LoginFailureRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(LoginLogRepository::class, function($c) {
+        return new LoginLogRepository($c->get('pdo'), $c->get('logger'));
     });
 
     $container->set(PasskeyRepository::class, function($c) {

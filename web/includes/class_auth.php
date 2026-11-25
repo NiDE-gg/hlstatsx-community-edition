@@ -83,6 +83,13 @@ class Auth
 	// Recovery codes given when two-factor authentication is set up
 	const RECOVERY_CODE_COUNT = 10;
 
+	// hlstats_LoginLog (sign-in history) exists from this dbversion on
+	const LOGIN_LOG_DBVERSION = 173;
+
+	// A refused address keeps trying: one history row per this many seconds is kept
+	// for it (every attempt still gets its error_log line)
+	const REFUSED_LOG_INTERVAL = 60;
+
 	// Changing the passkeys or the two-factor authentication of the account needs a
 	// password (or passkey) check this recent: the login itself, or a confirmation
 	const REAUTH_WINDOW = 600;
@@ -171,6 +178,7 @@ class Auth
 
 		$refused = self::countPasswordAttempt($accountName);
 		if ($refused !== null) {
+			self::recordSignIn('password', 'refused', $accountName);
 			$this->error = $refused;
 			$this->printAuth();
 			return;
@@ -178,6 +186,7 @@ class Auth
 
 		// Checked before the password, so a guess tells nothing about it
 		if ($user !== null && self::passkeyRequired($user)) {
+			self::recordSignIn('password', 'refused', $accountName);
 			$this->error = 'This account signs in with a passkey: use "Sign in with a passkey".';
 			$this->printAuth();
 			return;
@@ -186,6 +195,7 @@ class Auth
 		// Unknown usernames are counted too, so a lockout doesn't reveal which ones exist
 		$passwordOk = self::verifyPassword($password, $user !== null ? $user['password'] : self::DUMMY_HASH);
 		if ($user === null || !$passwordOk) {
+			self::recordSignIn('password', 'failure', $accountName);
 			// Same message for both cases, so valid usernames can't be guessed
 			$this->error = 'The username or password you supplied is incorrect.';
 			$this->printAuth();
@@ -220,13 +230,14 @@ class Auth
 				'tries'    => 0,
 				'default'  => $password === self::DEFAULT_PASSWORD,
 			);
+			self::recordSignIn('password', 'pending', $user['username']);
 			$this->twoFactorPending = true;
 			$this->printAuth();
 			return;
 		}
 
 		self::passwordAttemptSucceeded($user['username']);
-		self::startSession($user, $password === self::DEFAULT_PASSWORD, self::twoFactorRequiredFor($user));
+		self::startSession($user, $password === self::DEFAULT_PASSWORD, 'password', self::twoFactorRequiredFor($user));
 
 		$this->userdata = $user;
 		$this->usesDefaultPassword = $_SESSION['authdefaultpassword'];
@@ -253,9 +264,11 @@ class Auth
 		}
 
 		$this->username = $user['username'];
+		$method = self::secondFactorMethod((string) $code);
 
 		$refused = self::countPasswordAttempt($user['username']);
 		if ($refused !== null) {
+			self::recordSignIn($method, 'refused', $user['username']);
 			$this->error = $refused;
 			$this->twoFactorPending = true;
 			$this->printAuth();
@@ -265,6 +278,7 @@ class Auth
 		$_SESSION['authtwofactor']['tries'] = (int) $pending['tries'] + 1;
 
 		if (!self::checkSecondFactor($user['username'], (string) $code)) {
+			self::recordSignIn($method, 'failure', $user['username']);
 			if ($_SESSION['authtwofactor']['tries'] >= self::TWO_FACTOR_MAX_TRIES) {
 				unset($_SESSION['authtwofactor']);
 				$this->error = 'Too many wrong codes. Please enter your password again.';
@@ -277,7 +291,7 @@ class Auth
 		}
 
 		self::passwordAttemptSucceeded($user['username']);
-		self::startSession($user, !empty($pending['default']));
+		self::startSession($user, !empty($pending['default']), $method);
 
 		$this->userdata = $user;
 		$this->usesDefaultPassword = $_SESSION['authdefaultpassword'];
@@ -295,6 +309,15 @@ class Auth
 		}
 
 		return $pending;
+	}
+
+	// History name of a second factor as typed: 'code' (authenticator app) or 'recovery'
+	static function secondFactorMethod($code)
+	{
+		$digits = str_replace(' ', '', trim((string) $code));
+
+		return (strlen($digits) !== \Utils\Totp::DIGITS || !ctype_digit($digits)) && \Utils\Totp::normalizeRecoveryCode(trim((string) $code)) !== null
+			? 'recovery' : 'code';
 	}
 
 	// Whether $code (from the authenticator app, or a recovery code) is right for
@@ -439,11 +462,16 @@ class Auth
 
 	// Signs $user (a hlstats_Users row) in, after a password (and second factor) or a
 	// passkey check: a new session id, a new CSRF token, and the times the session
-	// limits are counted from. $twoFactorSetup: the account has to set up two-factor
-	// authentication before it can do anything else.
-	static function startSession(array $user, $defaultPassword, $twoFactorSetup = false)
+	// limits are counted from. $method: how the account proved itself, for the sign-in
+	// history ('password', 'code', 'recovery' or 'passkey'). $twoFactorSetup: the
+	// account has to set up two-factor authentication before it can do anything else.
+	static function startSession(array $user, $defaultPassword, $method, $twoFactorSetup = false)
 	{
 		self::rememberBrowser($user['username']);
+
+		// Read before this sign-in is recorded: shown once on the next admin page
+		$summary = self::signInSummary($user['username']);
+		self::recordSignIn($method, 'success', $user['username']);
 
 		session_regenerate_id(true);
 		unset($_SESSION['password'], $_SESSION['passkey_challenge'], $_SESSION['authtwofactor'], $_SESSION['twofactor_setup']);
@@ -457,6 +485,68 @@ class Auth
 		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 		$_SESSION['authdefaultpassword'] = (bool) $defaultPassword;
 		$_SESSION['authtwofactorsetup'] = (bool) $twoFactorSetup;
+		$_SESSION['authlastsignin'] = $summary;
+	}
+
+	// Writes a sign-in attempt to the history (hlstats_LoginLog). Failures and refusals
+	// also get one error_log line each, in a fixed format for fail2ban (see README):
+	//   HLstatsX auth failure from 203.0.113.7: method=password user="admin"
+	// The address comes first and the typed name last, JSON-encoded, so a name can't
+	// make the line point at another address.
+	// $method: password, code, recovery, passkey or confirm (password confirmation)
+	// $result: success, pending (password right, code awaited), failure or refused
+	static function recordSignIn($method, $result, $username)
+	{
+		global $g_options;
+
+		$address = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+		$username = mb_substr((string) $username, 0, 64);
+		$now = time();
+
+		if ($result === 'failure' || $result === 'refused') {
+			error_log('HLstatsX auth ' . $result . ' from ' . $address . ': method=' . $method . ' user='
+				. json_encode($username, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
+		}
+
+		if ((int) ($g_options['dbversion'] ?? 0) < self::LOGIN_LOG_DBVERSION) {
+			return;
+		}
+
+		$log = self::loginLog();
+		if ($result === 'refused' && $log->hasSince($address, 'refused', $now - self::REFUSED_LOG_INTERVAL)) {
+			return;
+		}
+		$log->add($now, $username, $address, $method, $result);
+	}
+
+	// The account's last sign-in before this one and the failures since, or null
+	static function signInSummary($username)
+	{
+		global $g_options;
+
+		if ((int) ($g_options['dbversion'] ?? 0) < self::LOGIN_LOG_DBVERSION) {
+			return null;
+		}
+
+		$summary = self::loginLog()->summaryBefore((string) $username, time() + 1);
+
+		return ($summary['last'] !== null || $summary['failures'] > 0) ? $summary : null;
+	}
+
+	// The summary saved at sign-in, once: null afterwards
+	static function takeSignInSummary()
+	{
+		$summary = $_SESSION['authlastsignin'] ?? null;
+		unset($_SESSION['authlastsignin']);
+
+		return is_array($summary) ? $summary : null;
+	}
+
+	static function loginLog()
+	{
+		global $container;
+
+		return $container->get(\Repository\LoginLogRepository::class);
 	}
 
 	// Administrators with a passkey only sign in with it when the passkey_required
@@ -528,10 +618,13 @@ class Auth
 	{
 		$refused = self::countPasswordAttempt($this->username);
 		if ($refused !== null) {
+			self::recordSignIn('confirm', 'refused', $this->username);
 			message('warning', eHtml($refused));
 		} elseif (!self::verifyPassword(is_string($_POST['confirm_password'] ?? null) ? $_POST['confirm_password'] : '', $this->userdata['password'])) {
+			self::recordSignIn('confirm', 'failure', $this->username);
 			message('warning', 'The password is incorrect.');
 		} else {
+			self::recordSignIn('confirm', 'success', $this->username);
 			self::passwordAttemptSucceeded($this->username);
 			$_SESSION['authreauthTime'] = time();
 			message('success', 'Password confirmed for ' . (int) (self::REAUTH_WINDOW / 60) . ' minutes.');
@@ -839,6 +932,7 @@ class Auth
 			$_SESSION['authhash'],
 			$_SESSION['csrf_token'],
 			$_SESSION['authdefaultpassword'],
+			$_SESSION['authlastsignin'],
 			$_SESSION['authtwofactorsetup'],
 			$_SESSION['authtwofactor'],
 			$_SESSION['twofactor_setup']

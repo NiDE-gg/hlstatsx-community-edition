@@ -934,6 +934,19 @@ if (!$auth->requireTwoFactorSetup()) {
 	return;
 }
 
+// Once after each sign-in: when and from where the account last signed in, and the
+// failed attempts on it since then, so an admin notices someone guessing
+$lastSignIn = Auth::takeSignInSummary();
+if ($lastSignIn !== null) {
+	$historyLink = "<a href=\"{$g_options['scripturl']}?mode=admin&amp;task=tools_loginhistory\">Sign-in History</a>";
+	if ($lastSignIn['last'] !== null) {
+		message('success', 'Last sign-in: ' . eHtml(date('Y-m-d H:i', (int) $lastSignIn['last']['time'])) . ' from ' . eHtml($lastSignIn['last']['address']) . '.');
+	}
+	if ($lastSignIn['failures'] > 0) {
+		message('warning', (int) $lastSignIn['failures'] . ' failed or refused attempt(s) on this account since then: see ' . $historyLink . '.');
+	}
+}
+
 // Only full administrators can act on this list, and it tells others which accounts are open
 if ($auth->userdata['acclevel'] >= 100) {
 	$defaultPasswordUsers = Auth::usersWithDefaultPassword();
@@ -984,6 +997,7 @@ $admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 
 $admintasks['tools_mypassword'] = new AdminTask('Change My Password', 80, 'tool', 'Choose a new password for the account you are signed in with.');
 $admintasks['tools_passkeys'] = new AdminTask('Passkeys', 80, 'tool', 'Sign in with a passkey (fingerprint, face, PIN or security key) instead of a password.');
 $admintasks['tools_twofactor'] = new AdminTask('Two-Factor Authentication', 80, 'tool', 'Ask for a code from an authenticator app after the password.');
+$admintasks['tools_loginhistory'] = new AdminTask('Sign-in History', 80, 'tool', 'Successful and failed admin sign-ins, with their address.');
 $admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 80, 'tool', 'Edit a player or clan\'s profile information.');
 $admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 100, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
 $admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');
