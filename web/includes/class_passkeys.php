@@ -27,7 +27,7 @@ class Passkeys
 	const CHALLENGE_LIFETIME = 300;
 
 	// Registering or removing a passkey needs a password or passkey check this recent
-	const REAUTH_WINDOW = 600;
+	const REAUTH_WINDOW = Auth::REAUTH_WINDOW;
 
 	// Why passkeys can't be used on this site, or null when they can
 	static function unavailableReason()
@@ -131,7 +131,7 @@ class Passkeys
 
 	static function recentlyAuthenticated()
 	{
-		return (int) ($_SESSION['authreauthTime'] ?? 0) >= time() - self::REAUTH_WINDOW;
+		return Auth::recentlyAuthenticated();
 	}
 
 	static function repository()

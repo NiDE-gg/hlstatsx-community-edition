@@ -930,6 +930,10 @@ if (!$auth->requireNewPassword($g_options['scripturl'] . '?mode=admin')) {
 	return;
 }
 
+if (!$auth->requireTwoFactorSetup()) {
+	return;
+}
+
 // Only full administrators can act on this list, and it tells others which accounts are open
 if ($auth->userdata['acclevel'] >= 100) {
 	$defaultPasswordUsers = Auth::usersWithDefaultPassword();
@@ -979,6 +983,7 @@ $admintasks['ribbons'] = new AdminTask('Ribbons (triggered by Awards)', 80, 'gam
 $admintasks['tools_perlcontrol'] = new AdminTask('HLstatsX: CE Daemon Control', 100, 'tool', 'Reload or stop your HLX: CE Daemons');
 $admintasks['tools_mypassword'] = new AdminTask('Change My Password', 80, 'tool', 'Choose a new password for the account you are signed in with.');
 $admintasks['tools_passkeys'] = new AdminTask('Passkeys', 80, 'tool', 'Sign in with a passkey (fingerprint, face, PIN or security key) instead of a password.');
+$admintasks['tools_twofactor'] = new AdminTask('Two-Factor Authentication', 80, 'tool', 'Ask for a code from an authenticator app after the password.');
 $admintasks['tools_editdetails'] = new AdminTask('Edit Player or Clan Details', 80, 'tool', 'Edit a player or clan\'s profile information.');
 $admintasks['tools_adminevents'] = new AdminTask('Admin-Event History', 100, 'tool', 'View event history of logged Rcon commands and Admin Mod messages.');
 $admintasks['tools_ipstats'] = new AdminTask('Host Statistics', 80, 'tool', 'See which ISPs your players are using.');

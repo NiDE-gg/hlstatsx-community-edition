@@ -54,6 +54,12 @@
 		error('Please change the default password in the admin panel first.');
 	}
 
+	// So does a required two-factor authentication
+	if ($auth->needsTwoFactorSetup)
+	{
+		error('Please set up two-factor authentication in the admin panel first.');
+	}
+
     $gameRepo = $container->get(\Repository\GameRepository::class);
     $allowedGames = $gameRepo->getGameCodes();
 

@@ -15,6 +15,7 @@
     use Repository\ServerLoadRepository;
     use Repository\SteamProfileRepository;
     use Repository\TrendRepository;
+    use Repository\TwoFactorRepository;
     use Service\DiscordService;
     use Service\OptionService;
     use Service\SteamProfileService;
@@ -105,6 +106,10 @@
 
     $container->set(PasskeyRepository::class, function($c) {
         return new PasskeyRepository($c->get('pdo'), $c->get('logger'));
+    });
+
+    $container->set(TwoFactorRepository::class, function($c) {
+        return new TwoFactorRepository($c->get('pdo'), $c->get('logger'));
     });
 
     $container->set(SteamProfileService::class, function($c) {

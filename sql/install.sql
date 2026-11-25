@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="171";
-SET @VERSION="1.18.25";
+SET @DBVERSION="172";
+SET @VERSION="1.19.0";
 
 -- --------------------------------------------------------
 
@@ -3904,6 +3904,36 @@ CREATE TABLE IF NOT EXISTS `hlstats_Passkeys` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `hlstats_TwoFactor`
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_TwoFactor` (
+  `username` varchar(16) NOT NULL,
+  `secret` varchar(64) NOT NULL,
+  `last_step` bigint(20) unsigned NOT NULL default '0',
+  `created` int(10) unsigned NOT NULL default '0',
+  `last_used` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY (`username`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hlstats_RecoveryCodes`
+--
+
+CREATE TABLE IF NOT EXISTS `hlstats_RecoveryCodes` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `username` varchar(16) NOT NULL,
+  `code_hash` char(64) NOT NULL,
+  `used` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username_code` (`username`, `code_hash`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `hlstats_Options`
 --
 
@@ -3977,6 +4007,7 @@ INSERT INTO `hlstats_Options` (`keyname`, `value`, `opttype`) VALUES
 ('gamehome_show_awards', '0',2),
 ('show_google_map', '1',2),
 ('passkey_required', '0', 2),
+('twofactor_required', '0', 2),
 ('google_map_region', 'NORTH AMERICA',2),
 ('google_map_type', 'HYBRID',2),
 ('slider', '1',2),
@@ -4024,6 +4055,8 @@ INSERT INTO `hlstats_Options_Choices` (`keyname`, `value`, `text`, `isDefault`) 
 ('gamehome_show_awards', '0', 'Hide', 1),
 ('passkey_required', '0', 'No', 1),
 ('passkey_required', '1', 'Yes', 0),
+('twofactor_required', '0', 'No', 1),
+('twofactor_required', '1', 'Yes', 0),
 ('show_google_map', '0', 'Hide', 0),
 ('show_google_map', '1', 'Show', 1),
 ('google_map_region', 'EUROPE', 'Europe', 0),
