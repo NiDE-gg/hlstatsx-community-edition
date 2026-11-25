@@ -83,13 +83,14 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 	elseif ($_POST)
 	{
-		if ($edlist->update()) {
-			// Two-factor settings of the accounts deleted or renamed: a new account
-			// created later with the same name must not inherit them
-			$db->query("DELETE FROM hlstats_TwoFactor WHERE username NOT IN (SELECT username FROM hlstats_Users)", false);
-			$db->query("DELETE FROM hlstats_RecoveryCodes WHERE username NOT IN (SELECT username FROM hlstats_Users)", false);
+		$updated = $edlist->update();
+		// Two-factor settings of the accounts deleted or renamed: a new account created
+		// later with the same name must not inherit them. Also when update() fails: it
+		// still applies the deletes when a new row is refused (see above).
+		$db->query("DELETE FROM hlstats_TwoFactor WHERE username NOT IN (SELECT username FROM hlstats_Users)", false);
+		$db->query("DELETE FROM hlstats_RecoveryCodes WHERE username NOT IN (SELECT username FROM hlstats_Users)", false);
+		if ($updated)
 			message("success", "Operation successful.");
-		}
 		else
 			message("warning", $edlist->error());
 	}

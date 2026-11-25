@@ -102,10 +102,15 @@ of the License, or (at your option) any later version.
 				message('success', 'Two-factor authentication is off. Remove this site from your authenticator app too.');
 			}
 		} elseif (isset($_POST['twofactor_reset_for']) && is_string($_POST['twofactor_reset_for']) && $isAdministrator && !$twoFactorForced) {
-			if (mb_strtolower($_POST['twofactor_reset_for']) === mb_strtolower($auth->username)) {
+			// The account as stored: the username collation ignores case and accents, so
+			// "ádmin" would otherwise reach "admin" past the check for the own account
+			$resetUser = Auth::fetchUser($_POST['twofactor_reset_for']);
+			if ($resetUser === null) {
+				message('warning', 'There is no such account.');
+			} elseif ((string) $resetUser['username'] === (string) $auth->username) {
 				message('warning', 'Use the buttons above for your own account.');
-			} elseif ($twoFactorRepo->disable($_POST['twofactor_reset_for'])) {
-				message('success', 'Two-factor authentication of ' . eHtml($_POST['twofactor_reset_for']) . ' is off. They can set it up again after their next sign-in.');
+			} elseif ($twoFactorRepo->disable((string) $resetUser['username'])) {
+				message('success', 'Two-factor authentication of ' . eHtml($resetUser['username']) . ' is off. They can set it up again after their next sign-in.');
 			}
 		}
 	}
