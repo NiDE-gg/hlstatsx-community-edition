@@ -238,6 +238,7 @@ RewriteEngine On
 RewriteRule sig-(.*)-(.*).png$ sig.php?player_id=$1&background=$2 [L]</textarea>', 'select');
 	
 	$optiongroups[0]->options[] = new Option('passkey_required', 'Administrators who have a passkey can only sign in with it (password login refused for them)', 'select');
+	$optiongroups[0]->options[] = new Option('twofactor_required', 'Administrators must use two-factor authentication: a password sign-in also asks for a code from an authenticator app (set up at their next sign-in). A passkey sign-in counts as two factors.', 'select');
 
 	$optiongroups[1] = new OptionGroup('GeoIP data & Google Map settings');
 	$optiongroups[1]->options[] = new Option('countrydata', 'Show features requiring GeoIP data', 'select');

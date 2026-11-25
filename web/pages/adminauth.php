@@ -55,6 +55,38 @@ For support and installation notes visit http://www.hlxcommunity.com
 	}
 ?>
 		<div style="float:left;margin-left:40px;">
+<?php
+	if ($this->twoFactorPending) {
+		// Second step of the sign-in: the password was right, the code is asked
+?>
+		<form method="post" name="auth">
+			<?php echo Auth::csrfField(); ?>
+
+			<p>Signing in as <strong><?php echo eHtml($this->username); ?></strong>.<br />
+			Enter the 6-digit code shown by your authenticator app, or one of your recovery codes.</p>
+			<table class="data-table">
+				<tr style="vertical-align:middle;">
+					<td class="bg1" style="width:45%;border:0;">Code:</td>
+					<td class="bg1" style="width:55%;border:0;"><input type="text" name="authcode" size="20" maxlength="20" value="" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" autofocus class="textbox"></td>
+				</tr>
+				<tr>
+					<td class="bg1" style="border:0;">&nbsp;</td>
+					<td class="bg1" style="border:0;"><input type="submit" value=" Verify " id="authsubmit" class="submit"></td>
+				</tr>
+			</table>
+		</form>
+		<form method="post" style="margin-top:10px;">
+			<?php echo Auth::csrfField(); ?>
+			<input type="hidden" name="authcancel" value="1">
+			<input type="submit" value=" Sign in with another account " class="submit">
+		</form>
+		</div>
+	</div>
+</div>
+<?php
+		return;
+	}
+?>
 		<form method="post" name="auth">
 			<?php echo Auth::csrfField(); ?>
 	

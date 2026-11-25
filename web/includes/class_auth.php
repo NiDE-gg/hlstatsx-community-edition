@@ -32,6 +32,10 @@ if (!defined('IN_HLSTATS')) {
  * still accepted and replaced on the next successful login. The session only
  * keeps the username, access level, last activity time and a fingerprint of
  * the stored hash, so changing or deleting a user ends their sessions.
+ *
+ * An account with two-factor authentication signs in with its password, then a
+ * code from its authenticator app (or a recovery code): between the two, the
+ * session only holds the pending sign-in (authtwofactor), nothing that opens a page.
  */
 class Auth
 {
@@ -67,6 +71,22 @@ class Auth
 	// login takes the same time either way and usernames can't be probed
 	const DUMMY_HASH = '$2y$12$n5HhhK0sfo720WM/KKLUzOAK48CRwObZzZxibAkD82UQJXDXhREqi';
 
+	// hlstats_TwoFactor and hlstats_RecoveryCodes exist from this dbversion on
+	const TWO_FACTOR_DBVERSION = 172;
+
+	// After the password, the code has to be typed within TWO_FACTOR_LIFETIME seconds
+	// and in at most TWO_FACTOR_MAX_TRIES tries, else the password is asked again.
+	// Every try is also counted like a password attempt (address and account).
+	const TWO_FACTOR_LIFETIME = 300;
+	const TWO_FACTOR_MAX_TRIES = 5;
+
+	// Recovery codes given when two-factor authentication is set up
+	const RECOVERY_CODE_COUNT = 10;
+
+	// Changing the passkeys or the two-factor authentication of the account needs a
+	// password (or passkey) check this recent: the login itself, or a confirmation
+	const REAUTH_WINDOW = 600;
+
 	// bcrypt ignores everything past 72 bytes
 	const MIN_PASSWORD_LENGTH = 12;
 	const MAX_PASSWORD_LENGTH = 72;
@@ -79,11 +99,18 @@ class Auth
 	public $csrfRejected = false;
 	// True when the logged-in user signed in with DEFAULT_PASSWORD
 	public $usesDefaultPassword = false;
+	// True while the password was right and the second factor is awaited
+	public $twoFactorPending = false;
+	// True when the site requires two-factor authentication of this account and it
+	// has none yet: the session opens nothing else until it is set up
+	public $needsTwoFactorSetup = false;
 
 	function __construct()
 	{
 		$authUsername = (isset($_POST['authusername']) && is_string($_POST['authusername'])) ? trim($_POST['authusername']) : '';
 		$authPassword = (isset($_POST['authpassword']) && is_string($_POST['authpassword'])) ? $_POST['authpassword'] : '';
+		$authCode = (isset($_POST['authcode']) && is_string($_POST['authcode'])) ? $_POST['authcode'] : null;
+		$authCancel = !empty($_POST['authcancel']);
 
 		if ($authUsername !== '') {
 			$csrfOk = self::checkCsrf();
@@ -99,11 +126,38 @@ class Auth
 			}
 
 			$this->login($authUsername, $authPassword);
+		} elseif (($authCode !== null || $authCancel) && !empty($_SESSION['authtwofactor'])) {
+			$csrfOk = self::checkCsrf();
+			$_POST = array();
+
+			if (!$csrfOk) {
+				$this->error = 'Your session has expired. Please try again.';
+				$this->showPendingTwoFactor();
+				return;
+			}
+			if ($authCancel) {
+				unset($_SESSION['authtwofactor']);
+				$this->printAuth();
+				return;
+			}
+
+			$this->loginSecondFactor($authCode);
 		} elseif (!empty($_SESSION['loggedin'])) {
 			$this->resume();
 		} else {
-			$this->printAuth();
+			$this->showPendingTwoFactor();
 		}
+	}
+
+	// The code form while a sign-in waits for its second factor, else the login form
+	function showPendingTwoFactor()
+	{
+		$pending = self::pendingTwoFactor();
+		if ($pending !== null) {
+			$this->username = $pending['username'];
+			$this->twoFactorPending = true;
+		}
+		$this->printAuth();
 	}
 
 	function login($username, $password)
@@ -138,17 +192,189 @@ class Auth
 			return;
 		}
 
-		self::passwordAttemptSucceeded($user['username']);
+		$this->username = $user['username'];
 
 		if (self::needsRehash($user['password'])) {
 			$user['password'] = self::upgradeHash($user['username'], $password, $user['password']);
 		}
 
-		self::startSession($user, $password === self::DEFAULT_PASSWORD);
+		$twoFactor = self::twoFactorFor($user['username']);
+		if ($twoFactor === null) {
+			// The second factor can't be skipped because its table can't be read
+			$this->error = 'Two-factor authentication could not be checked. Please try again later.';
+			$this->printAuth();
+			return;
+		}
+
+		if ($twoFactor !== false) {
+			// The password was right: the address gets this attempt back, but the account's
+			// count goes on until the code is right too, so a known password doesn't reset
+			// the delay between code guesses. Any session already open here ends.
+			self::loginFailures()->giveBack(self::ipFailureKey());
+			self::logout();
+			session_regenerate_id(true);
+			$_SESSION['authtwofactor'] = array(
+				'username' => $user['username'],
+				'hash'     => self::fingerprint($user['password']),
+				'time'     => time(),
+				'tries'    => 0,
+				'default'  => $password === self::DEFAULT_PASSWORD,
+			);
+			$this->twoFactorPending = true;
+			$this->printAuth();
+			return;
+		}
+
+		self::passwordAttemptSucceeded($user['username']);
+		self::startSession($user, $password === self::DEFAULT_PASSWORD, self::twoFactorRequiredFor($user));
+
+		$this->userdata = $user;
+		$this->usesDefaultPassword = $_SESSION['authdefaultpassword'];
+		$this->needsTwoFactorSetup = $_SESSION['authtwofactorsetup'];
+		$this->ok = true;
+	}
+
+	// Second step of a password login on an account with two-factor authentication:
+	// $code is a code from the authenticator app or a recovery code
+	function loginSecondFactor($code)
+	{
+		$pending = self::pendingTwoFactor();
+		$user = $pending !== null ? self::fetchUser($pending['username']) : null;
+
+		if ($user === null || !hash_equals(self::fingerprint($user['password']), $pending['hash'])) {
+			// Too late, or the account was deleted or its password changed meanwhile
+			unset($_SESSION['authtwofactor']);
+			if ($pending !== null) {
+				$this->username = $pending['username'];
+			}
+			$this->error = 'The sign-in has expired. Please enter your password again.';
+			$this->printAuth();
+			return;
+		}
+
+		$this->username = $user['username'];
+
+		$refused = self::countPasswordAttempt($user['username']);
+		if ($refused !== null) {
+			$this->error = $refused;
+			$this->twoFactorPending = true;
+			$this->printAuth();
+			return;
+		}
+
+		$_SESSION['authtwofactor']['tries'] = (int) $pending['tries'] + 1;
+
+		if (!self::checkSecondFactor($user['username'], (string) $code)) {
+			if ($_SESSION['authtwofactor']['tries'] >= self::TWO_FACTOR_MAX_TRIES) {
+				unset($_SESSION['authtwofactor']);
+				$this->error = 'Too many wrong codes. Please enter your password again.';
+			} else {
+				$this->error = 'The code is incorrect.';
+				$this->twoFactorPending = true;
+			}
+			$this->printAuth();
+			return;
+		}
+
+		self::passwordAttemptSucceeded($user['username']);
+		self::startSession($user, !empty($pending['default']));
 
 		$this->userdata = $user;
 		$this->usesDefaultPassword = $_SESSION['authdefaultpassword'];
 		$this->ok = true;
+	}
+
+	// The sign-in waiting for its second factor, or null (none, or too old: then dropped)
+	static function pendingTwoFactor()
+	{
+		$pending = $_SESSION['authtwofactor'] ?? null;
+		if (!is_array($pending) || (int) ($pending['time'] ?? 0) < time() - self::TWO_FACTOR_LIFETIME
+			|| (int) ($pending['tries'] ?? 0) >= self::TWO_FACTOR_MAX_TRIES) {
+			unset($_SESSION['authtwofactor']);
+			return null;
+		}
+
+		return $pending;
+	}
+
+	// Whether $code (from the authenticator app, or a recovery code) is right for
+	// $username. Either kind is used up by a match, so it can't sign in twice.
+	static function checkSecondFactor($username, $code)
+	{
+		$code = trim((string) $code);
+		$digits = str_replace(' ', '', $code);
+		$repository = self::twoFactor();
+
+		if (strlen($digits) === \Utils\Totp::DIGITS && ctype_digit($digits)) {
+			$row = $repository->find($username);
+			if (!is_array($row)) {
+				return false;
+			}
+			$step = \Utils\Totp::matchingStep((string) $row['secret'], $digits, time(), (int) $row['last_step']);
+
+			return $step !== null && $repository->useStep($username, $step);
+		}
+
+		$recovery = \Utils\Totp::normalizeRecoveryCode($code);
+
+		return $recovery !== null && $repository->useRecoveryCode($username, \Utils\Totp::hashRecoveryCode($recovery));
+	}
+
+	// The account's hlstats_TwoFactor row, false when it has none (or the database is
+	// from before the tables), null when it can't be read
+	static function twoFactorFor($username)
+	{
+		global $g_options;
+
+		if ((int) ($g_options['dbversion'] ?? 0) < self::TWO_FACTOR_DBVERSION) {
+			return false;
+		}
+
+		return self::twoFactor()->find((string) $username);
+	}
+
+	// Whether the site requires two-factor authentication of $user (a hlstats_Users
+	// row): the twofactor_required option is on and the account is an Administrator.
+	// A passkey sign-in already checks two factors (the device and its PIN or
+	// biometrics), so this only applies to password sign-ins.
+	static function twoFactorRequiredFor(array $user)
+	{
+		global $g_options;
+
+		return ($g_options['twofactor_required'] ?? '0') === '1'
+			&& (int) $user['acclevel'] >= 100
+			&& (int) ($g_options['dbversion'] ?? 0) >= self::TWO_FACTOR_DBVERSION;
+	}
+
+	static function twoFactor()
+	{
+		global $container;
+
+		return $container->get(\Repository\TwoFactorRepository::class);
+	}
+
+	// Until the account required to have two-factor authentication has it, prints its
+	// setup (Tools > Two-Factor Authentication) instead of the page. Call it after
+	// pageHeader() and requireNewPassword(). Returns true when the page can go on.
+	function requireTwoFactorSetup()
+	{
+		global $g_options, $db;
+
+		if (!$this->needsTwoFactorSetup) {
+			return true;
+		}
+		if (is_array(self::twoFactorFor($this->username))) {
+			// Set up meanwhile (another tab)
+			unset($_SESSION['authtwofactorsetup']);
+			$this->needsTwoFactorSetup = false;
+			return true;
+		}
+
+		$auth = $this;
+		$twoFactorForced = true;
+		include(PAGE_PATH . '/admintasks/tools_twofactor.php');
+
+		return false;
 	}
 
 	function resume()
@@ -185,15 +411,17 @@ class Auth
 		$this->username = $user['username'];
 		$this->userdata = $user;
 		$this->usesDefaultPassword = !empty($_SESSION['authdefaultpassword']);
+		$this->needsTwoFactorSetup = !empty($_SESSION['authtwofactorsetup']);
 		$this->ok = true;
 	}
 
 	// Access level of the signed-in admin, or 0. For pages that only need the level:
 	// the same checks as resume() (account deleted, password changed, session idle).
-	// A session opened with the install password counts for nothing until it is changed.
+	// A session opened with the install password counts for nothing until it is changed,
+	// nor one that has to set up two-factor authentication first.
 	static function sessionLevel()
 	{
-		if (empty($_SESSION['loggedin']) || !empty($_SESSION['authdefaultpassword'])) {
+		if (empty($_SESSION['loggedin']) || !empty($_SESSION['authdefaultpassword']) || !empty($_SESSION['authtwofactorsetup'])) {
 			return 0;
 		}
 
@@ -209,14 +437,16 @@ class Auth
 		return (int) $user['acclevel'];
 	}
 
-	// Signs $user (a hlstats_Users row) in, after a password or a passkey check: a new
-	// session id, a new CSRF token, and the times the session limits are counted from.
-	static function startSession(array $user, $defaultPassword)
+	// Signs $user (a hlstats_Users row) in, after a password (and second factor) or a
+	// passkey check: a new session id, a new CSRF token, and the times the session
+	// limits are counted from. $twoFactorSetup: the account has to set up two-factor
+	// authentication before it can do anything else.
+	static function startSession(array $user, $defaultPassword, $twoFactorSetup = false)
 	{
 		self::rememberBrowser($user['username']);
 
 		session_regenerate_id(true);
-		unset($_SESSION['password'], $_SESSION['passkey_challenge']);
+		unset($_SESSION['password'], $_SESSION['passkey_challenge'], $_SESSION['authtwofactor'], $_SESSION['twofactor_setup']);
 		$_SESSION['loggedin'] = 1;
 		$_SESSION['username'] = $user['username'];
 		$_SESSION['acclevel'] = $user['acclevel'];
@@ -226,6 +456,7 @@ class Auth
 		$_SESSION['authhash'] = self::fingerprint($user['password']);
 		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 		$_SESSION['authdefaultpassword'] = (bool) $defaultPassword;
+		$_SESSION['authtwofactorsetup'] = (bool) $twoFactorSetup;
 	}
 
 	// Administrators with a passkey only sign in with it when the passkey_required
@@ -283,6 +514,28 @@ class Auth
 	{
 		self::loginFailures()->clear(array(self::userFailureKey($accountName)));
 		self::loginFailures()->giveBack(self::ipFailureKey());
+	}
+
+	static function recentlyAuthenticated()
+	{
+		return (int) ($_SESSION['authreauthTime'] ?? 0) >= time() - self::REAUTH_WINDOW;
+	}
+
+	// Handles the "confirm your password" form of the pages that need a recent check
+	// (recentlyAuthenticated()), counted like a login. Call it for a POST that carries
+	// confirm_password; prints the outcome.
+	function confirmPassword()
+	{
+		$refused = self::countPasswordAttempt($this->username);
+		if ($refused !== null) {
+			message('warning', eHtml($refused));
+		} elseif (!self::verifyPassword(is_string($_POST['confirm_password'] ?? null) ? $_POST['confirm_password'] : '', $this->userdata['password'])) {
+			message('warning', 'The password is incorrect.');
+		} else {
+			self::passwordAttemptSucceeded($this->username);
+			$_SESSION['authreauthTime'] = time();
+			message('success', 'Password confirmed for ' . (int) (self::REAUTH_WINDOW / 60) . ' minutes.');
+		}
 	}
 
 	// Whether the signed-in session is older than SESSION_MAX_AGE. A session opened
@@ -585,7 +838,10 @@ class Auth
 			$_SESSION['authreauthTime'],
 			$_SESSION['authhash'],
 			$_SESSION['csrf_token'],
-			$_SESSION['authdefaultpassword']
+			$_SESSION['authdefaultpassword'],
+			$_SESSION['authtwofactorsetup'],
+			$_SESSION['authtwofactor'],
+			$_SESSION['twofactor_setup']
 		);
 	}
 
