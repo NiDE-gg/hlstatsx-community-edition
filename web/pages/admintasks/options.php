@@ -224,6 +224,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	$optiongroups[0]->options[] = new Option('contact', 'Contact URL', 'text');
 	$optiongroups[0]->options[] = new Option('bannerdisplay', 'Show Banner', 'select');
 	$optiongroups[0]->options[] = new Option('bannerfile', 'Banner file name (in hlstatsimg/) or full banner URL', 'text');
+	$optiongroups[0]->options[] = new Option('headerlogo', 'Header logo: file name (in the style\'s icons folder) or full logo URL. Empty = title.png', 'text');
 	$optiongroups[0]->options[] = new Option('playerinfo_tabs', 'Use tabs in playerinfo to show/hide sections current page or just show all at once', 'select');
 	$optiongroups[0]->options[] = new Option('slider', 'Enable AJAX gliding server list (accordion effect) on homepage of each game (only affects games with more than one server)', 'select');
 	$optiongroups[0]->options[] = new Option('nav_globalchat', 'Show Chat nav-link', 'select');

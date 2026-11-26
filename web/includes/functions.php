@@ -151,6 +151,29 @@ function eHtmlOnce($str)
 }
 
 /**
+ * hlxHeaderLogo()
+ *
+ * URL of the logo at the top of the pages: the headerlogo option (a full
+ * http(s) URL, or a file name inside $iconDir), or $iconDir/title.png when
+ * the option is empty or missing (databases before updater 175).
+ *
+ * @param string $iconDir icons folder of the page (style folder or IMAGE_PATH/icons)
+ * @return string not HTML-escaped
+ */
+function hlxHeaderLogo($iconDir)
+{
+    global $g_options;
+    $logo = trim(html_entity_decode((string)($g_options['headerlogo'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($logo === '') {
+        return $iconDir . '/title.png';
+    }
+    if (preg_match('#^https?://#i', $logo)) {
+        return $logo;
+    }
+    return $iconDir . '/' . ltrim($logo, '/');
+}
+
+/**
  * shortName()
  *
  * Shortens a player name for titles and breadcrumbs. Counts characters, not bytes:

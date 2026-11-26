@@ -65,7 +65,7 @@ if (!preg_match('#^https?://#i', $lastpage)) {
 <body style="margin:0px;padding:0px;" id="ingame"> 
     
 <div style="width:100%;height:50px;" class="headerblock">
-	<img src="<?php echo IMAGE_PATH; ?>/icons/title.png" alt="HLstats" />
+	<img src="<?php echo eHtml(hlxHeaderLogo(IMAGE_PATH . '/icons')); ?>" alt="HLstats" />
 	<?php 
 	if ($lastpage) {
 		?>
