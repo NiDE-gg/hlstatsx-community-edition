@@ -2,8 +2,8 @@
 
 -- This file is only needed for new installations.
 
-SET @DBVERSION="174";
-SET @VERSION="1.19.2";
+SET @DBVERSION="175";
+SET @VERSION="1.19.3";
 
 -- --------------------------------------------------------
 
@@ -4008,6 +4008,7 @@ INSERT INTO `hlstats_Options` (`keyname`, `value`, `opttype`) VALUES
 ('rankingtype', 'skill',1),
 ('bannerfile', 'hlxcebanner.jpg',2),
 ('bannerdisplay', '0',2),
+('headerlogo', '',2),
 ('awarddailycols', '5',2),
 ('awardglobalcols', '5',2),
 ('awardrankscols', '5',2),
