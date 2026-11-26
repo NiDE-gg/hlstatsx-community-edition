@@ -168,7 +168,7 @@ For support and installation notes visit http://www.hlxcommunity.com
 	
 	<div class="headerblock">
 		<div class="title">
-			<a href="<?php echo $g_options['scripturl']; ?>"><img src="<?php echo $iconpath; ?>/title.png" alt="HLstatsX Community Edition" title="HLstatsX Community Edition" /></a>
+			<a href="<?php echo $g_options['scripturl']; ?>"><img src="https://motd.nide.gg/assets/logos/rankings.png" alt="HLstatsX Community Edition" title="HLstatsX Community Edition" /></a>
 		</div>
 
 <?php
